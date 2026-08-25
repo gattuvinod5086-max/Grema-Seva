@@ -1,0 +1,18 @@
+# Google Sign-In – use ONE of the two options below.
+#
+# Copy this file:  cp .dev.vars.example .dev.vars
+# Then fill in either Option A or Option B.
+
+# ========== Option A: Direct Google OAuth (recommended, no Mocha signup) ==========
+# 1. Go to https://console.cloud.google.com/apis/credentials
+# 2. Create OAuth 2.0 Client ID (Web application)
+# 3. Add authorized redirect URI: http://localhost:5173/auth/callback (for dev)
+# 4. Copy Client ID and Client Secret here (GOOGLE_REDIRECT_URI optional for local—we use your request origin):
+GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+# Optional for localhost; required for production. Example:
+# GOOGLE_REDIRECT_URI=http://localhost:5173/auth/callback
+
+# ========== Option B: Mocha (getmocha.com) ==========
+# MOCHA_USERS_SERVICE_API_URL=https://getmocha.com/u
+# MOCHA_USERS_SERVICE_API_KEY=your_api_key_here

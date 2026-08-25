@@ -1,0 +1,4 @@
+
+ALTER TABLE users DROP COLUMN village;
+ALTER TABLE users DROP COLUMN mandal;
+ALTER TABLE users DROP COLUMN district;

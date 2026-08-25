@@ -1,0 +1,71 @@
+/**
+ * Grama Seva – App theme variables (light + dark)
+ * Use with class "dark" on <html> or data-theme="dark"
+ */
+
+:root {
+  /* Telangana State – primary palette */
+  --tg-maroon: #67001A;
+  --tg-maroon-light: #8B0026;
+  --tg-gold: #C9A227;
+  --tg-gold-light: #E5B82E;
+  --tg-green: #166534;
+  --tg-green-light: #15803d;
+  --tg-sidebar: #0a1f14;
+  --tg-sidebar-accent: #0f2d1f;
+
+  /* Light mode – surfaces & text */
+  --app-bg: #f8faf8;
+  --app-surface: #ffffff;
+  --app-surface-elevated: #ffffff;
+  --app-border: rgba(22, 101, 52, 0.12);
+  --app-text: #0f172a;
+  --app-text-secondary: #475569;
+  --app-text-muted: #64748b;
+
+  /* Light – semantic */
+  --app-success: #166534;
+  --app-error: #b91c1c;
+  --app-warning: #C9A227;
+  --app-info: #0ea5e9;
+
+  /* Shadows */
+  --app-shadow: 0 25px 50px -12px rgba(22, 101, 52, 0.08);
+  --app-shadow-button: 0 10px 25px -5px rgba(103, 0, 26, 0.2);
+
+  /* Typography */
+  --font-heading: "Instrument Serif", Georgia, serif;
+  --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+  --radius-glass: 2.5rem;
+  --radius-button: 2rem;
+  --radius-input: 1.5rem;
+}
+
+[data-theme="dark"],
+.dark,
+html.dark {
+  --tg-maroon: #8B0026;
+  --tg-maroon-light: #A31233;
+  --tg-gold: #E5B82E;
+  --tg-gold-light: #F0C84A;
+  --tg-green: #15803d;
+  --tg-green-light: #16a34a;
+  --tg-sidebar: #06100b;
+  --tg-sidebar-accent: #0a1f14;
+
+  --app-bg: #0a1f14;
+  --app-surface: #0f2d1f;
+  --app-surface-elevated: #142d22;
+  --app-border: rgba(201, 162, 39, 0.15);
+  --app-text: #f1f5f9;
+  --app-text-secondary: #94a3b8;
+  --app-text-muted: #64748b;
+
+  --app-success: #22c55e;
+  --app-error: #ef4444;
+  --app-warning: #E5B82E;
+  --app-info: #38bdf8;
+
+  --app-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  --app-shadow-button: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}

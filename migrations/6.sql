@@ -1,0 +1,4 @@
+
+ALTER TABLE issues ADD COLUMN district TEXT;
+ALTER TABLE issues ADD COLUMN mandal TEXT;
+ALTER TABLE issues ADD COLUMN village TEXT;

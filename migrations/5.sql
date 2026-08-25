@@ -1,0 +1,4 @@
+
+ALTER TABLE users ADD COLUMN district TEXT;
+ALTER TABLE users ADD COLUMN mandal TEXT;
+ALTER TABLE users ADD COLUMN village TEXT;

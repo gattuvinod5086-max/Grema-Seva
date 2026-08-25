@@ -1,0 +1,132 @@
+{
+  "gramaSevaTheme": {
+    "light": {
+      "palette": {
+        "mode": "light",
+        "primary": {
+          "main": "#67001A",
+          "light": "#8B0026",
+          "dark": "#4A0012",
+          "contrastText": "#ffffff"
+        },
+        "secondary": {
+          "main": "#C9A227",
+          "light": "#E5B82E",
+          "dark": "#9A7B1E",
+          "contrastText": "#0f172a"
+        },
+        "success": {
+          "main": "#166534",
+          "light": "#15803d",
+          "dark": "#14532d",
+          "contrastText": "#ffffff"
+        },
+        "error": { "main": "#b91c1c" },
+        "warning": { "main": "#C9A227" },
+        "info": { "main": "#0ea5e9" },
+        "background": {
+          "default": "#f8faf8",
+          "paper": "#ffffff"
+        },
+        "text": {
+          "primary": "#0f172a",
+          "secondary": "#475569",
+          "disabled": "#94a3b8"
+        }
+      },
+      "typography": {
+        "fontFamily": "\"Plus Jakarta Sans\", system-ui, sans-serif",
+        "h1": {
+          "fontFamily": "\"Instrument Serif\", Georgia, serif",
+          "fontWeight": 800,
+          "fontStyle": "italic"
+        },
+        "h2": {
+          "fontFamily": "\"Instrument Serif\", Georgia, serif",
+          "fontWeight": 800,
+          "fontStyle": "italic"
+        },
+        "button": {
+          "fontWeight": 700,
+          "textTransform": "uppercase",
+          "letterSpacing": "0.1em"
+        }
+      },
+      "shape": {
+        "borderRadius": 16
+      },
+      "components": {
+        "MuiButton": {
+          "styleOverrides": {
+            "root": {
+              "borderRadius": "2rem",
+              "padding": "12px 24px",
+              "fontWeight": 700
+            },
+            "containedPrimary": {
+              "boxShadow": "0 10px 25px -5px rgba(103, 0, 26, 0.2)"
+            }
+          }
+        },
+        "MuiCard": {
+          "styleOverrides": {
+            "root": {
+              "borderRadius": "2.5rem",
+              "boxShadow": "0 25px 50px -12px rgba(22, 101, 52, 0.08)"
+            }
+          }
+        }
+      }
+    },
+    "dark": {
+      "palette": {
+        "mode": "dark",
+        "primary": {
+          "main": "#8B0026",
+          "light": "#A31233",
+          "dark": "#67001A",
+          "contrastText": "#ffffff"
+        },
+        "secondary": {
+          "main": "#E5B82E",
+          "light": "#F0C84A",
+          "dark": "#C9A227",
+          "contrastText": "#0a1f14"
+        },
+        "success": {
+          "main": "#15803d",
+          "light": "#16a34a",
+          "contrastText": "#ffffff"
+        },
+        "background": {
+          "default": "#0a1f14",
+          "paper": "#0f2d1f"
+        },
+        "text": {
+          "primary": "#f1f5f9",
+          "secondary": "#94a3b8"
+        }
+      },
+      "typography": {
+        "fontFamily": "\"Plus Jakarta Sans\", system-ui, sans-serif"
+      },
+      "components": {
+        "MuiButton": {
+          "styleOverrides": {
+            "containedPrimary": {
+              "boxShadow": "0 10px 25px -5px rgba(0, 0, 0, 0.5)"
+            }
+          }
+        },
+        "MuiCard": {
+          "styleOverrides": {
+            "root": {
+              "boxShadow": "0 25px 50px -12px rgba(0, 0, 0, 0.4)"
+            }
+          }
+        }
+      }
+    }
+  },
+  "_comment": "Use with createTheme() from @mui/material. Example: createTheme(gramaSevaTheme.light)"
+}

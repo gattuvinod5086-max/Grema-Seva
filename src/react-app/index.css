@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.telugu-text {
+  font-family: "Noto Sans Telugu", "Plus Jakarta Sans", system-ui, sans-serif;
+  line-height: 1.75;
+  word-break: break-word;
+}
+
+:root {
+  --tg-primary: #67001A;
+  --tg-primary-light: #8A1538;
+  --tg-gold: #CCB252;
+  --tg-green: #008A3B;
+  --tg-bg: #FAF9F6;
+  --tg-white: #FFFFFF;
+  --tg-text: #1F2937;
+  --tg-text-secondary: #64748B;
+  --tg-border: #E5E7EB;
+  --tg-maroon: var(--tg-primary);
+  --tg-maroon-light: var(--tg-primary-light);
+  --tg-emblem-green: var(--tg-green);
+  --tg-emblem-gold: var(--tg-gold);
+  --tg-green-light: #059669;
+  --tg-pink: #67001A;
+  --color-primary: var(--tg-primary);
+  --color-primary-light: var(--tg-primary-light);
+  --color-gold: var(--tg-gold);
+  --color-emerald: var(--tg-green);
+  --font-heading: "Instrument Serif", Georgia, serif;
+  --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+  --tg-gradient-page: #FAF9F6;
+  --tg-gradient-header: var(--tg-primary);
+  --tg-gradient-sidebar: linear-gradient(180deg, #67001A 0%, #4d0012 100%);
+  --tg-gradient-terminal-card: #FFFFFF;
+  --glass-bg: #FFFFFF;
+  --glass-border: var(--tg-border);
+  --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --radius-glass: 0.75rem;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  font-family: var(--font-body);
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--tg-text);
+  background: var(--tg-bg);
+  overscroll-behavior-y: contain;
+}
+
+h1, h2, .font-heading {
+  font-family: var(--font-heading);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.25);
+  border-radius: 20px;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+select,
+input,
+textarea {
+  font-size: 16px !important;
+}
+
+button {
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+button:active {
+  transform: scale(0.98);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--tg-primary);
+  outline-offset: 2px;
+}
+
+.glass-card,
+.gs-card {
+  background: var(--tg-white);
+  border-radius: 0.75rem;
+  border: 1px solid var(--tg-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: fadeInUp 0.35s ease-out forwards;
+}
+
+.reveal-item {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+.reveal-item.delay-100 { animation-delay: 100ms; }
+.reveal-item.delay-200 { animation-delay: 200ms; }
+.reveal-item.delay-300 { animation-delay: 300ms; }
+
+.grama-pattern {
+  background-color: var(--tg-bg);
+}

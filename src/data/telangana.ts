@@ -852,3 +852,48 @@ export function getMandalByName(districtName: string, mandalName: string): Manda
   const district = getDistrictByName(districtName);
   return district?.mandals.find(m => m.name === mandalName);
 }
+
+/** Sorted district names (all 33 Telangana districts) */
+export function getDistrictNames(): string[] {
+  return telanganaData.map((d) => d.name).sort((a, b) => a.localeCompare(b));
+}
+
+/** Sorted mandal names for a district */
+export function getMandalNames(districtName: string): string[] {
+  const district = getDistrictByName(districtName);
+  if (!district) return [];
+  return district.mandals.map((m) => m.name).sort((a, b) => a.localeCompare(b));
+}
+
+/** Sorted village names for a district + mandal */
+export function getVillageNames(districtName: string, mandalName: string): string[] {
+  const mandal = getMandalByName(districtName, mandalName);
+  if (!mandal) return [];
+  return mandal.villages.map((v) => v.name).sort((a, b) => a.localeCompare(b));
+}
+
+/** Nested lookup: district → mandal → villages (for legacy callers) */
+export function buildTelanganaLookup(): Record<string, Record<string, string[]>> {
+  const lookup: Record<string, Record<string, string[]>> = {};
+  for (const district of telanganaData) {
+    lookup[district.name] = {};
+    for (const mandal of district.mandals) {
+      lookup[district.name][mandal.name] = mandal.villages.map((v) => v.name);
+    }
+  }
+  return lookup;
+}
+
+/** Clear mandal/village if they are not valid for the selected district */
+export function sanitizeGeoSelection(
+  district: string,
+  mandal: string,
+  village: string
+): { district: string; mandal: string; village: string } {
+  if (!district) return { district: "", mandal: "", village: "" };
+  const mandals = getMandalNames(district);
+  const validMandal = mandals.includes(mandal) ? mandal : "";
+  const villages = validMandal ? getVillageNames(district, validMandal) : [];
+  const validVillage = villages.includes(village) ? village : "";
+  return { district, mandal: validMandal, village: validVillage };
+}

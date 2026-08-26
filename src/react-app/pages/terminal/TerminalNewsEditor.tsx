@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { X, Eye } from "lucide-react";
 import { TerminalGlassCard } from "./TerminalUI";
-import { TELANGANA_DATA } from "@/react-app/data/terminalData";
+import { getDistrictNames, getMandalNames, getVillageNames } from "@/data/telangana";
 import {
   NEWS_CATEGORIES,
   NEWS_PRIORITIES,
@@ -45,9 +45,9 @@ export function TerminalNewsEditor({
     image: existing?.image ?? "",
   });
 
-  const districts = Object.keys(TELANGANA_DATA);
-  const mandals = form.district ? Object.keys(TELANGANA_DATA[form.district] ?? {}) : [];
-  const villages = form.district && form.mandal ? TELANGANA_DATA[form.district]?.[form.mandal] ?? [] : [];
+  const districts = getDistrictNames();
+  const mandals = form.district ? getMandalNames(form.district) : [];
+  const villages = form.district && form.mandal ? getVillageNames(form.district, form.mandal) : [];
 
   const valid = form.title_en.trim() && form.short_description_en.trim() && form.content_en.trim();
 

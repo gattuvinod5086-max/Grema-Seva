@@ -3,7 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router';
 import { useAuth } from '@getmocha/users-service/react';
 import { LogIn, Sparkles, Users, TrendingUp, Award, AlertCircle, Smartphone, UserCog, MapPin, Siren } from 'lucide-react';
 import { BRANDING } from '@/react-app/constants/branding';
-import { TELANGANA_DATA } from '@/react-app/data/terminalData';
+import { getDistrictNames, getMandalNames, getVillageNames, sanitizeGeoSelection } from '@/data/telangana';
 import { WELFARE_SCHEMES } from '@/react-app/data/schemes';
 import {
   PENDING_OFFICIAL_KEY,
@@ -357,24 +357,33 @@ export default function Login() {
                     <div className="grid grid-cols-1 gap-2 mb-3">
                       <select
                         value={officialDistrict}
-                        onChange={(e) => { setOfficialDistrict(e.target.value); setOfficialMandal(''); setOfficialVillage(''); }}
+                        onChange={(e) => {
+                          const next = sanitizeGeoSelection(e.target.value, '', '');
+                          setOfficialDistrict(next.district);
+                          setOfficialMandal(next.mandal);
+                          setOfficialVillage(next.village);
+                        }}
                         className="w-full p-3 rounded-xl font-bold text-slate-800 border-2 outline-none focus:ring-2 focus:ring-offset-1"
                         style={{ borderColor: gold, backgroundColor: '#fffbeb' }}
                       >
                         <option value="">District</option>
-                        {Object.keys(TELANGANA_DATA).sort().map((d) => (
+                        {getDistrictNames().map((d) => (
                           <option key={d} value={d}>{d}</option>
                         ))}
                       </select>
                       {officialDistrict && (
                         <select
                           value={officialMandal}
-                          onChange={(e) => { setOfficialMandal(e.target.value); setOfficialVillage(''); }}
+                          onChange={(e) => {
+                            const next = sanitizeGeoSelection(officialDistrict, e.target.value, '');
+                            setOfficialMandal(next.mandal);
+                            setOfficialVillage(next.village);
+                          }}
                           className="w-full p-3 rounded-xl font-bold text-slate-800 border-2 outline-none focus:ring-2 focus:ring-offset-1"
                           style={{ borderColor: gold, backgroundColor: '#fffbeb' }}
                         >
                           <option value="">Mandal</option>
-                          {Object.keys(TELANGANA_DATA[officialDistrict] ?? {}).sort().map((m) => (
+                          {getMandalNames(officialDistrict).map((m) => (
                             <option key={m} value={m}>{m}</option>
                           ))}
                         </select>
@@ -387,7 +396,7 @@ export default function Login() {
                           style={{ borderColor: gold, backgroundColor: '#fffbeb' }}
                         >
                           <option value="">Village</option>
-                          {(TELANGANA_DATA[officialDistrict]?.[officialMandal] ?? []).sort().map((v) => (
+                          {getVillageNames(officialDistrict, officialMandal).map((v) => (
                             <option key={v} value={v}>{v}</option>
                           ))}
                         </select>

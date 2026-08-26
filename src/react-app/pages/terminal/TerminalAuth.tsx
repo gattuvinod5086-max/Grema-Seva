@@ -4,7 +4,10 @@ import { ArrowRight, Loader2, Sparkles, LogIn } from "lucide-react";
 import { TerminalGlassCard } from "./TerminalUI";
 import {
   MockDB,
-  TELANGANA_DATA,
+  getDistrictNames,
+  getMandalNames,
+  getVillageNames,
+  sanitizeGeoSelection,
   type AppUser,
   type UserRole,
 } from "@/react-app/data/terminalData";
@@ -48,15 +51,28 @@ export function TerminalAuth({ onLoginSuccess }: { onLoginSuccess: (user: AppUse
 
   useEffect(() => {
     if (step === "register" && pendingOfficial) {
-      setRegData((prev) => ({
-        ...prev,
-        role: pendingOfficial.role as UserRole,
-        district: pendingOfficial.district,
-        mandal: pendingOfficial.mandal,
-        village: pendingOfficial.village,
-      }));
+      setRegData((prev) => {
+        const merged = sanitizeGeoSelection(
+          pendingOfficial.district,
+          pendingOfficial.mandal,
+          pendingOfficial.village
+        );
+        return {
+          ...prev,
+          role: pendingOfficial.role as UserRole,
+          district: merged.district,
+          mandal: merged.mandal,
+          village: merged.village,
+        };
+      });
     }
   }, [step, pendingOfficial]);
+
+  const mandalOptions = regData.district ? getMandalNames(regData.district) : [];
+  const villageOptions =
+    regData.district && regData.mandal
+      ? getVillageNames(regData.district, regData.mandal)
+      : [];
 
   const handleMobileSubmit = () => {
     if (mobile.length !== 10) return setError("Enter valid 10-digit number");
@@ -311,18 +327,22 @@ export function TerminalAuth({ onLoginSuccess }: { onLoginSuccess: (user: AppUse
             <h2 className="text-lg md:text-xl font-black text-slate-800 text-center uppercase tracking-tight">
               Regional Profile
             </h2>
-            <div className="grid grid-cols-1 gap-3 max-h-[280px] sm:max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">
-                  Full Name
-                </label>
-                <input
-                  className="w-full p-5 bg-white border border-slate-100 rounded-2xl font-bold text-sm focus:border-tg-maroon outline-none shadow-sm"
-                  value={regData.name}
-                  onChange={(e) => setRegData({ ...regData, name: e.target.value })}
-                  placeholder="Legal Name"
-                />
-              </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">
+                Full Name
+              </label>
+              <input
+                className="w-full p-5 bg-white border border-slate-100 rounded-2xl font-bold text-sm focus:border-tg-maroon outline-none shadow-sm"
+                value={regData.name}
+                onChange={(e) => setRegData({ ...regData, name: e.target.value })}
+                placeholder="Legal Name"
+              />
+            </div>
+
+            <div className="space-y-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                District · Mandal · Village
+              </p>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">
                   District
@@ -330,53 +350,64 @@ export function TerminalAuth({ onLoginSuccess }: { onLoginSuccess: (user: AppUse
                 <select
                   className="w-full p-5 bg-white border border-slate-100 rounded-2xl font-bold text-sm outline-none focus:border-tg-maroon shadow-sm"
                   value={regData.district}
-                  onChange={(e) =>
-                    setRegData({ ...regData, district: e.target.value, mandal: "", village: "" })
-                  }
+                  onChange={(e) => {
+                    setRegData((prev) => ({
+                      ...prev,
+                      ...sanitizeGeoSelection(e.target.value, "", ""),
+                    }));
+                  }}
                 >
                   <option value="">Select Official District</option>
-                  {Object.keys(TELANGANA_DATA)
-                    .sort()
-                    .map((d) => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
+                  {getDistrictNames().map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
                 </select>
               </div>
               {regData.district && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">
-                    Mandal
+                    Mandal{mandalOptions.length > 0 ? ` (${mandalOptions.length})` : ""}
                   </label>
                   <select
                     className="w-full p-5 bg-white border border-slate-100 rounded-2xl font-bold text-sm outline-none focus:border-tg-maroon shadow-sm"
                     value={regData.mandal}
-                    onChange={(e) => setRegData({ ...regData, mandal: e.target.value, village: "" })}
+                    onChange={(e) => {
+                      const mandal = e.target.value;
+                      setRegData((prev) => ({
+                        ...prev,
+                        ...sanitizeGeoSelection(prev.district, mandal, ""),
+                      }));
+                    }}
+                    disabled={mandalOptions.length === 0}
                   >
-                    <option value="">Select Mandal</option>
-                    {Object.keys(TELANGANA_DATA[regData.district] ?? {})
-                      .sort()
-                      .map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
+                    <option value="">
+                      {mandalOptions.length === 0 ? "No mandals for this district" : "Select Mandal"}
+                    </option>
+                    {mandalOptions.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
                   </select>
                 </div>
               )}
               {regData.mandal && regData.district && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">
-                    Village
+                    Village{villageOptions.length > 0 ? ` (${villageOptions.length})` : ""}
                   </label>
                   <select
                     className="w-full p-5 bg-white border border-slate-100 rounded-2xl font-bold text-sm outline-none focus:border-tg-maroon shadow-sm"
                     value={regData.village}
                     onChange={(e) => setRegData({ ...regData, village: e.target.value })}
+                    disabled={villageOptions.length === 0}
                   >
-                    <option value="">Select Village</option>
-                    {(TELANGANA_DATA[regData.district]?.[regData.mandal] ?? []).sort().map((v) => (
+                    <option value="">
+                      {villageOptions.length === 0 ? "No villages for this mandal" : "Select Village"}
+                    </option>
+                    {villageOptions.map((v) => (
                       <option key={v} value={v}>
                         {v}
                       </option>
@@ -384,22 +415,23 @@ export function TerminalAuth({ onLoginSuccess }: { onLoginSuccess: (user: AppUse
                   </select>
                 </div>
               )}
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">
-                  User Role
-                </label>
-                <select
-                  className="w-full p-5 bg-white border border-slate-100 rounded-2xl font-bold text-sm outline-none focus:border-tg-maroon shadow-sm"
-                  value={regData.role}
-                  onChange={(e) => setRegData({ ...regData, role: e.target.value as UserRole })}
-                >
-                  <option value="Citizen">Citizen</option>
-                  <option value="Ward Member">Ward Member</option>
-                  <option value="Sarpanch">Sarpanch</option>
-                  <option value="Upasarpanch">Upasarpanch</option>
-                  <option value="Admin">Admin</option>
-                </select>
-              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">
+                User Role
+              </label>
+              <select
+                className="w-full p-5 bg-white border border-slate-100 rounded-2xl font-bold text-sm outline-none focus:border-tg-maroon shadow-sm"
+                value={regData.role}
+                onChange={(e) => setRegData({ ...regData, role: e.target.value as UserRole })}
+              >
+                <option value="Citizen">Citizen</option>
+                <option value="Ward Member">Ward Member</option>
+                <option value="Sarpanch">Sarpanch</option>
+                <option value="Upasarpanch">Upasarpanch</option>
+                <option value="Admin">Admin</option>
+              </select>
             </div>
             {error && (
               <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest text-center">

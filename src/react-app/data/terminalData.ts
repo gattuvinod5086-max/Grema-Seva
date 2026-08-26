@@ -1,3 +1,13 @@
+import {
+  buildTelanganaLookup,
+  getDistrictNames,
+  getMandalNames,
+  getVillageNames,
+  sanitizeGeoSelection,
+} from "@/data/telangana";
+
+export { getDistrictNames, getMandalNames, getVillageNames, sanitizeGeoSelection };
+
 export type UserRole = "Citizen" | "Ward Member" | "Sarpanch" | "Upasarpanch" | "Admin" | "Mandal Official" | "District Official";
 export type PriorityLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | "Low" | "Medium" | "High";
 
@@ -135,48 +145,11 @@ export const MockDB = {
   },
 };
 
-export const TELANGANA_DATA: Record<string, Record<string, string[]>> = {
-  Adilabad: {
-    "Adilabad Rural": ["Ankapur", "Bela", "Chanda", "Boregaon", "Dasnapur"],
-    Ichoda: ["Adegaon", "Sirichelma", "Gundi", "Ichoda Town"],
-    Jainad: ["Jainad", "Kupti", "Sangvi"],
-  },
-  Hanumakonda: {
-    Hanamkonda: ["Bheemaram", "Gopalpur", "Kondaparthy"],
-    Kazipet: ["Somidi", "Kazipet Town", "Madikonda"],
-  },
-  Hyderabad: {
-    Khairatabad: ["Banjara Hills", "Jubilee Hills", "Somajiguda"],
-    Amberpet: ["Amberpet", "Golnaka", "Kachiguda"],
-  },
-  Nalgonda: {
-    "Nalgonda Urban": ["Ramagiri", "Nalgonda Town"],
-    Miryalaguda: ["Dameracherla", "Miryalaguda Town"],
-  },
-  Warangal: {
-    "Warangal Rural": ["Shayampet", "Geesugonda"],
-    "Warangal City": ["Khila Warangal", "Ursu"],
-  },
-  "Yadadri Bhuvanagiri": {
-    "Adda Guduru": ["Adda Guduru Village", "Chinna Guduru", "Guduru North"],
-    Alair: ["Alair Town", "Sharajipet", "Kolanupaka", "Thangadapally"],
-    "Atmakur (M)": ["Atmakur", "Kurella", "Singaram", "Parupally"],
-    "B Pochampally": ["Pochampally Town", "Jiblakpally", "Mukhtapur", "Vankamamidi"],
-    Bhongir: ["Bhongir City", "Raigiri", "Anantharam", "Nandanam"],
-    Bibinagar: ["Bibinagar Town", "Raghavapur", "Jainpally", "Madharam"],
-    Bommalaramaram: ["Bommalaramaram", "Malyala", "Naginenipally", "Maryala"],
-    Choutuppal: ["Choutuppal Town", "Lakkaram", "Panthangi", "Yellagiri"],
-    Gundala: ["Gundala", "Vasalamarri", "Lingala", "Venkatapur"],
-    Motakonduru: ["Motakonduru", "Ahmadipur", "Dilawarpur", "Kathalapur"],
-    Mothkur: ["Mothkur Town", "Darmaram", "Pothireddypally", "Kondagadapa"],
-    Narayanpur: ["Narayanpur", "Sarvail", "Chilla Pur", "Guthpa"],
-    Rajapeta: ["Rajapeta", "Raghavapur", "Thalaigudem", "Dudekulapally"],
-    Ramannapet: ["Ramannapet Town", "Kommaigudem", "Vellanki", "Dubbaka"],
-    Thurkapally: ["Thurkapally Village", "Gandamalla", "Vandanam", "Madapur"],
-    Valigonda: ["Valigonda Town", "Gokaram", "Vemulakonda", "Lingarajupally"],
-    Yadagirigutta: ["Yadagirigutta Town", "Masaipet", "Gundlapally", "Saidapur"],
-  },
-};
+/** All 33 Telangana districts → mandals → villages (from telangana.ts) */
+export const TELANGANA_DATA: Record<string, Record<string, string[]>> = buildTelanganaLookup();
+
+/** Sorted list of all district names */
+export const TELANGANA_DISTRICTS = getDistrictNames();
 
 export const MOCK_PANCHAYAT: PanchayatLeader[] = [
   {

@@ -10,6 +10,11 @@ import VillageIssues from "@web/pages/VillageIssues";
 import Registration from "@web/pages/Registration";
 import { WardMembers } from "@web/pages/WardMembers";
 
+/**
+ * `key` per route: without it React keeps ONE ProtectedRoute instance
+ * across route changes, which keeps serving the previous route's fetched
+ * user and bounces users back to /registration after they complete it.
+ */
 export default function App() {
   return (
     <Router>
@@ -20,7 +25,7 @@ export default function App() {
         <Route
           path="/admin/officials"
           element={
-            <ProtectedRoute requireLocation={false}>
+            <ProtectedRoute key="admin-officials" requireLocation={false}>
               <AdminOfficials />
             </ProtectedRoute>
           }
@@ -28,7 +33,7 @@ export default function App() {
         <Route
           path="/registration"
           element={
-            <ProtectedRoute requireLocation={false}>
+            <ProtectedRoute key="registration" requireLocation={false}>
               <Registration />
             </ProtectedRoute>
           }
@@ -36,7 +41,7 @@ export default function App() {
         <Route
           path="/"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute key="home">
               <CitizenDashboard />
             </ProtectedRoute>
           }
@@ -44,7 +49,7 @@ export default function App() {
         <Route
           path="/telangana"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute key="telangana">
               <TelanganaAdmin />
             </ProtectedRoute>
           }
@@ -52,7 +57,7 @@ export default function App() {
         <Route
           path="/telangana/issues"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute key="telangana-issues">
               <VillageIssues />
             </ProtectedRoute>
           }
@@ -60,7 +65,7 @@ export default function App() {
         <Route
           path="/ward-members"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute key="ward-members">
               <WardMembers />
             </ProtectedRoute>
           }

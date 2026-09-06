@@ -18,6 +18,12 @@ export function createApp() {
   );
 
   const api = new Hono();
+  // Session and user data must never come from a cache — a stale
+  // /api/users/me response after profile updates sends users in circles.
+  api.use("*", async (c, next) => {
+    await next();
+    c.header("Cache-Control", "no-store");
+  });
   api.route("/", healthRoutes);
   api.route("/auth", authRoutes);
   api.route("/users", userRoutes);

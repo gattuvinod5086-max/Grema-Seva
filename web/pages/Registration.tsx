@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowLeft, MapPin, CheckCircle, User, Phone, Users } from 'lucide-react';
+import { ArrowLeft, MapPin, CheckCircle, User, Phone, Users, Loader2 } from 'lucide-react';
 import { telanganaData, type District, type Mandal, type Village } from '@shared/data/telangana';
 import type { User as ApiUser } from '@shared/types';
 import {
@@ -15,6 +15,7 @@ type Step = 'details' | 'district' | 'mandal' | 'village';
 export default function Registration() {
   const navigate = useNavigate();
   const [user, setUser] = useState<ApiUser | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [step, setStep] = useState<Step>('details');
 
   // User details
@@ -27,21 +28,41 @@ export default function Registration() {
   const [selectedMandal, setSelectedMandal] = useState<Mandal | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [detailErrors, setDetailErrors] = useState<{ name?: string; fatherName?: string; phone?: string }>({});
 
   useEffect(() => {
+    // StrictMode runs effects twice in dev; without the cancelled flag the
+    // duplicate fetch lands late and wipes whatever the user has typed.
+    let cancelled = false;
     fetch('/api/users/me', { credentials: 'same-origin' })
       .then((r) => (r.ok ? r.json() : null))
       .then((body) => {
+        if (cancelled) return;
         const u = body?.user as ApiUser | undefined;
-        if (!u) return;
-        setUser(u);
-        setFullName(u.name && u.name !== 'New User' ? u.name : '');
-        if (u.phone) setMobileNumber(u.phone.replace(/^\+91/, ''));
+        if (u) {
+          setUser(u);
+          setFullName(u.name && u.name !== 'New User' ? u.name : '');
+          if (u.phone) setMobileNumber(u.phone.replace(/^\+91/, ''));
+        }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setProfileLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const [detailErrors, setDetailErrors] = useState<{ name?: string; fatherName?: string; phone?: string }>({});
+  // The form renders only after the profile prefill settles — otherwise a
+  // late response overwrites whatever the user has already typed.
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50 flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
+      </div>
+    );
+  }
 
   const handleDetailsSubmit = (e: React.FormEvent) => {
     e.preventDefault();

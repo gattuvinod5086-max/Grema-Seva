@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { X, Upload, MapPin, Camera, AlertTriangle } from 'lucide-react';
+import { X, Upload, Camera, AlertTriangle } from 'lucide-react';
 import { classifyIssue } from '@shared/services/issueClassification';
 import VoiceInput from '@web/components/VoiceInput';
+import LocationPicker from '@web/components/map/LocationPicker';
 import { ISSUE_CATEGORIES } from '@shared/constants/governance';
 import type { CreateIssue } from '@shared/types';
 
@@ -17,7 +18,6 @@ export default function IssueForm({ onClose, onSubmitted }: IssueFormProps) {
   const [location, setLocation] = useState('');
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
-  const [capturedLocation, setCapturedLocation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [duplicateWarning, setDuplicateWarning] = useState(false);
@@ -28,24 +28,10 @@ export default function IssueForm({ onClose, onSubmitted }: IssueFormProps) {
     }
   };
 
-  const captureLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude: lat, longitude: lng, accuracy } = position.coords;
-          setLatitude(lat);
-          setLongitude(lng);
-          setLocation(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-          setCapturedLocation(true);
-          void accuracy;
-        },
-        () => {
-          alert('Unable to get your location. Please enter it manually.');
-        }
-      );
-    } else {
-      alert('Geolocation is not supported by your browser.');
-    }
+  const handlePickLocation = (lat: number, lng: number) => {
+    setLatitude(lat);
+    setLongitude(lng);
+    setLocation(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -225,32 +211,21 @@ export default function IssueForm({ onClose, onSubmitted }: IssueFormProps) {
             </div>
           </div>
 
-          {/* Location */}
+          {/* Location: pin-drop picker with GPS shortcut */}
           <div>
             <label className="block text-base font-semibold text-gray-900 mb-3">
-              Location
+              Location — tap the map to drop a pin
             </label>
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Enter location or capture GPS"
-                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all text-base"
-              />
-              <button
-                type="button"
-                onClick={captureLocation}
-                className={`px-5 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 ${
-                  capturedLocation
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                }`}
-              >
-                <MapPin className="w-5 h-5" />
-                <span className="hidden md:inline">GPS</span>
-              </button>
-            </div>
+            <LocationPicker
+              latitude={latitude}
+              longitude={longitude}
+              onChange={handlePickLocation}
+            />
+            {latitude != null && longitude != null && (
+              <p className="mt-2 text-xs font-semibold text-green-700">
+                Pinned at {latitude.toFixed(5)}, {longitude.toFixed(5)}
+              </p>
+            )}
           </div>
 
           {error && (

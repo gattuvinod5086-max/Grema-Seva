@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { X, CheckCircle2, RotateCcw, Loader2 } from 'lucide-react';
+import { X, CheckCircle2, RotateCcw, Loader2, MapPin } from 'lucide-react';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import { pinIcon } from '@web/components/map/LocationPicker';
 import SlaDisplay from '@web/components/SlaDisplay';
 import IssueTimeline from '@web/components/IssueTimeline';
 import { GsCard } from '@web/components/ui/GsCard';
@@ -73,12 +75,30 @@ export default function IssueDetailModal({ issue, onClose, onChanged }: IssueDet
           <p className="text-sm text-slate-700">{issue.description}</p>
 
           {issue.addressText && (
-            <p className="text-xs text-slate-500">
-              <strong>Location:</strong> {issue.addressText}
-              {issue.latitude != null && issue.longitude != null
-                ? ` (${issue.latitude.toFixed(5)}, ${issue.longitude.toFixed(5)})`
-                : ''}
+            <p className="text-xs text-slate-500 flex items-start gap-1">
+              <MapPin size={12} className="mt-0.5 shrink-0" />
+              <span>
+                {issue.addressText}
+                {issue.latitude != null && issue.longitude != null
+                  ? ` (${issue.latitude.toFixed(5)}, ${issue.longitude.toFixed(5)})`
+                  : ''}
+              </span>
             </p>
+          )}
+
+          {issue.latitude != null && issue.longitude != null && (
+            <MapContainer
+              center={[issue.latitude, issue.longitude]}
+              zoom={16}
+              scrollWheelZoom={false}
+              className="h-44 w-full rounded-xl border border-slate-200 z-0"
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <Marker position={[issue.latitude, issue.longitude]} icon={pinIcon('#67001A')} />
+            </MapContainer>
           )}
 
           <SlaDisplay

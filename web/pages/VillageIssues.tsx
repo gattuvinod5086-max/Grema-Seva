@@ -3,6 +3,7 @@ import { ArrowLeft, AlertCircle, RefreshCw } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useApi } from "@web/hooks/useApi";
 import IssueList from "@web/components/IssueList";
+import IssuesMap from "@web/components/map/IssuesMap";
 import type { IssueListResponse } from "@shared/types";
 
 export default function VillageIssues() {
@@ -59,7 +60,13 @@ export default function VillageIssues() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        <section>
+          <h2 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-3">Map view</h2>
+          <IssuesMap issues={issues} />
+        </section>
+
+        <section>
         {isLoading ? (
           <div className="bg-white rounded-2xl shadow-xl p-8 text-center border-2 border-pink-200">
             <div className="animate-spin w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full mx-auto" />
@@ -98,6 +105,7 @@ export default function VillageIssues() {
         ) : (
           <IssueList issues={issues} />
         )}
+        </section>
       </div>
     </div>
   );

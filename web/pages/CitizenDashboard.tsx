@@ -67,7 +67,7 @@ export default function CitizenDashboard() {
   const { data: issuesData, error: issuesError, isLoading: issuesLoading, refetch: refetchIssues } =
     useApi<IssueListResponse>('/api/issues');
 
-  const issues = issuesData?.issues ?? [];
+  const issues = useMemo(() => issuesData?.issues ?? [], [issuesData]);
 
   const openIssueDetail = async (issueId: string) => {
     setDetailLoading(true);

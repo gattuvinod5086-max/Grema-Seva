@@ -1,18 +1,15 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
-    "src/react-app/main.tsx",
-    "src/worker/index.ts"
+    "web/main.tsx",
+    "server/src/index.ts"
   ],
-  "project": ["src/**/*.{ts,tsx}"],
+  "project": ["web/**/*.{ts,tsx}", "shared/**/*.ts", "server/src/**/*.ts"],
   "ignore": [
-    ".bun/**",
     "dist/**",
-    "worker-configuration.d.ts",
-    "src/react-app/vite-env.d.ts"
+    "server/legacy/**"
   ],
   "ignoreDependencies": [
-    "@getmocha/vite-plugins",
     "@getmocha/users-service"
   ]
 }

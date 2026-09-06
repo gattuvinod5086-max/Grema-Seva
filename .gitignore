@@ -1,12 +1,16 @@
 dist/
 node_modules/
-.wrangler/
-.dev.vars
-worker-configuration.d.ts
 
 # Local tooling & secrets
-.pptx-venv/
 .env
 .env.*
+!.env.example
 *.local
 .DS_Store
+
+# Runtime data
+uploads/
+*.log
+
+# OS / office lock files
+~$*

@@ -1,0 +1,1230 @@
+<title>GramSeva Backend Readiness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --ground:        #f6f8f4;
+    --surface:       #ffffff;
+    --sunk:          #eef2ea;
+    --ink:           #10201a;
+    --ink-2:         #44584e;
+    --ink-3:         #6d8177;
+    --rule:          rgba(22, 101, 52, 0.16);
+    --rule-soft:     rgba(22, 101, 52, 0.08);
+    --green:         #166534;
+    --green-deep:    #0f4a26;
+    --gold:          #9c7208;
+    --gold-bright:   #B8860B;
+    --maroon:        #67001A;
+
+    --sev-crit:      #8B0026;
+    --sev-crit-bg:   rgba(139, 0, 38, 0.07);
+    --sev-high:      #9c7208;
+    --sev-high-bg:   rgba(184, 134, 11, 0.09);
+    --sev-med:       #2c6360;
+    --sev-med-bg:    rgba(44, 99, 96, 0.08);
+
+    --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
+    --font-body: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    --measure: 68ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #08190f;
+      --surface:     #0e2718;
+      --sunk:        #0b2114;
+      --ink:         #e8f1ea;
+      --ink-2:       #a5bcae;
+      --ink-3:       #7a9186;
+      --rule:        rgba(201, 162, 39, 0.20);
+      --rule-soft:   rgba(201, 162, 39, 0.10);
+      --green:       #4a9e3d;
+      --green-deep:  #6fbf5f;
+      --gold:        #E5B82E;
+      --gold-bright: #F0C84A;
+      --maroon:      #d9647f;
+
+      --sev-crit:    #e8899f;
+      --sev-crit-bg: rgba(232, 137, 159, 0.10);
+      --sev-high:    #E5B82E;
+      --sev-high-bg: rgba(229, 184, 46, 0.10);
+      --sev-med:     #74c4c0;
+      --sev-med-bg:  rgba(116, 196, 192, 0.10);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #08190f;
+    --surface:     #0e2718;
+    --sunk:        #0b2114;
+    --ink:         #e8f1ea;
+    --ink-2:       #a5bcae;
+    --ink-3:       #7a9186;
+    --rule:        rgba(201, 162, 39, 0.20);
+    --rule-soft:   rgba(201, 162, 39, 0.10);
+    --green:       #4a9e3d;
+    --green-deep:  #6fbf5f;
+    --gold:        #E5B82E;
+    --gold-bright: #F0C84A;
+    --maroon:      #d9647f;
+
+    --sev-crit:    #e8899f;
+    --sev-crit-bg: rgba(232, 137, 159, 0.10);
+    --sev-high:    #E5B82E;
+    --sev-high-bg: rgba(229, 184, 46, 0.10);
+    --sev-med:     #74c4c0;
+    --sev-med-bg:  rgba(116, 196, 192, 0.10);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: 0 1.5rem 6rem;
+  }
+
+  .col { max-width: var(--measure); }
+
+  /* ---------- masthead ---------- */
+
+  header.masthead {
+    padding: 3.5rem 0 2rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .eyebrow {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin: 0 0 1.1rem;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(2.6rem, 6vw, 3.9rem);
+    line-height: 1.04;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    margin: 0 0 1rem;
+    color: var(--ink);
+  }
+  h1 em { font-style: italic; color: var(--green); }
+
+  .standfirst {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--ink-2);
+    max-width: 56ch;
+    margin: 0 0 2rem;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 2.5rem;
+    row-gap: 1rem;
+    padding-top: 0.5rem;
+  }
+  .meta div { display: flex; flex-direction: column; gap: 0.2rem; }
+  .meta dt {
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .meta dd {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.84rem;
+    color: var(--ink);
+  }
+
+  /* ---------- sections ---------- */
+
+  section { padding-top: 3.5rem; }
+
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(1.7rem, 3.4vw, 2.3rem);
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.6rem;
+    text-wrap: balance;
+  }
+
+  .sec-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    display: block;
+    margin-bottom: 0.7rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  h3 {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    margin: 2.2rem 0 0.6rem;
+    color: var(--ink);
+  }
+
+  p { margin: 0 0 1rem; max-width: var(--measure); }
+  p.lead { color: var(--ink-2); }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.845em;
+    background: var(--sunk);
+    padding: 0.1em 0.36em;
+    border-radius: 3px;
+    color: var(--ink);
+    word-break: break-word;
+  }
+
+  strong { font-weight: 600; }
+
+  a { color: var(--green); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--gold-bright);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  ul.plain { margin: 0 0 1rem; padding-left: 1.15rem; max-width: var(--measure); }
+  ul.plain li { margin-bottom: 0.45rem; }
+  ul.plain li::marker { color: var(--gold); }
+
+  /* ---------- tally ---------- */
+
+  .tally {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1.6rem 0 2.2rem;
+  }
+  .tally span {
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    padding: 0.34rem 0.7rem;
+    border-radius: 2px;
+    border: 1px solid currentColor;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.45rem;
+  }
+  .tally b { font-size: 0.95rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .t-crit { color: var(--sev-crit); background: var(--sev-crit-bg); }
+  .t-high { color: var(--sev-high); background: var(--sev-high-bg); }
+  .t-med  { color: var(--sev-med);  background: var(--sev-med-bg); }
+
+  /* ---------- findings ---------- */
+
+  .findings { display: flex; flex-direction: column; gap: 0; }
+
+  .finding {
+    display: grid;
+    grid-template-columns: 2.4rem 1fr;
+    gap: 0 1.1rem;
+    padding: 1.35rem 0 1.35rem 0.9rem;
+    border-top: 1px solid var(--rule-soft);
+    border-left: 3px solid var(--sev-med);
+  }
+  .finding:last-child { border-bottom: 1px solid var(--rule-soft); }
+  .finding.crit { border-left-color: var(--sev-crit); }
+  .finding.high { border-left-color: var(--sev-high); }
+  .finding.med  { border-left-color: var(--sev-med); }
+
+  .f-num {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-3);
+    padding-top: 0.18rem;
+  }
+  .f-body { min-width: 0; }
+  .f-title {
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1.4;
+    margin: 0 0 0.35rem;
+    text-wrap: pretty;
+  }
+  .f-title .sev {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    vertical-align: 0.18em;
+    margin-right: 0.55rem;
+    padding: 0.14rem 0.4rem;
+    border-radius: 2px;
+  }
+  .crit .sev { color: var(--sev-crit); background: var(--sev-crit-bg); }
+  .high .sev { color: var(--sev-high); background: var(--sev-high-bg); }
+  .med  .sev { color: var(--sev-med);  background: var(--sev-med-bg); }
+
+  .f-body p { font-size: 0.93rem; color: var(--ink-2); margin: 0 0 0.5rem; max-width: 74ch; }
+  .f-loc {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-3);
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 0.15rem;
+  }
+
+  /* ---------- code block ---------- */
+
+  .block {
+    background: var(--sunk);
+    border: 1px solid var(--rule-soft);
+    border-radius: 4px;
+    padding: 1.15rem 1.25rem;
+    overflow-x: auto;
+    margin: 1.2rem 0 1.6rem;
+  }
+  .block pre {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.775rem;
+    line-height: 1.72;
+    color: var(--ink-2);
+    white-space: pre;
+  }
+  .block pre b { color: var(--green-deep); font-weight: 500; }
+  .block pre i { color: var(--ink-3); font-style: normal; }
+
+  /* ---------- schema table ---------- */
+
+  .tbl-wrap { overflow-x: auto; margin: 1.2rem 0 1.8rem; }
+  table { border-collapse: collapse; width: 100%; min-width: 34rem; }
+  th, td {
+    text-align: left;
+    padding: 0.65rem 1.1rem 0.65rem 0;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+    font-size: 0.9rem;
+  }
+  th {
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+  td:first-child {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  td:last-child { color: var(--ink-2); padding-right: 0; }
+
+  /* ---------- phases ---------- */
+
+  .phases { margin-top: 1.6rem; }
+
+  .phase {
+    display: grid;
+    grid-template-columns: 4.4rem 1fr;
+    gap: 0 1.4rem;
+    padding: 1.6rem 0;
+    border-top: 1px solid var(--rule-soft);
+  }
+  .phase:last-child { border-bottom: 1px solid var(--rule-soft); }
+
+  .p-idx { padding-top: 0.1rem; }
+  .p-idx .n {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--gold);
+    display: block;
+  }
+  .p-idx .d {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--ink-3);
+    display: block;
+    margin-top: 0.35rem;
+    white-space: nowrap;
+  }
+  .p-body { min-width: 0; }
+  .p-body h3 { margin: 0 0 0.5rem; font-size: 1.02rem; }
+  .p-body p { font-size: 0.93rem; color: var(--ink-2); margin-bottom: 0.7rem; }
+  .p-body ul { margin: 0; padding-left: 1.1rem; font-size: 0.9rem; color: var(--ink-2); }
+  .p-body ul li { margin-bottom: 0.3rem; }
+  .p-body ul li::marker { color: var(--gold); }
+  .p-out {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: var(--green);
+    margin-top: 0.8rem;
+    display: block;
+  }
+
+  /* ---------- callout ---------- */
+
+  .callout {
+    border-left: 3px solid var(--gold-bright);
+    background: var(--sev-high-bg);
+    padding: 1.05rem 1.25rem;
+    margin: 1.5rem 0;
+    max-width: var(--measure);
+    border-radius: 0 3px 3px 0;
+  }
+  .callout p { margin: 0; font-size: 0.92rem; color: var(--ink-2); }
+  .callout p + p { margin-top: 0.6rem; }
+  .callout strong { color: var(--ink); }
+
+  /* ---------- asks ---------- */
+
+  .asks { display: flex; flex-direction: column; gap: 0; margin-top: 1.4rem; }
+  .ask {
+    display: grid;
+    grid-template-columns: 8.5rem 1fr;
+    gap: 0 1.4rem;
+    padding: 1.1rem 0;
+    border-top: 1px solid var(--rule-soft);
+  }
+  .ask:last-child { border-bottom: 1px solid var(--rule-soft); }
+  .ask dt {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gold);
+    padding-top: 0.2rem;
+  }
+  .ask dd { margin: 0; font-size: 0.93rem; color: var(--ink-2); }
+  .ask dd b { color: var(--ink); font-weight: 600; }
+
+  footer {
+    margin-top: 4rem;
+    padding-top: 1.6rem;
+    border-top: 1px solid var(--rule);
+    font-size: 0.82rem;
+    color: var(--ink-3);
+  }
+
+  @media (max-width: 640px) {
+    .finding { grid-template-columns: 1fr; gap: 0.4rem; }
+    .f-num { padding-top: 0; }
+    .phase { grid-template-columns: 1fr; gap: 0.7rem; }
+    .p-idx { display: flex; align-items: baseline; gap: 0.8rem; }
+    .p-idx .d { margin-top: 0; }
+    .ask { grid-template-columns: 1fr; gap: 0.3rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Engineering Review &amp; Delivery Plan</p>
+    <h1>Taking GramSeva<br>off the <em>demo</em></h1>
+    <p class="standfirst">
+      A read of every line of the current worker, schema and auth flow — what is real,
+      what is mocked, what is leaking — and the sequence to get to a backend that can
+      hold a district's grievance data.
+    </p>
+    <dl class="meta">
+      <div><dt>Branch</dt><dd>feat/backend-production</dd></div>
+      <div><dt>Reviewed</dt><dd>6 Sep 2026</dd></div>
+      <div><dt>Backend</dt><dd>Node + Postgres</dd></div>
+      <div><dt>SMS OTP</dt><dd>MSG91 (DLT)</dd></div>
+      <div><dt>Maps</dt><dd>Leaflet + OSM</dd></div>
+    </dl>
+  </header>
+
+  <!-- ============ STATE ============ -->
+  <section>
+    <span class="sec-label">01 — Where the code actually stands</span>
+    <h2>Two apps are living in one repo</h2>
+
+    <p class="lead">
+      GramSeva today is not one prototype, it is two, and they do not share a line of state.
+      Understanding this split is the whole job, because the backend work is mostly deciding
+      which of the two survives.
+    </p>
+
+    <h3>Track A — the Terminal app at <code>/app</code></h3>
+    <p>
+      This is the flow that looks finished: onboarding, OTP screen, report form, issue list,
+      officials' dashboard, news, emergency contacts, Krishi and Vikas assistants. It runs
+      entirely in the browser. The database is <code>MockDB</code> in
+      <code>src/react-app/data/terminalData.ts</code>, the session is a
+      <code>localStorage</code> key, and the OTP is a literal string compared client-side.
+      Nothing survives a cleared browser, and nothing is visible to anyone else. This is a
+      demo in the strict sense.
+    </p>
+
+    <h3>Track B — the web app at <code>/</code>, <code>/telangana</code></h3>
+    <p>
+      This one is genuinely server-backed: Hono on Cloudflare Workers, D1 for data, R2 for
+      photos, Google OAuth for login. It has real SLA computation, escalation, an audit
+      trail, citizen confirmation and analytics. It is roughly 1,800 lines and it is
+      better than it looks. But it is reachable only through the Mocha auth provider, its
+      login path is half-migrated to direct Google OAuth, and its authorization has holes
+      wide enough that "data isolation is must" is currently not true of it.
+    </p>
+
+    <div class="callout">
+      <p><strong>The good news, and it is substantial:</strong> the domain logic in
+      <code>src/shared/services/</code> — SLA clocks, escalation ladders, issue
+      classification, department routing, duplicate detection, village scoring, audit
+      formatting — is written against plain objects with no platform dependency. Those
+      eleven files move to the new backend unchanged. The thinking is done; it is the
+      plumbing that has to be rebuilt.</p>
+    </div>
+  </section>
+
+  <!-- ============ FINDINGS ============ -->
+  <section>
+    <span class="sec-label">02 — What the review turned up</span>
+    <h2>Findings, worst first</h2>
+
+    <p class="lead">
+      Every location below was read, not inferred. Line numbers are against
+      <code>main</code> as of this review.
+    </p>
+
+    <div class="tally">
+      <span class="t-crit"><b>5</b> critical</span>
+      <span class="t-high"><b>7</b> high</span>
+      <span class="t-med"><b>9</b> medium</span>
+    </div>
+
+    <div class="findings">
+
+      <div class="finding crit">
+        <div class="f-num">01</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">Critical</span>Every citizen can read every neighbour's complaint</p>
+          <p>
+            When a citizen has a village set, the issue list query becomes
+            <code>SELECT * FROM issues WHERE village = ?</code> with no owner filter, and
+            <code>canViewIssue</code> ends with a blanket "same village, allow". A resident
+            of Kondapur can read the full text, photo, GPS coordinate and reporter ID of
+            every complaint filed in Kondapur — including a domestic dispute, a caste
+            harassment report, or a complaint against a neighbour.
+          </p>
+          <p>
+            This may in fact be an intentional transparency feature. It is not written down
+            anywhere, there is no per-report visibility control, and the citizen is never
+            told. That makes it a leak either way. <b>This is the single most important
+            product decision on the list.</b>
+          </p>
+          <span class="f-loc">src/worker/index.ts:290, :305 · src/worker/governance.ts:75</span>
+        </div>
+      </div>
+
+      <div class="finding crit">
+        <div class="f-num">02</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">Critical</span>Complaint photos are served to anyone, with no login</p>
+          <p>
+            <code>GET /api/files/:key</code> is registered with no auth middleware at all.
+            Any photo attached to any complaint — a house front, a face, a document held up
+            to the camera — is downloadable by anyone who has the key, and keys are handed
+            out in list responses that already over-share.
+          </p>
+          <span class="f-loc">src/worker/index.ts:670</span>
+        </div>
+      </div>
+
+      <div class="finding crit">
+        <div class="f-num">03</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">Critical</span>Any sarpanch can make themselves admin</p>
+          <p>
+            <code>PATCH /api/users/:id/role</code> admits both <code>admin</code> and
+            <code>sarpanch</code>, accepts an arbitrary target user id, and accepts an
+            arbitrary role string with no validation and no jurisdiction check. One village
+            sarpanch can promote themselves to <code>admin</code> and then read and edit the
+            entire state's data.
+          </p>
+          <span class="f-loc">src/worker/index.ts:723</span>
+        </div>
+      </div>
+
+      <div class="finding crit">
+        <div class="f-num">04</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">Critical</span>The village analytics permission check cannot fail</p>
+          <p>
+            The endpoint runs its query first, then calls
+            <code>canViewIssue(user, { user_id: user.id, village })</code> — passing the
+            caller's own id as the record's owner. <code>canViewIssue</code> returns true on
+            <code>issue.user_id === user.id</code>, so the guard is always satisfied. Any
+            logged-in user can pull analytics for any village in the state.
+          </p>
+          <span class="f-loc">src/worker/index.ts:655–668</span>
+        </div>
+      </div>
+
+      <div class="finding crit">
+        <div class="f-num">05</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">Critical</span>A sarpanch can close complaints in villages that are not theirs</p>
+          <p>
+            <code>canUpdateIssueStatus</code> opens with
+            <code>if (user.role === "admin" || user.role === "sarpanch") return true</code>
+            — no comparison against the issue's village. The mandal official below them in
+            the hierarchy <em>is</em> scoped correctly; the sarpanch above them is not.
+          </p>
+          <span class="f-loc">src/worker/governance.ts:85</span>
+        </div>
+      </div>
+
+      <div class="finding high">
+        <div class="f-num">06</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">High</span>Registration cannot complete under the auth method you documented as recommended</p>
+          <p>
+            Five endpoints still use Mocha's <code>authMiddleware</code> instead of the
+            newer <code>requireAuth()</code>, and <code>ProtectedRoute</code> gates on
+            Mocha's <code>useAuth()</code>. A user who signs in through the direct Google
+            OAuth path gets a valid session cookie the rest of the app refuses to
+            recognise — <code>/api/users/me/complete-registration</code> returns 404 and the
+            router bounces them back to <code>/login</code> forever.
+          </p>
+          <span class="f-loc">src/worker/index.ts:689, :701, :723, :752, :781 · components/ProtectedRoute.tsx:14</span>
+        </div>
+      </div>
+
+      <div class="finding high">
+        <div class="f-num">07</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">High</span>OTP is a hardcoded string in the browser bundle</p>
+          <p>
+            <code>TerminalAuth</code> checks <code>otp !== "1234"</code>;
+            <code>Onboarding</code> checks against <code>OTP_DEMO = "123456"</code>. There is
+            no OTP table, no SMS provider, no expiry, no attempt counter and no server
+            involvement whatsoever. Phone login is presentation only — this is net-new work,
+            not a fix.
+          </p>
+          <span class="f-loc">pages/terminal/TerminalAuth.tsx:108 · pages/Onboarding.tsx:9,:34</span>
+        </div>
+      </div>
+
+      <div class="finding high">
+        <div class="f-num">08</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">High</span>Session tokens are signed with the Google OAuth client secret</p>
+          <p>
+            <code>signJwt</code> is handed <code>GOOGLE_CLIENT_SECRET</code> as its HMAC key.
+            Rotating the OAuth credential silently invalidates every session; leaking either
+            one compromises both. Sessions also have no server-side record, so logout only
+            deletes the cookie — a token captured beforehand stays valid for its full 30 days.
+          </p>
+          <span class="f-loc">src/worker/index.ts:144–151 · src/worker/governance.ts:25</span>
+        </div>
+      </div>
+
+      <div class="finding high">
+        <div class="f-num">09</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">High</span>The OAuth flow carries no <code>state</code> parameter</p>
+          <p>
+            <code>buildGoogleRedirectUrl</code> omits <code>state</code> entirely, so the
+            callback has no CSRF protection. Compounding it, the <code>redirect_uri</code>
+            falls back to a value derived from the request's own <code>Origin</code> or
+            <code>Referer</code> header when the env var is unset.
+          </p>
+          <span class="f-loc">src/worker/google-auth.ts:33–47 · src/worker/index.ts:60–64</span>
+        </div>
+      </div>
+
+      <div class="finding high">
+        <div class="f-num">10</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">High</span>A personal-looking PDF is committed and will be served publicly</p>
+          <p>
+            <code>public/Statement_FEB2026_182057584.pdf</code> is tracked in git since the
+            initial commit and sits in the static asset root, meaning it is served at
+            <code>/Statement_FEB2026_182057584.pdf</code> on every deploy. The filename reads
+            like a personal account statement. It needs to be identified, removed, and
+            scrubbed from history — deleting the file alone leaves it in the pack.
+          </p>
+          <p>
+            Separately, a 168 MB <code>claude-desktop_*.deb</code> is sitting untracked in
+            the working tree, one <code>git add .</code> away from being permanent.
+          </p>
+          <span class="f-loc">public/Statement_FEB2026_182057584.pdf · ./claude-desktop_1.46388.2_amd64.deb</span>
+        </div>
+      </div>
+
+      <div class="finding high">
+        <div class="f-num">11</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">High</span>The user directory is unfiltered and unpaginated</p>
+          <p>
+            <code>GET /api/users</code> answers with <code>SELECT * FROM users</code> — every
+            citizen in every village, with email, phone number and father's name — to any
+            caller holding a sarpanch or admin role.
+          </p>
+          <span class="f-loc">src/worker/index.ts:701–719</span>
+        </div>
+      </div>
+
+      <div class="finding high">
+        <div class="f-num">12</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">High</span>No rate limiting on any endpoint</p>
+          <p>
+            Tolerable today. The moment OTP ships it becomes a direct financial attack: an
+            unthrottled send endpoint is someone else spending your SMS balance, and DLT
+            traffic is billed per message. Rate limiting has to land in the same change as
+            OTP, not after it.
+          </p>
+          <span class="f-loc">src/worker/index.ts — no limiter registered</span>
+        </div>
+      </div>
+
+      <div class="finding med">
+        <div class="f-num">13</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">Medium</span>SLA escalation only runs if somebody happens to open a list</p>
+          <p>
+            <code>processEscalations</code> is invoked inside the <code>GET /api/issues</code>
+            handler. A complaint that breaches its SLA overnight is not escalated until the
+            next person loads a dashboard. Escalation belongs on a scheduled job.
+          </p>
+          <span class="f-loc">src/worker/index.ts:315</span>
+        </div>
+      </div>
+
+      <div class="finding med">
+        <div class="f-num">14</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">Medium</span>Migrations 3 and 4 do not exist</p>
+          <p>
+            The folder runs 1, 2, 5, 6, 7, 8, 9, 10, 11. The current D1 instance cannot be
+            reproduced from the repo, and there is no migration command in
+            <code>package.json</code> either. Whatever those two files did is now only in the
+            live database.
+          </p>
+          <span class="f-loc">migrations/</span>
+        </div>
+      </div>
+
+      <div class="finding med">
+        <div class="f-num">15</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">Medium</span>Dead authorization guard, twice</p>
+          <p>
+            <code>if (!canUpdateIssueStatus(user, {})) { /* checked per-issue below */ }</code>
+            calls the function, throws the result away and executes an empty block. The real
+            check does follow, so it is not exploitable — but it reads as protection that
+            isn't there, which is how the next person introduces a hole.
+          </p>
+          <span class="f-loc">src/worker/index.ts:409, :498</span>
+        </div>
+      </div>
+
+      <div class="finding med">
+        <div class="f-num">16</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">Medium</span>CORS is open to every origin</p>
+          <p>
+            <code>app.use("/*", cors())</code> with no options. Not currently exploitable for
+            credentialed reads, but it should be an explicit allowlist before the API is
+            public.
+          </p>
+          <span class="f-loc">src/worker/index.ts:46</span>
+        </div>
+      </div>
+
+      <div class="finding med">
+        <div class="f-num">17</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">Medium</span>Google's <code>id_token</code> signature is never verified, and <code>email_verified</code> is never read</p>
+          <p>
+            <code>getGoogleUserFromTokens</code> base64-decodes the payload and trusts it.
+            It happens to be safe at the one call site (the token came straight from Google
+            over TLS) but the function is exported with no such contract, and an unverified
+            Google email is currently good enough to create an account.
+          </p>
+          <span class="f-loc">src/worker/google-auth.ts:78–95</span>
+        </div>
+      </div>
+
+      <div class="finding med">
+        <div class="f-num">18</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">Medium</span>Photo upload is a second request that can silently fail</p>
+          <p>
+            The client creates the issue, then posts the photo to
+            <code>/api/issues/:id/photo</code>. If the second call fails on a village
+            connection the complaint is filed with no evidence and nobody is told. There is
+            also no size cap, no MIME validation, no EXIF stripping, and <code>photo_key</code>
+            is a single column — a second upload overwrites the first.
+          </p>
+          <span class="f-loc">src/worker/index.ts:583–620</span>
+        </div>
+      </div>
+
+      <div class="finding med">
+        <div class="f-num">19</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">Medium</span>No idempotency on complaint creation</p>
+          <p>
+            A double tap on a slow connection files two complaints. The duplicate detector in
+            <code>shared/services/duplicateDetection.ts</code> exists but is only wired into the
+            client-side demo, not into the create path.
+          </p>
+          <span class="f-loc">src/worker/index.ts:352</span>
+        </div>
+      </div>
+
+      <div class="finding med">
+        <div class="f-num">20</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">Medium</span>No pagination anywhere</p>
+          <p>
+            Every list endpoint is an unbounded <code>SELECT *</code> ordered by date. Fine at
+            demo volume; a district's worth of complaints will time out the dashboard.
+          </p>
+          <span class="f-loc">src/worker/index.ts — all list handlers</span>
+        </div>
+      </div>
+
+      <div class="finding med">
+        <div class="f-num">21</div>
+        <div class="f-body">
+          <p class="f-title"><span class="sev">Medium</span>No tests, no CI, no error contract</p>
+          <p>
+            Zero test files in the repo. Zod validation failures throw out of the handler
+            rather than returning a 400 with field errors, and there is no shared error shape
+            for the client to render. Nothing runs on push.
+          </p>
+          <span class="f-loc">repository-wide</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ MISSED ============ -->
+  <section>
+    <span class="sec-label">03 — What wasn't on your list</span>
+    <h2>The gaps between your five features and a working system</h2>
+
+    <p class="lead">
+      You named SMS OTP, Google login, report routing, status visibility, official updates,
+      data isolation and map location. Those are the right seven. Here is what sits between
+      them that nothing in the repo currently covers.
+    </p>
+
+    <h3>There is no directory of who the officials actually are</h3>
+    <p>
+      "The report goes to the sarpanch" needs a table that answers <em>who is the sarpanch of
+      this village, right now</em>. That table does not exist. <code>departmentRouting</code>
+      returns a department <em>name</em> as a string; <code>assigned_to_user_id</code> is only
+      ever set by a human clicking assign. Auto-routing is impossible until officials are
+      modelled with a jurisdiction and a validity period — terms end, officials transfer, and
+      the audit trail has to still make sense afterwards.
+    </p>
+
+    <h3>Location is free text, so isolation is built on string equality</h3>
+    <p>
+      District, mandal and village are <code>TEXT</code> columns on both users and issues, and
+      every access decision compares them with <code>=</code>. One trailing space, one
+      "Kondapur" vs "Kondapuram", and a complaint becomes invisible to the person who should
+      see it — or visible to someone who shouldn't. These need to be foreign keys into a
+      canonical jurisdiction table seeded from the LGD codes.
+    </p>
+
+    <h3>Nobody gets told anything</h3>
+    <p>
+      The entire loop you described — citizen reports, sarpanch acts, citizen sees progress —
+      has no notification layer. The sarpanch learns about a complaint by opening a dashboard;
+      the citizen learns their issue was resolved by opening the app. Once MSG91 is wired for
+      OTP the same channel carries status SMS, and it needs its own DLT templates registered
+      in Telugu and English, which is a lead-time item.
+    </p>
+
+    <h3>Consent, retention and residency are unaddressed</h3>
+    <p>
+      This app collects phone numbers, father's names, GPS coordinates and photographs of
+      identifiable people, on behalf of a government body. Under the DPDP Act 2023 that needs
+      a consent record, a stated purpose, a retention period and a deletion path — none of
+      which exist. It also very likely needs to sit in an Indian region, which constrains the
+      hosting choice below.
+    </p>
+
+    <h3>Smaller pieces with no home yet</h3>
+    <ul class="plain">
+      <li><b>Voice notes</b> — <code>VoiceInput</code> exists in the UI; there is no attachment model to store what it captures.</li>
+      <li><b>Multiple photos</b> — before/after evidence needs a row per file, not one column.</li>
+      <li><b>Moderation</b> — no way to withdraw, hide or flag an abusive complaint, and no soft delete.</li>
+      <li><b>Search and export</b> — officials will ask for both within a week of launch.</li>
+      <li><b>Language</b> — translations exist client-side, but SMS and notification language is a per-user setting that isn't stored.</li>
+      <li><b>Offline queue</b> — <code>offlineSync.ts</code> models sync state; the server has no endpoint to accept a batch of queued reports.</li>
+      <li><b>Repo hygiene</b> — twelve <code>FIX_*</code> / <code>START_HERE</code> markdown files and eight shell scripts in the project root, largely superseded.</li>
+    </ul>
+  </section>
+
+  <!-- ============ ARCHITECTURE ============ -->
+  <section>
+    <span class="sec-label">04 — Target shape</span>
+    <h2>Folder structure</h2>
+
+    <p class="lead">
+      A workspace monorepo with three roots: the API, the web app, and the shared contract
+      between them. The shared package is what stops the two drifting apart again — one set
+      of Zod schemas defines both what the server validates and what the client expects.
+    </p>
+
+    <div class="block">
+<pre><b>apps/api/</b>                        <i>Node 22 · Hono · Postgres · Drizzle</i>
+  src/
+    <b>index.ts</b>                     <i>server bootstrap, route mounting</i>
+    <b>env.ts</b>                       <i>zod-validated config, fails fast on boot</i>
+    <b>db/</b>
+      client.ts                  <i>pg pool + drizzle</i>
+      schema/                    <i>table definitions</i>
+      migrations/                <i>generated, ordered, checked in</i>
+      seed/                      <i>jurisdictions from LGD codes</i>
+    <b>modules/</b>                     <i>each: routes · service · repo · schema · test</i>
+      auth/                      <i>otp, google, session, rbac</i>
+      users/
+      officials/                 <i>jurisdiction directory, term validity</i>
+      issues/                    <i>report → route → update → confirm</i>
+      attachments/
+      notifications/
+      news/
+      emergency/
+      analytics/
+    <b>middleware/</b>                  <i>auth · scope · ratelimit · error · request-log</i>
+    <b>providers/</b>
+      sms/msg91.ts               <i>+ console driver for local dev</i>
+      storage/s3.ts
+      geocode/nominatim.ts
+    <b>jobs/</b>
+      sla-escalation.ts          <i>cron, replaces the read-path hack</i>
+      notification-dispatch.ts
+  test/                          <i>integration, incl. isolation contract suite</i>
+
+<b>apps/web/</b>                        <i>existing React app, moved wholesale</i>
+  src/ pages · components · hooks · context · i18n · data
+
+<b>packages/shared/</b>                 <i>imported by both</i>
+  types/                         <i>zod schemas = the API contract</i>
+  constants/                     <i>governance · news · emergency</i>
+  services/                      <i>sla · escalation · classification ·</i>
+                                 <i>routing · dedup · scoring · audit</i>
+
+<b>infra/</b>
+  docker-compose.yml             <i>postgres+postgis · minio · mailpit</i>
+  Dockerfile.api
+
+<b>docs/</b>                            <i>keep; root FIX_*.md files fold in here</i>
+</pre>
+    </div>
+
+    <p>
+      The eleven files already in <code>src/shared/services/</code> move into
+      <code>packages/shared/services/</code> with no edits — they were written
+      platform-neutral, which is the reason this restructure is cheap rather than a rewrite.
+    </p>
+  </section>
+
+  <!-- ============ SCHEMA ============ -->
+  <section>
+    <span class="sec-label">05 — Data model</span>
+    <h2>What Postgres adds</h2>
+
+    <p class="lead">
+      Beyond a straight port of the eleven existing tables. The first four are what make
+      auth and isolation structural rather than remembered.
+    </p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Table</th><th>Carries</th><th>Why it earns a table</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>jurisdictions</td>
+            <td>district, mandal, village, ward, LGD code, centroid</td>
+            <td>Canonical geography. Every user, issue and official points at a row here instead of comparing strings.</td>
+          </tr>
+          <tr>
+            <td>official_assignments</td>
+            <td>user, role, jurisdiction, department, valid_from / valid_to</td>
+            <td>Answers "who is the sarpanch of this village today" — the lookup auto-routing needs, and the one that keeps history correct after a transfer.</td>
+          </tr>
+          <tr>
+            <td>auth_identities</td>
+            <td>user, provider, provider_uid, verified_at</td>
+            <td>One citizen, two login methods. Lets a phone-OTP account and a Google account resolve to the same person instead of two.</td>
+          </tr>
+          <tr>
+            <td>otp_requests</td>
+            <td>phone, code_hash, purpose, attempts, expires_at, consumed_at, ip</td>
+            <td>Hashed codes, 5-minute expiry, capped attempts, per-phone and per-IP throttles. Never stores the code in clear.</td>
+          </tr>
+          <tr>
+            <td>sessions</td>
+            <td>user, token_hash, device, ip, expires_at, revoked_at</td>
+            <td>Makes logout mean something, and lets an official's session be revoked when their term ends.</td>
+          </tr>
+          <tr>
+            <td>issue_attachments</td>
+            <td>issue, kind (photo / voice), key, mime, bytes, phase</td>
+            <td>Multiple files, and the before/after evidence pairing officials will want for proof of work.</td>
+          </tr>
+          <tr>
+            <td>notifications</td>
+            <td>user, channel, template, payload, status, provider_msg_id</td>
+            <td>One queue behind SMS, push and in-app, with delivery state you can actually debug.</td>
+          </tr>
+          <tr>
+            <td>sms_log</td>
+            <td>phone, dlt_template_id, provider_msg_id, status, cost</td>
+            <td>DLT compliance evidence and a running cost line. You will want this the first time a bill surprises you.</td>
+          </tr>
+          <tr>
+            <td>consents</td>
+            <td>user, purpose, version, granted_at, withdrawn_at</td>
+            <td>DPDP Act record of what each citizen agreed to and when.</td>
+          </tr>
+          <tr>
+            <td>audit_log</td>
+            <td>actor, action, entity, before, after, ip</td>
+            <td>Generalises today's <code>issue_updates</code> so role changes and official reassignments are recorded too.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Columns onto <code>issues</code></h3>
+    <p>
+      <code>jurisdiction_id</code>, <code>geom geography(Point,4326)</code> with a GiST index,
+      <code>accuracy_m</code>, <code>address_text</code>, <code>reported_via</code>,
+      <code>visibility</code>, <code>idempotency_key</code> (unique),
+      <code>duplicate_of_id</code>, <code>withdrawn_at</code>.
+    </p>
+
+    <div class="callout">
+      <p><strong>On data isolation specifically.</strong> The five critical findings above are
+      all the same failure: authorization written by hand in each handler, and eventually
+      forgotten in one. Postgres row-level security fixes the category rather than the
+      instances — policies on <code>issues</code>, <code>users</code> and
+      <code>attachments</code> keyed to a per-request
+      <code>SET LOCAL app.user_id / app.role / app.jurisdiction</code>, so a handler that
+      forgets its <code>WHERE</code> clause returns nothing instead of returning everything.</p>
+      <p>That is the strongest reason Postgres was the right call over staying on D1, which
+      has no equivalent.</p>
+    </div>
+  </section>
+
+  <!-- ============ PLAN ============ -->
+  <section>
+    <span class="sec-label">06 — Delivery</span>
+    <h2>Six phases</h2>
+
+    <p class="lead">
+      Ordered by dependency, not by appetite. Phase 0 ships to the current Cloudflare
+      deployment on day one, because the rewrite takes weeks and the leaks are live now.
+      Estimates assume one developer.
+    </p>
+
+    <div class="phases">
+
+      <div class="phase">
+        <div class="p-idx"><span class="n">0</span><span class="d">1–2 days</span></div>
+        <div class="p-body">
+          <h3>Stop the bleeding on what's deployed</h3>
+          <p>Patches to the existing worker, shipped before any restructuring begins.</p>
+          <ul>
+            <li>Identify and purge the PDF from <code>public/</code> and from git history; gitignore the <code>.deb</code></li>
+            <li>Put auth and an ownership check on <code>/api/files/:key</code></li>
+            <li>Delete <code>PATCH /api/users/:id/role</code> or restrict it to <code>admin</code> with a role allowlist</li>
+            <li>Fix the analytics guard; scope sarpanch writes to their own village</li>
+            <li>Lock CORS to known origins; scope and paginate <code>/api/users</code></li>
+          </ul>
+          <span class="p-out">→ nothing sensitive is publicly readable</span>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="p-idx"><span class="n">1</span><span class="d">3–4 days</span></div>
+        <div class="p-body">
+          <h3>Monorepo and API skeleton</h3>
+          <p>The move, with no behaviour change, so the diff stays reviewable.</p>
+          <ul>
+            <li>Workspaces; <code>src/react-app</code> → <code>apps/web</code>, <code>src/shared</code> → <code>packages/shared</code></li>
+            <li><code>apps/api</code> on Hono + Node adapter; Drizzle over Postgres; docker-compose for local Postgres/PostGIS/MinIO</li>
+            <li>Port the eleven tables as migration 001 — reconstructing what the missing migrations 3 and 4 did</li>
+            <li>Config validation on boot, structured request logging, one error shape, health endpoint</li>
+          </ul>
+          <span class="p-out">→ existing endpoints answer from Postgres</span>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="p-idx"><span class="n">2</span><span class="d">4–5 days</span></div>
+        <div class="p-body">
+          <h3>Real authentication</h3>
+          <p>Phone OTP and Google resolving to one identity, with sessions you can revoke.</p>
+          <ul>
+            <li>MSG91 adapter behind an <code>SmsProvider</code> interface, with a console driver so the flow is testable before DLT clears</li>
+            <li><code>POST /auth/otp/request</code> and <code>/verify</code> — hashed codes, 5-min expiry, 5 attempts, throttled per phone, per IP and per day</li>
+            <li>Google OAuth with <code>state</code>, verified <code>id_token</code>, <code>email_verified</code> enforced, and its own <code>SESSION_SECRET</code></li>
+            <li>Account linking on matching verified phone or email; server-side sessions with real logout</li>
+            <li>Retire Mocha and the <code>authMiddleware</code> / <code>requireAuth</code> split; one middleware everywhere</li>
+          </ul>
+          <span class="p-out">→ OTP arrives on a real handset</span>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="p-idx"><span class="n">3</span><span class="d">3–4 days</span></div>
+        <div class="p-body">
+          <h3>Isolation as structure</h3>
+          <p>The phase that makes "data isolation is must" true rather than intended.</p>
+          <ul>
+            <li>Seed <code>jurisdictions</code> from LGD codes; migrate the text columns to foreign keys</li>
+            <li><code>official_assignments</code> with validity windows; role and scope resolved once per request</li>
+            <li>RLS policies on issues, users and attachments, driven by <code>SET LOCAL</code> session variables</li>
+            <li>A contract test suite that asserts each role sees exactly its own slice — the regression net for every finding above</li>
+            <li>Settle and implement the complaint-visibility decision (private / village-public / opt-in per report)</li>
+          </ul>
+          <span class="p-out">→ a forgotten WHERE clause returns nothing, not everything</span>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="p-idx"><span class="n">4</span><span class="d">5–6 days</span></div>
+        <div class="p-body">
+          <h3>The complaint lifecycle, end to end</h3>
+          <p>Report reaches the right official, citizen watches it move, official reports progress.</p>
+          <ul>
+            <li>Create in one transaction: text, attachments, location, idempotency key, server-side duplicate check</li>
+            <li>Auto-route on category and jurisdiction to a named official, with escalation targets resolved from the same table</li>
+            <li>Status and progress updates with mandatory evidence on resolve; citizen confirm / reopen; full audit</li>
+            <li>SLA escalation moved to a scheduled job; notification queue with SMS and in-app, Telugu and English</li>
+            <li>Paginated, filterable list endpoints for citizen and official views</li>
+          </ul>
+          <span class="p-out">→ the loop you described actually closes</span>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="p-idx"><span class="n">5</span><span class="d">3–4 days</span></div>
+        <div class="p-body">
+          <h3>Map and geography</h3>
+          <p>Leaflet on OpenStreetMap tiles — no key, no billing, no vendor lock.</p>
+          <ul>
+            <li>Pin-drop and GPS capture on the report form, with accuracy shown and manual correction</li>
+            <li>Reverse geocode to an address and a jurisdiction suggestion; Nominatim results cached server-side to stay inside its usage policy</li>
+            <li>Officials' map view: clustered pins, severity colouring, heatmap over the existing <code>toMapPoints</code></li>
+            <li>PostGIS radius query feeding duplicate detection — "three reports of this pothole within 50 m"</li>
+          </ul>
+          <span class="p-out">→ location is data, not a text field</span>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="p-idx"><span class="n">6</span><span class="d">4–5 days</span></div>
+        <div class="p-body">
+          <h3>Hardening and go-live</h3>
+          <ul>
+            <li>Rate limits across auth, create and upload; upload size, MIME and EXIF handling</li>
+            <li>Integration tests on auth, isolation and the issue lifecycle; CI on every push</li>
+            <li>Consent capture, retention policy, deletion path, privacy notice</li>
+            <li>Backups with a tested restore, error tracking, uptime checks, runbook</li>
+            <li>Load check at a district's volume; staging environment mirroring production</li>
+          </ul>
+          <span class="p-out">→ ready for a real village</span>
+        </div>
+      </div>
+
+    </div>
+
+    <p style="margin-top:1.6rem">
+      <strong>Roughly 23–30 working days</strong> for one developer, five to six calendar
+      weeks. Phases 0 and 1 are independent of every external dependency below and can start
+      immediately.
+    </p>
+  </section>
+
+  <!-- ============ ASKS ============ -->
+  <section>
+    <span class="sec-label">07 — Blocking on you</span>
+    <h2>What I need, and what has lead time</h2>
+
+    <dl class="asks">
+      <div class="ask">
+        <dt>Start today</dt>
+        <dd><b>DLT registration on TRAI's portal.</b> Entity registration plus header and template approval takes one to two weeks and needs the sponsoring organisation's documents. Every SMS template — OTP, complaint received, status changed, resolved — must be registered in advance, in both Telugu and English. This is the longest pole in the plan and nothing about it is a coding task.</dd>
+      </div>
+      <div class="ask">
+        <dt>Decide</dt>
+        <dd><b>Are complaints visible to the village, or only to the reporter and officials?</b> The code currently says village-visible with no control and no notice. This determines the entire isolation model in Phase 3, so it needs answering before that phase starts.</dd>
+      </div>
+      <div class="ask">
+        <dt>Confirm</dt>
+        <dd><b>What is <code>public/Statement_FEB2026_182057584.pdf</code>?</b> I have not opened it beyond confirming it is a PDF. If it is what the filename suggests, it needs purging from git history and any credentials it references treated as exposed.</dd>
+      </div>
+      <div class="ask">
+        <dt>Provision</dt>
+        <dd><b>Hosting and an India region.</b> Managed Postgres plus a container host — Supabase and AWS both offer Mumbai (<code>ap-south-1</code>); Neon's nearest is Singapore. If the sponsoring body requires Indian data residency, that rules some options out, so it is worth asking them before I pick.</dd>
+      </div>
+      <div class="ask">
+        <dt>Provision</dt>
+        <dd><b>A production Google OAuth client</b> with a verified consent screen, plus MSG91 credentials once DLT clears.</dd>
+      </div>
+      <div class="ask">
+        <dt>Supply</dt>
+        <dd><b>Real officials data for the pilot villages</b> — names, phone numbers, roles and jurisdictions. Auto-routing is only as good as this list, and someone has to own keeping it current as terms and postings change.</dd>
+      </div>
+      <div class="ask">
+        <dt>Recover</dt>
+        <dd><b>Migrations 3 and 4, if a copy exists anywhere.</b> Otherwise I will reconstruct the schema from the live D1 instance and note the gap.</dd>
+      </div>
+    </dl>
+  </section>
+
+  <footer>
+    Reviewed against <code>main</code> at 96030b2 · branch <code>feat/backend-production</code> ·
+    all findings verified by reading source, not inferred.
+  </footer>
+
+</div>

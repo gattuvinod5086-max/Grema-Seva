@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import ProtectedRoute from "@web/components/ProtectedRoute";
 import Login from "@web/pages/Login";
 import PhoneLogin from "@web/pages/PhoneLogin";
+import OfficialRegister from "@web/pages/OfficialRegister";
+import AdminOfficials from "@web/pages/AdminOfficials";
 import CitizenDashboard from "@web/pages/CitizenDashboard";
 import TelanganaAdmin from "@web/pages/TelanganaAdmin";
 import VillageIssues from "@web/pages/VillageIssues";
@@ -14,6 +16,15 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/login/phone" element={<PhoneLogin />} />
+        <Route path="/register/official" element={<OfficialRegister />} />
+        <Route
+          path="/admin/officials"
+          element={
+            <ProtectedRoute requireLocation={false}>
+              <AdminOfficials />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/registration"
           element={

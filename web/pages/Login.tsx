@@ -286,6 +286,17 @@ export default function Login() {
                   API not reachable — start it with <code className="bg-amber-100 px-1 rounded">npm run dev:server</code>.
                 </p>
               )}
+              <p className="text-center text-sm text-slate-500 mt-4">
+                Sarpanch or government official?{" "}
+                <button
+                  type="button"
+                  onClick={() => navigate('/register/official')}
+                  className="font-semibold underline"
+                  style={{ color: maroon }}
+                >
+                  Register here
+                </button>
+              </p>
             </div>
 
             {error && (

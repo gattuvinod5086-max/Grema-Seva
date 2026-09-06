@@ -4,6 +4,7 @@ import { onError } from "./middleware/error";
 import { healthRoutes } from "./routes/health";
 import { authRoutes } from "./routes/auth";
 import { userRoutes } from "./routes/users";
+import { adminRoutes } from "./routes/admin";
 
 export function createApp() {
   const app = new Hono();
@@ -19,6 +20,7 @@ export function createApp() {
   api.route("/", healthRoutes);
   api.route("/auth", authRoutes);
   api.route("/users", userRoutes);
+  api.route("/admin", adminRoutes);
   app.route("/api", api);
 
   return app;

@@ -74,6 +74,24 @@ export const UserSchema = z.object({
   createdAt: z.string(),
 });
 
+export const OFFICIAL_REGISTRATION_ROLES = ["sarpanch", "admin", "ward_member"] as const;
+export type OfficialRegistrationRole = (typeof OFFICIAL_REGISTRATION_ROLES)[number];
+
+export const OfficialRecordSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  phone: z.string().nullable(),
+  role: z.enum(OFFICIAL_REGISTRATION_ROLES),
+  approvalStatus: z.enum(APPROVAL_STATUSES),
+  approvalNote: z.string().nullable(),
+  wardNumber: z.string().nullable(),
+  district: z.string().nullable(),
+  mandal: z.string().nullable(),
+  village: z.string().nullable(),
+  createdAt: z.string(),
+});
+export type OfficialRecord = z.infer<typeof OfficialRecordSchema>;
+
 export const WardSchema = z.object({
   id: z.number(),
   name: z.string(),

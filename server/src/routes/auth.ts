@@ -9,7 +9,8 @@ import { generateToken } from "../lib/crypto";
 import { requestOtp, verifyOtp, assertVerificationOk } from "../services/otp";
 import { createSession, revokeCurrentSession } from "../services/session";
 import { findIdentityUser, linkIdentity, serializeUser } from "../services/users";
-import { badRequest } from "../middleware/error";
+import { findJurisdictionByName } from "../services/jurisdictions";
+import { badRequest, conflict } from "../middleware/error";
 import { requireAuth } from "../middleware/auth";
 import { loadJurisdiction } from "../services/users";
 
@@ -20,6 +21,19 @@ const otpRequestSchema = z.object({
 const otpVerifySchema = z.object({
   phone: z.string().min(1),
   code: z.string().regex(/^\d{6}$/, "OTP must be 6 digits"),
+});
+
+const officialRoles = ["sarpanch", "admin", "ward_member"] as const;
+
+const registerOfficialSchema = z.object({
+  phone: z.string().min(1),
+  code: z.string().regex(/^\d{6}$/, "OTP must be 6 digits"),
+  name: z.string().trim().min(1).max(120),
+  role: z.enum(officialRoles),
+  district: z.string().trim().min(1),
+  mandal: z.string().trim().min(1),
+  village: z.string().trim().min(1),
+  wardNumber: z.string().trim().max(20).optional(),
 });
 
 const GOOGLE_STATE_COOKIE = "grama_oauth_state";
@@ -65,6 +79,61 @@ export const authRoutes = new Hono()
 
     const jurisdiction = await loadJurisdiction(user.jurisdictionId);
     return c.json({ user: serializeUser(user, jurisdiction) });
+  })
+
+  /* ---------- Official registration (OTP-verified, pending approval) ---------- */
+  .post("/register/official", async (c) => {
+    const input = registerOfficialSchema.parse(await c.req.json());
+
+    const phone = normalizePhone(input.phone);
+    if (!phone) throw badRequest("Enter a valid mobile number");
+
+    assertVerificationOk(await verifyOtp(phone, input.code));
+
+    if (await findIdentityUser("phone", phone)) {
+      throw conflict(
+        "This mobile number already has an account. Sign in instead, or use a different number."
+      );
+    }
+
+    const jurisdiction = await findJurisdictionByName(
+      input.district,
+      input.mandal,
+      input.village
+    );
+    if (!jurisdiction) {
+      throw badRequest("Selected village is not registered. Please choose from the list.");
+    }
+
+    const [user] = await db
+      .insert(schema.users)
+      .values({
+        name: input.name,
+        phone,
+        role: input.role,
+        // Officials hold no official powers until a super admin approves them.
+        approvalStatus: "pending",
+        jurisdictionId: jurisdiction.id,
+        wardNumber: input.wardNumber,
+      })
+      .returning();
+    await linkIdentity(user.id, "phone", phone);
+
+    await db.insert(schema.auditLog).values({
+      actorId: user.id,
+      action: "official.registration.submitted",
+      entity: "user",
+      entityId: user.id,
+      after: { role: input.role, jurisdictionId: jurisdiction.id },
+      ip: c.req.header("x-forwarded-for") ?? c.req.header("x-real-ip"),
+    });
+
+    await createSession(c, user.id, {
+      ip: c.req.header("x-forwarded-for") ?? c.req.header("x-real-ip"),
+      device: c.req.header("user-agent"),
+    });
+
+    return c.json({ user: serializeUser(user, jurisdiction) }, 201);
   })
 
   /* ---------- Google OAuth ---------- */

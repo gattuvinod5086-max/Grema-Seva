@@ -1,24 +1,17 @@
 import { useState } from 'react';
-import { X, Upload, MapPin, Camera } from 'lucide-react';
+import { X, Upload, MapPin, Camera, AlertTriangle } from 'lucide-react';
 import { classifyIssue } from '@shared/services/issueClassification';
 import VoiceInput from '@web/components/VoiceInput';
-import { ISSUE_CATEGORIES, ISSUE_PRIORITIES } from '@shared/constants/governance';
+import { ISSUE_CATEGORIES } from '@shared/constants/governance';
+import type { CreateIssue } from '@shared/types';
 
 interface IssueFormProps {
   onClose: () => void;
-  onSubmit: () => void;
-  initialCategory?: string;
-  initialPriority?: string;
+  onSubmitted: () => void;
 }
 
-export default function IssueForm({
-  onClose,
-  onSubmit,
-  initialCategory,
-  initialPriority,
-}: IssueFormProps) {
-  const [category, setCategory] = useState(initialCategory ?? '');
-  const [priority, setPriority] = useState(initialPriority ?? 'MEDIUM');
+export default function IssueForm({ onClose, onSubmitted }: IssueFormProps) {
+  const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
   const [location, setLocation] = useState('');
@@ -26,6 +19,8 @@ export default function IssueForm({
   const [longitude, setLongitude] = useState<number | null>(null);
   const [capturedLocation, setCapturedLocation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState(false);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -37,11 +32,12 @@ export default function IssueForm({
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const { latitude: lat, longitude: lng } = position.coords;
+          const { latitude: lat, longitude: lng, accuracy } = position.coords;
           setLatitude(lat);
           setLongitude(lng);
           setLocation(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
           setCapturedLocation(true);
+          void accuracy;
         },
         () => {
           alert('Unable to get your location. Please enter it manually.');
@@ -55,47 +51,60 @@ export default function IssueForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setError(null);
 
     try {
-      // Create the issue first
+      // The Idempotency-Key makes double-taps safe: the same key never
+      // files the same complaint twice.
+      const payload: CreateIssue = {
+        category: category ?? undefined,
+        description,
+        latitude,
+        longitude,
+        addressText: location || undefined,
+      };
+
       const issueResponse = await fetch('/api/issues', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category: category || undefined,
-          description,
-          priority,
-          location: location || undefined,
-          latitude: latitude || undefined,
-          longitude: longitude || undefined,
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': crypto.randomUUID(),
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload),
       });
+      const body = await issueResponse.json().catch(() => ({}));
 
       if (!issueResponse.ok) {
-        throw new Error('Failed to create issue');
+        setError(body?.error?.message ?? 'Failed to submit the issue.');
+        return;
       }
 
-      // If there's a photo, upload it
-      if (photo) {
-        // Get the issue ID from the list (last created)
-        const issuesResponse = await fetch('/api/issues');
-        const issues = await issuesResponse.json();
-        const latestIssue = issues[0]; // Issues are sorted by created_at DESC
+      if (body.duplicate) setDuplicateWarning(true);
 
+      if (photo && body?.issue?.id) {
         const formData = new FormData();
-        formData.append('photo', photo);
-
-        await fetch(`/api/issues/${latestIssue.id}/photo`, {
+        formData.append('file', photo);
+        formData.append('phase', 'report');
+        const uploadRes = await fetch(`/api/issues/${body.issue.id}/attachments`, {
           method: 'POST',
+          credentials: 'same-origin',
           body: formData,
         });
+        if (!uploadRes.ok) {
+          setError('Issue submitted, but the photo upload failed.');
+        }
       }
 
-      onSubmit();
-    } catch (error) {
-      console.error('Error submitting issue:', error);
-      alert('Failed to submit issue. Please try again.');
-    } finally {
+      if (!body.duplicate) {
+        onSubmitted();
+      } else {
+        // Duplicate warning shown; only exit when the user acknowledges.
+        setSubmitting(false);
+      }
+    } catch (err) {
+      console.error('Error submitting issue:', err);
+      setError('Network error. Please try again.');
       setSubmitting(false);
     }
   };
@@ -114,6 +123,27 @@ export default function IssueForm({
           </button>
         </div>
 
+        {duplicateWarning && (
+          <div className="mx-6 mt-6 bg-amber-50 border-2 border-amber-200 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="font-semibold text-amber-900 text-sm">Looks like a similar report exists nearby</p>
+                <p className="text-amber-800 text-sm mt-1">
+                  We saved your report and linked it to the existing one, so officials see both together.
+                </p>
+                <button
+                  type="button"
+                  onClick={onSubmitted}
+                  className={`mt-3 ${'px-4 py-2 rounded-xl bg-amber-600 text-white text-sm font-semibold'}`}
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <VoiceInput
@@ -121,7 +151,6 @@ export default function IssueForm({
               setDescription(text);
               const c = classifyIssue(text);
               setCategory(c.category);
-              setPriority(c.priority);
             }}
           />
 
@@ -146,19 +175,6 @@ export default function IssueForm({
                 </button>
               ))}
             </div>
-          </div>
-
-          <div>
-            <label className="block text-base font-semibold text-gray-900 mb-3">Priority</label>
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl"
-            >
-              {ISSUE_PRIORITIES.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
           </div>
 
           {/* Description */}
@@ -236,6 +252,10 @@ export default function IssueForm({
               </button>
             </div>
           </div>
+
+          {error && (
+            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 text-red-700 text-sm">{error}</div>
+          )}
 
           {/* Submit Button */}
           <button

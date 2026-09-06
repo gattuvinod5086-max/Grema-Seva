@@ -168,12 +168,23 @@ export async function listIssuesForUser(
     .limit(Math.min(options.limit, 100))
     .offset((options.page - 1) * options.limit);
 
+  const ids = rows.map((r) => r.issue.id);
+  const photos = ids.length
+    ? await db
+        .select({ issueId: schema.issueAttachments.issueId, key: schema.issueAttachments.storageKey })
+        .from(schema.issueAttachments)
+        .where(and(inArray(schema.issueAttachments.issueId, ids), eq(schema.issueAttachments.kind, "photo")))
+    : [];
+  const photoByIssue = new Map<string, string>();
+  for (const p of photos) photoByIssue.set(p.issueId, p.key);
+
   return {
     issues: rows.map(({ issue, jurisdiction: j }) => ({
       ...issue,
       district: j.district,
       mandal: j.mandal,
       village: j.village,
+      photoKey: photoByIssue.get(issue.id) ?? null,
     })),
     total: Number(total),
     page: options.page,

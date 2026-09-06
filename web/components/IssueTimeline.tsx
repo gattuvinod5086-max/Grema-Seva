@@ -3,16 +3,20 @@ import type { IssueTimelineEvent } from "@shared/types";
 
 const ACTION_LABELS: Record<string, string> = {
   created: "Complaint submitted",
-  acknowledged: "Acknowledged",
-  assigned: "Assigned",
   status_change: "Status updated",
-  escalated: "Escalated",
-  resolved: "Marked resolved",
-  citizen_confirmed: "Citizen confirmed resolution",
-  citizen_rejected: "Citizen rejected resolution",
-  photo_uploaded: "Photo uploaded",
-  affected_population_updated: "Affected population updated",
+  progress: "Progress update",
+  confirmation: "Resolution confirmed",
+  attachment: "Evidence uploaded",
+  comment: "Comment",
+  assignment: "Assigned",
 };
+
+function labelFor(event: IssueTimelineEvent): string {
+  if (event.action === "status_change" && event.newStatus) {
+    return `Status updated to ${event.newStatus}`;
+  }
+  return ACTION_LABELS[event.action] ?? event.action;
+}
 
 function formatTimestamp(iso: string): string {
   const d = new Date(iso);
@@ -45,17 +49,15 @@ export default function IssueTimeline({ events }: { events: IssueTimelineEvent[]
           </div>
           <div className="flex-1 pt-0.5">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              {formatTimestamp(event.timestamp)}
+              {formatTimestamp(event.createdAt)}
             </p>
-            <p className="font-black text-slate-900 mt-1">
-              {event.label || ACTION_LABELS[event.action ?? ""] || event.action}
-            </p>
-            {event.detail && (
-              <p className="text-sm text-slate-600 mt-1">{event.detail}</p>
+            <p className="font-black text-slate-900 mt-1">{labelFor(event)}</p>
+            {event.note && (
+              <p className="text-sm text-slate-600 mt-1">{event.note}</p>
             )}
             {(event.actorName || event.actorRole) && (
               <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">
-                {[event.actorName, event.actorRole].filter(Boolean).join(" • ")}
+                {[event.actorName, event.actorRole?.replace("_", " ")].filter(Boolean).join(" • ")}
               </p>
             )}
           </div>

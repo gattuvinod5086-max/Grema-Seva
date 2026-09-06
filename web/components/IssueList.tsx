@@ -22,9 +22,9 @@ export default function IssueList({ issues, onSelectIssue }: IssueListProps) {
             onClick={onSelectIssue ? () => onSelectIssue(issue) : undefined}
             className="overflow-hidden"
           >
-            {issue.photo_url && (
+            {issue.photoKey && (
               <div className="w-full h-40 bg-slate-100">
-                <img src={issue.photo_url} alt="" className="w-full h-full object-cover" />
+                <img src={`/api/files/${issue.photoKey}`} alt="" className="w-full h-full object-cover" />
               </div>
             )}
             <div className="p-4">
@@ -48,11 +48,11 @@ export default function IssueList({ issues, onSelectIssue }: IssueListProps) {
               <div className="mt-3 pt-3 border-t border-[#E5E7EB]">
                 <SlaDisplay
                   compact
-                  createdAt={issue.created_at}
+                  createdAt={issue.createdAt}
                   priority={issue.priority}
-                  slaDueAt={issue.sla_due_at}
-                  acknowledgedAt={issue.acknowledged_at}
-                  resolvedAt={issue.resolved_at}
+                  slaDueAt={issue.slaDueAt}
+                  acknowledgedAt={issue.acknowledgedAt}
+                  resolvedAt={issue.resolvedAt}
                   status={issue.status}
                 />
               </div>
@@ -62,12 +62,12 @@ export default function IssueList({ issues, onSelectIssue }: IssueListProps) {
                   <span className="flex items-center gap-1">
                     <MapPin size={12} aria-hidden />
                     {issue.village}
-                    {issue.ward_id != null ? ` · Ward ${issue.ward_id}` : ''}
+                    {issue.wardNumber ? ` · Ward ${issue.wardNumber}` : ''}
                   </span>
                 )}
                 <span className="flex items-center gap-1">
                   <Calendar size={12} aria-hidden />
-                  {new Date(issue.created_at).toLocaleDateString('en-IN', {
+                  {new Date(issue.createdAt).toLocaleDateString('en-IN', {
                     day: 'numeric',
                     month: 'short',
                     year: 'numeric',

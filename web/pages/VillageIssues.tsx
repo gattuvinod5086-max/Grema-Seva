@@ -3,7 +3,7 @@ import { ArrowLeft, AlertCircle, RefreshCw } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useApi } from "@web/hooks/useApi";
 import IssueList from "@web/components/IssueList";
-import type { Issue } from "@shared/types";
+import type { IssueListResponse } from "@shared/types";
 
 export default function VillageIssues() {
   const navigate = useNavigate();
@@ -13,16 +13,12 @@ export default function VillageIssues() {
   const mandal = searchParams.get("mandal") ?? "";
   const village = searchParams.get("village") ?? "";
 
-  const apiUrl = useMemo(() => {
-    const params = new URLSearchParams();
-    if (district) params.set("district", district);
-    if (mandal) params.set("mandal", mandal);
-    if (village) params.set("village", village);
-    const qs = params.toString();
-    return `/api/issues${qs ? `?${qs}` : ""}`;
-  }, [district, mandal, village]);
+  // The API scopes results server-side to the signed-in official's
+  // jurisdiction; location params here are display context only.
+  const apiUrl = useMemo(() => "/api/issues?limit=50", []);
 
-  const { data: issues, isLoading, error, refetch } = useApi<Issue[]>(apiUrl);
+  const { data, isLoading, error, refetch } = useApi<IssueListResponse>(apiUrl);
+  const issues = data?.issues ?? [];
 
   const title = village || mandal || district || "Issues";
   const subtitle = [district, mandal, village].filter(Boolean).join(" • ");

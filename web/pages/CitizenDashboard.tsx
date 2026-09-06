@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Plus,
   LogOut,
@@ -9,13 +9,14 @@ import {
 import { useNavigate } from 'react-router';
 import IssueList from '@web/components/IssueList';
 import IssueForm from '@web/components/IssueForm';
+import IssueDetailModal from '@web/components/IssueDetailModal';
 import VillageScoreCard from '@web/components/ui/VillageScoreCard';
 import { GsCard } from '@web/components/ui/GsCard';
 import { UI } from '@web/constants/design';
 import { BRANDING } from '@web/constants/branding';
 import { useApi } from '@web/hooks/useApi';
 import { computeVillageAnalytics } from '@shared/services/analytics';
-import type { Issue, User } from '@shared/types';
+import type { IssueDetail, IssueListResponse, User } from '@shared/types';
 
 function QuickAction({
   icon,
@@ -57,24 +58,29 @@ function QuickAction({
 
 export default function CitizenDashboard() {
   const [showForm, setShowForm] = useState(false);
-  const [formPreset, setFormPreset] = useState<{ category?: string; priority?: string }>({});
+  const [selectedIssue, setSelectedIssue] = useState<IssueDetail | null>(null);
+  const [, setDetailLoading] = useState(false);
   const navigate = useNavigate();
 
   const { data: user, error: userError, isLoading: userLoading, refetch: refetchUser } =
-    useApi<User>('/api/users/me');
-  const { data: issues, error: issuesError, isLoading: issuesLoading, refetch: refetchIssues } =
-    useApi<Issue[]>('/api/issues');
+    useApi<{ user: User }>('/api/users/me');
+  const { data: issuesData, error: issuesError, isLoading: issuesLoading, refetch: refetchIssues } =
+    useApi<IssueListResponse>('/api/issues');
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const category = params.get('category');
-    const priority = params.get('priority');
-    if (category || priority) {
-      setFormPreset({ category: category ?? undefined, priority: priority ?? undefined });
-      setShowForm(true);
-      window.history.replaceState({}, '', '/');
+  const issues = issuesData?.issues ?? [];
+
+  const openIssueDetail = async (issueId: string) => {
+    setDetailLoading(true);
+    try {
+      const res = await fetch(`/api/issues/${issueId}`, { credentials: 'same-origin' });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok) setSelectedIssue(body.issue as IssueDetail);
+    } finally {
+      setDetailLoading(false);
     }
-  }, []);
+  };
+
+  const me = user?.user ?? null;
 
   const activeIssues = useMemo(
     () => (issues ?? []).filter((i) => !['Resolved', 'Closed'].includes(i.status)),
@@ -82,9 +88,9 @@ export default function CitizenDashboard() {
   );
 
   const villageScore = useMemo(() => {
-    if (!user?.village || !issues) return null;
-    return computeVillageAnalytics(user.village, issues).developmentScore;
-  }, [user?.village, issues]);
+    if (!me?.village || !issues) return null;
+    return computeVillageAnalytics(me.village, issues).developmentScore;
+  }, [me?.village, issues]);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -126,7 +132,7 @@ export default function CitizenDashboard() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <div className="w-9 h-9 rounded-lg bg-[#67001A] text-white flex items-center justify-center text-xs font-bold">
-              {getInitials(user?.name ?? null)}
+              {getInitials(me?.name ?? null)}
             </div>
             <button
               type="button"
@@ -153,17 +159,17 @@ export default function CitizenDashboard() {
         <section className="space-y-2">
           <p className="text-sm text-[#64748B]">{greeting()},</p>
           <h2 className="text-2xl md:text-3xl font-heading text-[#1F2937]">
-            {user?.name?.split(' ')[0] ?? 'Citizen'}
+            {me?.name?.split(' ')[0] ?? 'Citizen'}
           </h2>
-          {user?.village && (
+          {me?.village && (
             <GsCard padding="p-4" className="flex items-start gap-3">
               <MapPin size={18} className="text-[#008A3B] shrink-0 mt-0.5" aria-hidden />
               <div>
                 <p className={UI.label}>Your village</p>
                 <p className="font-semibold text-[#1F2937] mt-0.5">
-                  {user.village}, {user.mandal}
+                  {me.village}, {me.mandal}
                 </p>
-                <p className="text-sm text-[#64748B]">{user.district} District</p>
+                <p className="text-sm text-[#64748B]">{me.district} District</p>
               </div>
             </GsCard>
           )}
@@ -239,7 +245,7 @@ export default function CitizenDashboard() {
               <p className="text-sm text-[#64748B] mt-1">Tap &quot;Report a Problem&quot; when you need help.</p>
             </GsCard>
           ) : (
-            <IssueList issues={activeIssues} />
+            <IssueList issues={activeIssues} onSelectIssue={(i) => void openIssueDetail(i.id)} />
           )}
         </section>
       </main>
@@ -247,9 +253,21 @@ export default function CitizenDashboard() {
       {showForm && (
         <IssueForm
           onClose={() => setShowForm(false)}
-          onSubmit={() => { setShowForm(false); refetchIssues(); }}
-          initialCategory={formPreset.category}
-          initialPriority={formPreset.priority}
+          onSubmitted={() => {
+            setShowForm(false);
+            refetchIssues();
+          }}
+        />
+      )}
+
+      {selectedIssue && (
+        <IssueDetailModal
+          issue={selectedIssue}
+          onClose={() => setSelectedIssue(null)}
+          onChanged={() => {
+            void openIssueDetail(selectedIssue.id);
+            refetchIssues();
+          }}
         />
       )}
     </div>

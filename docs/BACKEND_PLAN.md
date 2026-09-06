@@ -1,5 +1,20 @@
 # GramSeva — Production Backend
 
+> **POC status (implemented on branch `feat/backend-production`).** The POC
+> implements the core loop end to end on a new Node/Hono + Postgres
+> (Supabase) stack: OTP+Google auth with server-side sessions, jurisdiction
+> reference data replacing free-text matching, official registration with
+> super-admin approval, scoped issue lifecycle (create → acknowledge →
+> progress → resolve → confirm/reopen) with idempotency and proximity
+> dedup, auth-gated local file storage, Leaflet/OSM maps, and a 19-test
+> isolation/lifecycle contract suite in `server/test/`.
+>
+> **Deferred to the production phase** (sections below remain the plan for
+> that): RLS policies, `official_assignments` validity windows, the
+> notifications queue / `sms_log` / consents / DPDP work, the SLA cron job,
+> backups/load tests, and the news & emergency modules. Files flagged below
+> with old line numbers refer to `main` and are historical.
+
 ## Context
 
 GramSeva is a village grievance-redressal app for Telangana. The intended loop is: a citizen

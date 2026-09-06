@@ -1,159 +1,65 @@
-## GramSeva
+# GramSeva — Backend & App (POC)
 
-**Village & Rural Development Issue Reporting System for Telangana State**
+Village grievance-redressal app for Telangana: citizens report problems,
+approved officials (sarpanch / ward member / mandal-district admin) act on
+them, and reporters track status and progress end to end.
 
-This app was created using https://getmocha.com.
-Need help or want to join the community? Join our [Discord](https://discord.gg/shDEGBSe2d).
+## Architecture (POC)
 
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- **Node.js** (v18 or higher) - [Download here](https://nodejs.org/)
-- **npm** (comes with Node.js)
-
-### Installation & Setup
-
-#### Option 1: Using Setup Script (Recommended)
-```bash
-# Make scripts executable (first time only)
-chmod +x setup.sh start.sh
-
-# Run setup
-./setup.sh
-
-# Start development server
-./start.sh
+```
+web/        React 19 + Vite + Tailwind (Leaflet/OSM maps)
+server/     Hono on Node.js 22 + Drizzle ORM → PostgreSQL (Supabase)
+shared/     Zod schemas + pure business logic used by BOTH sides
+uploads/    local file storage (StorageProvider interface — S3-swappable)
 ```
 
-#### Option 2: Manual Setup
+- **Auth**: phone OTP (MSG91 with a console driver for dev) + Google OAuth,
+  both issuing server-side sessions (opaque token, hashed in DB, revocable)
+- **Isolation**: every user binds to a `jurisdictions` row; issue visibility
+  is composed server-side from the session (see
+  `server/src/services/issueScope.ts`), enforced by a contract test suite
+- **Official access**: registration is OTP-verified and requires super-admin
+  approval (`server/src/routes/admin.ts`); a seeded super admin reviews the
+  queue at `/admin/officials`
+- **DB migrations**: Drizzle Kit (`server/src/db/migrations/`)
+
+## Local development
+
 ```bash
-# Install dependencies
+cp .env.example .env          # fill DATABASE_URL + SESSION_SECRET
 npm install
-
-# Start development server
-npm run dev
+npm run db:migrate            # apply schema to Postgres
+npm run db:seed               # jurisdictions + super admin
+npm run dev:server            # API on :3000 (console SMS driver prints OTPs)
+npm run dev                   # web on :5173, /api proxied to the API
+npm test                      # isolation + lifecycle contract tests
 ```
 
-### Access the Application
+With `SMS_DRIVER=console` the OTP is printed in the server log instead of
+being sent — the full login flow works before DLT/MSG91 are ready.
 
-After running `npm run dev`, open your browser and navigate to:
-- **Local:** http://localhost:5173
-- The terminal will show the exact URL
+The super admin (phone from `SUPER_ADMIN_PHONE`) signs in with the same OTP
+flow, then opens `/admin/officials` to approve or decline officials.
 
----
+## Production deployment (single VPS)
 
-## 📱 Application Features
-
-### For Citizens:
-- 🔐 **Google OAuth Login** - Secure authentication
-- 📝 **Report Issues** - Water, Roads, Sanitation, Electricity, Welfare
-- 📸 **Photo Upload** - Attach photos to issues
-- 📍 **GPS Location** - Capture issue location
-- 👥 **Ward Members Directory** - Contact village representatives
-- 📊 **Track Issues** - View status of reported issues
-
-### For Administrators:
-- 🗺️ **Telangana Map View** - Browse all districts, mandals, and villages
-- 📋 **Issue Management** - Assign and update issue status
-- 👤 **User Management** - Manage roles and permissions
-
----
-
-## 🏗️ Tech Stack
-
-- **Frontend:** React 19 + TypeScript + Vite
-- **Backend:** Hono (Cloudflare Workers)
-- **Database:** Cloudflare D1 (SQLite)
-- **Storage:** Cloudflare R2 (for photos)
-- **Styling:** Tailwind CSS
-- **Authentication:** Google OAuth via @getmocha/users-service
-
----
-
-## 📂 Project Structure
-
-```
-GramSeva/
-├── src/
-│   ├── react-app/          # React frontend
-│   │   ├── pages/         # Page components
-│   │   ├── components/    # Reusable components
-│   │   └── hooks/         # Custom React hooks
-│   ├── worker/            # Cloudflare Worker (backend)
-│   ├── shared/            # Shared types
-│   └── data/              # Telangana location data
-├── migrations/            # Database migrations
-└── public/               # Static assets
+```bash
+npm ci && npm run db:migrate && npm run db:seed
+npm run build                 # tsc + vite bundle into dist/web
+node --env-file=.env server/src/index.ts   # serves API + static web
 ```
 
----
+Put nginx (or Caddy) in front for TLS; the server is a plain HTTP Node
+process (`PORT` env). Set `SMS_DRIVER=msg91` plus the MSG91 credentials once
+the DLT template is approved, and `GOOGLE_CLIENT_ID/SECRET` with redirect
+URI `{APP_BASE_URL}/api/auth/google/callback`.
 
-## 🔧 Available Scripts
+## Environment
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run lint` - Run ESLint
-- `npm run check` - Type check and build validation
+See `.env.example`. Required: `DATABASE_URL`, `SESSION_SECRET` (≥32 chars,
+distinct from the Google client secret), `APP_BASE_URL`.
 
----
+## Docs
 
-## 🌐 Application Routes
-
-- `/` - Citizen Dashboard (protected)
-- `/login` - Login page
-- `/registration` - User registration (protected)
-- `/telangana` - Telangana admin view (protected)
-- `/ward-members` - Ward members directory (protected)
-
----
-
-## 📝 Notes
-
-- First-time users will be prompted to complete registration
-- Location selection: District → Mandal → Village
-- Issues are filtered by user's village location
-- Photo uploads are stored in Cloudflare R2
-
----
-
-## 🔐 Authentication Setup
-
-**⚠️ IMPORTANT**: The sign-in page requires a Mocha Users Service API Key to work.
-
-### Quick Setup:
-
-1. **Get your API key** from https://getmocha.com/dashboard
-2. **Create `.dev.vars` file** in the project root:
-   ```bash
-   cp .dev.vars.example .dev.vars
-   ```
-3. **Edit `.dev.vars`** and add your API key:
-   ```env
-   MOCHA_USERS_SERVICE_API_KEY=your_api_key_here
-   ```
-4. **Restart the dev server**
-
-See [AUTH_SETUP.md](./AUTH_SETUP.md) for detailed instructions.
-
----
-
-## 🆘 Troubleshooting
-
-**Sign-in page not working:**
-- See [AUTH_SETUP.md](./AUTH_SETUP.md) for authentication setup
-- Make sure `.dev.vars` file exists with your API key
-- Restart the dev server after creating `.dev.vars`
-
-**Node.js not found:**
-- Install Node.js from https://nodejs.org/
-- Or use Homebrew: `brew install node`
-
-**Port already in use:**
-- Vite will automatically try the next available port
-- Or specify a port: `npm run dev -- --port 3000`
-
-**Dependencies issues:**
-- Delete `node_modules` and `package-lock.json`
-- Run `npm install --legacy-peer-deps` again
+- `docs/BACKEND_PLAN.md` — architecture review, security findings and the
+  phase plan (implemented POC scope noted at the top)

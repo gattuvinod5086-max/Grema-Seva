@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: gramseva
+          POSTGRES_DB: gramseva_test
+        ports:
+          - 54322:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:gramseva@localhost:54322/gramseva_test
+      SESSION_SECRET: ci-secret-ci-secret-ci-secret-ci-secret
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: TypeScript (web + server)
+        run: npx tsc -b
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Apply DB migrations to test database
+        run: |
+          node --input-type=module -e "
+            import { readFileSync, readdirSync } from 'node:fs';
+            import postgres from 'postgres';
+            const sql = postgres(process.env.DATABASE_URL, { prepare: false });
+            for (const f of readdirSync('server/src/db/migrations').filter(f => f.endsWith('.sql')).sort()) {
+              await sql.unsafe(readFileSync('server/src/db/migrations/' + f, 'utf8'));
+              console.log('applied', f);
+            }
+            await sql.end();
+          "
+
+      - name: Contract tests (isolation + lifecycle)
+        run: npm test
+
+      - name: Build web bundle
+        run: npx vite build

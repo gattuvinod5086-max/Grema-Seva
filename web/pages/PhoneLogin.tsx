@@ -5,6 +5,14 @@ import { BRANDING } from '@web/constants/branding';
 
 type Step = 'phone' | 'otp';
 
+interface OtpRequestResponse {
+  sent?: boolean;
+  expiresInSec?: number;
+  /** Present only in dev mode (SMS_DRIVER=console): the code, so the flow works without a real SMS provider. */
+  devOtp?: string;
+  error?: { message?: string };
+}
+
 /**
  * Phone login: request an OTP over SMS, then verify it. On success the
  * API sets a session cookie and the user is redirected.
@@ -17,6 +25,7 @@ export default function PhoneLogin() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [resendIn, setResendIn] = useState(0);
+  const [devOtp, setDevOtp] = useState<string | null>(null);
   const otpInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -45,11 +54,13 @@ export default function PhoneLogin() {
         credentials: 'same-origin',
         body: JSON.stringify({ phone }),
       });
-      const body = await res.json().catch(() => ({}));
+      const body = (await res.json().catch(() => ({}))) as OtpRequestResponse;
       if (!res.ok) {
         setError(body?.error?.message ?? 'Could not send the OTP. Please try again.');
         return;
       }
+      setDevOtp(body.devOtp ?? null);
+      if (body.devOtp) setCode(body.devOtp);
       setStep('otp');
       setResendIn(30);
     } catch {
@@ -133,6 +144,16 @@ export default function PhoneLogin() {
                 : `Sent to ${phone}`}
             </p>
           </div>
+
+          {step === 'otp' && devOtp && (
+            <div className="mb-4 bg-sky-50 border-2 border-sky-200 rounded-xl p-4 text-center">
+              <p className="text-xs font-bold text-sky-800 uppercase tracking-wider">Development mode</p>
+              <p className="text-2xl font-black text-sky-900 tracking-[0.3em] my-1">{devOtp}</p>
+              <p className="text-[11px] text-sky-700">
+                In production this code will be sent by SMS to your mobile via a real provider (MSG91).
+              </p>
+            </div>
+          )}
 
           {step === 'phone' ? (
             <form

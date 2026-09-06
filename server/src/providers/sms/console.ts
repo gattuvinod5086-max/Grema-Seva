@@ -7,6 +7,8 @@ import { maskPhone } from "../../lib/phone";
  * templates and MSG91 credentials are ready.
  */
 export const consoleSmsProvider: SmsProvider = {
+  exposesDevOtp: true,
+
   async sendOtp({ phone, code, purpose }: SendOtpParams) {
     console.log(
       `[sms:console] purpose=${purpose} to=${maskPhone(phone)} OTP=${code} (dev only — not delivered)`

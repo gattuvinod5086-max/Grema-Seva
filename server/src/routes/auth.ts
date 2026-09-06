@@ -7,6 +7,7 @@ import { env, isGoogleOAuthConfigured } from "../env";
 import { normalizePhone } from "../lib/phone";
 import { generateToken } from "../lib/crypto";
 import { requestOtp, verifyOtp, assertVerificationOk } from "../services/otp";
+import { getSmsProvider } from "../providers/sms";
 import { createSession, revokeCurrentSession } from "../services/session";
 import { findIdentityUser, linkIdentity, serializeUser } from "../services/users";
 import { findJurisdictionByName } from "../services/jurisdictions";
@@ -47,7 +48,12 @@ export const authRoutes = new Hono()
     if (!phone) throw badRequest("Enter a valid mobile number");
 
     const result = await requestOtp(phone, c.req.header("x-forwarded-for") ?? c.req.header("x-real-ip"));
-    return c.json({ sent: true, expiresInSec: result.expiresInSec });
+
+    // Dev drivers surface the code in the response so the UI can display
+    // it without a real SMS; production providers never do.
+    const devOtp = getSmsProvider().exposesDevOtp ? result.code : undefined;
+
+    return c.json({ sent: true, expiresInSec: result.expiresInSec, devOtp });
   })
   .post("/otp/verify", async (c) => {
     const { phone: rawPhone, code } = otpVerifySchema.parse(await c.req.json());

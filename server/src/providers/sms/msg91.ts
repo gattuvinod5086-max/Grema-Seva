@@ -8,6 +8,8 @@ const FLOW_URL = "https://control.msg91.com/api/v5/flow/";
  * mapped below). Configure MSG91_OTP_TEMPLATE_ID with the template ID.
  */
 export class Msg91SmsProvider implements SmsProvider {
+  readonly exposesDevOtp = false;
+
   constructor(
     private authKey: string,
     private templateId: string,

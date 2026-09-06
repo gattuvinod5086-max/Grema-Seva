@@ -58,7 +58,9 @@ export async function requestOtp(phone: string, ip: string | undefined, purpose 
 
   await getSmsProvider().sendOtp({ phone, code, purpose });
 
-  return { expiresInSec: OTP_TTL_SECONDS };
+  // `code` is returned so a dev driver can surface it in the UI; the route
+  // only includes it when the active provider opts in (exposesDevOtp).
+  return { expiresInSec: OTP_TTL_SECONDS, code };
 }
 
 export async function verifyOtp(phone: string, code: string): Promise<OtpVerificationResult> {

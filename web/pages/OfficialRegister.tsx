@@ -9,6 +9,14 @@ import {
 } from '@shared/data/telangana';
 import { OFFICIAL_REGISTRATION_ROLES, type OfficialRegistrationRole } from '@shared/types';
 
+interface OtpRequestResponse {
+  sent?: boolean;
+  expiresInSec?: number;
+  /** Present only in dev mode (SMS_DRIVER=console): the code, so the flow works without a real SMS provider. */
+  devOtp?: string;
+  error?: { message?: string };
+}
+
 const ROLE_META: Record<OfficialRegistrationRole, { label: string; hint: string }> = {
   sarpanch: { label: 'Sarpanch', hint: 'Head of the gram panchayat' },
   ward_member: { label: 'Ward Member', hint: 'Ward-level representative' },
@@ -33,6 +41,7 @@ export default function OfficialRegister() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [resendIn, setResendIn] = useState(0);
+  const [devOtp, setDevOtp] = useState<string | null>(null);
   const otpRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -57,11 +66,13 @@ export default function OfficialRegister() {
         credentials: 'same-origin',
         body: JSON.stringify({ phone }),
       });
-      const body = await res.json().catch(() => ({}));
+      const body = (await res.json().catch(() => ({}))) as OtpRequestResponse;
       if (!res.ok) {
         setError(body?.error?.message ?? 'Could not send the OTP.');
         return;
       }
+      setDevOtp(body.devOtp ?? null);
+      if (body.devOtp) setCode(body.devOtp);
       setStep('otp');
       setResendIn(30);
       setTimeout(() => otpRef.current?.focus(), 50);
@@ -120,6 +131,16 @@ export default function OfficialRegister() {
               Verified by OTP and approved by the super admin before you get official access.
             </p>
           </div>
+
+          {step === 'otp' && devOtp && (
+            <div className="mb-4 bg-sky-50 border-2 border-sky-200 rounded-xl p-4 text-center">
+              <p className="text-xs font-bold text-sky-800 uppercase tracking-wider">Development mode</p>
+              <p className="text-2xl font-black text-sky-900 tracking-[0.3em] my-1">{devOtp}</p>
+              <p className="text-[11px] text-sky-700">
+                In production this code will be sent by SMS to your mobile via a real provider (MSG91).
+              </p>
+            </div>
+          )}
 
           {step === 'details' ? (
             <form

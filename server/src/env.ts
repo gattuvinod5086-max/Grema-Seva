@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+const boolFromEnv = z
+  .enum(["true", "false"])
+  .default("false")
+  .transform((v) => v === "true");
+
 const schema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   SESSION_SECRET: z
@@ -7,6 +12,9 @@ const schema = z.object({
     .min(32, "SESSION_SECRET must be at least 32 chars (openssl rand -hex 32)"),
   APP_BASE_URL: z.string().url().default("http://localhost:5173"),
   PORT: z.coerce.number().int().positive().default(3000),
+
+  /** OTP/IP throttles — enable in production (cost + abuse protection). */
+  RATE_LIMITS_ENABLED: boolFromEnv,
 
   SMS_DRIVER: z.enum(["console", "msg91"]).default("console"),
   MSG91_AUTH_KEY: z.string().optional(),

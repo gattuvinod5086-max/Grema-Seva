@@ -14,6 +14,7 @@ import { findJurisdictionByName } from "../services/jurisdictions";
 import { badRequest, conflict } from "../middleware/error";
 import { requireAuth } from "../middleware/auth";
 import { loadJurisdiction } from "../services/users";
+import { personNameSchema, indianMobileSchema } from "../../../shared/validation";
 
 const otpRequestSchema = z.object({
   phone: z.string().min(1),
@@ -27,14 +28,18 @@ const otpVerifySchema = z.object({
 const officialRoles = ["sarpanch", "admin", "ward_member"] as const;
 
 const registerOfficialSchema = z.object({
-  phone: z.string().min(1),
+  phone: indianMobileSchema,
   code: z.string().regex(/^\d{6}$/, "OTP must be 6 digits"),
-  name: z.string().trim().min(1).max(120),
+  name: personNameSchema,
   role: z.enum(officialRoles),
   district: z.string().trim().min(1),
   mandal: z.string().trim().min(1),
   village: z.string().trim().min(1),
-  wardNumber: z.string().trim().max(20).optional(),
+  wardNumber: z
+    .string()
+    .trim()
+    .regex(/^\d{1,3}$/, "Ward number must be 1–3 digits")
+    .optional(),
 });
 
 const GOOGLE_STATE_COOKIE = "grama_oauth_state";

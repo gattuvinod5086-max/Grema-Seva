@@ -4,14 +4,19 @@ import { and, eq } from "drizzle-orm";
 import { db, schema } from "../db/client";
 import { serializeUser, loadJurisdiction } from "../services/users";
 import { requireAuth, getAuth } from "../middleware/auth";
-import { badRequest } from "../middleware/error";
+import { badRequest, conflict } from "../middleware/error";
 import { normalizePhone } from "../lib/phone";
+import {
+  personNameSchema,
+  optionalPersonNameSchema,
+  indianMobileSchema,
+} from "../../../shared/validation";
 
 const completeRegistrationSchema = z
   .object({
-    name: z.string().trim().min(1).max(120),
-    fatherName: z.string().trim().max(120).optional(),
-    phone: z.string().optional(),
+    name: personNameSchema,
+    fatherName: optionalPersonNameSchema,
+    phone: indianMobileSchema,
     district: z.string().trim().min(1),
     mandal: z.string().trim().min(1),
     village: z.string().trim().min(1),
@@ -56,7 +61,18 @@ export const userRoutes = new Hono()
     if (input.fatherName) updates.fatherName = input.fatherName;
     if (input.phone) {
       const phone = normalizePhone(input.phone);
-      if (!phone) throw badRequest("Enter a valid mobile number");
+      if (!phone) {
+        throw badRequest("Enter a valid 10-digit Indian mobile number");
+      }
+      // A phone can bind to only one account.
+      const [taken] = await db
+        .select({ id: schema.users.id })
+        .from(schema.users)
+        .where(eq(schema.users.phone, phone))
+        .limit(1);
+      if (taken && taken.id !== user.id) {
+        throw conflict("This mobile number is already linked to another account");
+      }
       updates.phone = phone;
     }
 

@@ -3,11 +3,26 @@ import { db, schema } from "../db/client";
 import { getSmsProvider } from "../providers/sms";
 import { generateOtpCode, sha256, safeEqual } from "../lib/crypto";
 import { tooManyRequests, badRequest } from "../middleware/error";
+import { env } from "../env";
 
 const OTP_TTL_SECONDS = 5 * 60;
 const MAX_VERIFY_ATTEMPTS = 5;
+/**
+ * Per-phone/IP throttles exist to protect SMS cost and abuse. They are
+ * DISABLED for the POC (env.RATE_LIMITS_ENABLED=false) and must be
+ * enabled in production, where limits are stricter for real-SMS drivers.
+ */
 const MAX_PER_PHONE_PER_HOUR = 3;
+const MAX_PER_PHONE_PER_HOUR_DEV = 10;
 const MAX_PER_IP_PER_HOUR = 10;
+const MAX_PER_IP_PER_HOUR_DEV = 30;
+
+function phoneHourLimit() {
+  return getSmsProvider().exposesDevOtp ? MAX_PER_PHONE_PER_HOUR_DEV : MAX_PER_PHONE_PER_HOUR;
+}
+function ipHourLimit() {
+  return getSmsProvider().exposesDevOtp ? MAX_PER_IP_PER_HOUR_DEV : MAX_PER_IP_PER_HOUR;
+}
 
 export interface OtpVerificationResult {
   ok: boolean;
@@ -17,25 +32,29 @@ export interface OtpVerificationResult {
 export async function requestOtp(phone: string, ip: string | undefined, purpose = "login") {
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
-  const [phoneCount] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(schema.otpRequests)
-    .where(
-      and(eq(schema.otpRequests.phone, phone), gt(schema.otpRequests.createdAt, oneHourAgo))
-    );
-  if (phoneCount.count >= MAX_PER_PHONE_PER_HOUR) {
-    throw tooManyRequests("Too many OTP requests for this number. Try again later.");
-  }
-
-  if (ip) {
-    const [ipCount] = await db
+  if (env.RATE_LIMITS_ENABLED) {
+    const [phoneCount] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(schema.otpRequests)
       .where(
-        and(eq(schema.otpRequests.requestIp, ip), gt(schema.otpRequests.createdAt, oneHourAgo))
+        and(eq(schema.otpRequests.phone, phone), gt(schema.otpRequests.createdAt, oneHourAgo))
       );
-    if (ipCount.count >= MAX_PER_IP_PER_HOUR) {
-      throw tooManyRequests("Too many OTP requests. Try again later.");
+    if (phoneCount.count >= phoneHourLimit()) {
+      throw tooManyRequests(
+        "Too many OTP requests for this number. Please wait an hour, or use the code already shown."
+      );
+    }
+
+    if (ip) {
+      const [ipCount] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(schema.otpRequests)
+        .where(
+          and(eq(schema.otpRequests.requestIp, ip), gt(schema.otpRequests.createdAt, oneHourAgo))
+        );
+      if (ipCount.count >= ipHourLimit()) {
+        throw tooManyRequests("Too many OTP requests. Try again later.");
+      }
     }
   }
 
@@ -108,7 +127,9 @@ export async function verifyOtp(phone: string, code: string): Promise<OtpVerific
 export function assertVerificationOk(result: OtpVerificationResult) {
   if (result.ok) return;
   if (result.reason === "mismatch") {
-    throw badRequest("Incorrect OTP. Please check the code and try again.");
+    throw badRequest("Incorrect OTP. Enter the latest code you received.");
   }
-  throw badRequest("OTP expired or not requested. Please request a new one.");
+  throw badRequest(
+    "This OTP has expired, was already used, or was replaced by a newer request. Please request a new one."
+  );
 }

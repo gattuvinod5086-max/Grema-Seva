@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { ArrowLeft, Smartphone, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 import { BRANDING } from '@web/constants/branding';
+import { isValidIndianMobile } from '@shared/validation';
 
 type Step = 'phone' | 'otp';
 
@@ -46,6 +47,10 @@ export default function PhoneLogin() {
 
   const requestOtp = async () => {
     setError(null);
+    if (!isValidIndianMobile(phone)) {
+      setError('Enter a valid 10-digit Indian mobile number (digits only, starting 6–9).');
+      return;
+    }
     setBusy(true);
     try {
       const res = await fetch('/api/auth/otp/request', {

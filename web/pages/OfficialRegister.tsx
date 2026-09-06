@@ -8,6 +8,7 @@ import {
   sanitizeGeoSelection,
 } from '@shared/data/telangana';
 import { OFFICIAL_REGISTRATION_ROLES, type OfficialRegistrationRole } from '@shared/types';
+import { isValidIndianMobile, personNameSchema, NAME_ERROR } from '@shared/validation';
 
 interface OtpRequestResponse {
   sent?: boolean;
@@ -58,6 +59,22 @@ export default function OfficialRegister() {
 
   const requestOtp = async () => {
     setError(null);
+    if (!personNameSchema.safeParse(name).success) {
+      setError(NAME_ERROR);
+      return;
+    }
+    if (!role) {
+      setError('Select the role you are registering for.');
+      return;
+    }
+    if (!isValidIndianMobile(phone)) {
+      setError('Enter a valid 10-digit Indian mobile number (digits only, starting 6–9).');
+      return;
+    }
+    if (!district || !mandal || !village) {
+      setError('Select your district, mandal and village.');
+      return;
+    }
     setBusy(true);
     try {
       const res = await fetch('/api/auth/otp/request', {

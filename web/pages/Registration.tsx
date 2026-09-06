@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router';
 import { ArrowLeft, MapPin, CheckCircle, User, Phone, Users } from 'lucide-react';
 import { telanganaData, type District, type Mandal, type Village } from '@shared/data/telangana';
 import type { User as ApiUser } from '@shared/types';
+import {
+  isValidIndianMobile,
+  personNameSchema,
+  MOBILE_ERROR,
+  NAME_ERROR,
+} from '@shared/validation';
 
 type Step = 'details' | 'district' | 'mandal' | 'village';
 
@@ -35,9 +41,18 @@ export default function Registration() {
       .catch(() => {});
   }, []);
 
+  const [detailErrors, setDetailErrors] = useState<{ name?: string; fatherName?: string; phone?: string }>({});
+
   const handleDetailsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (fullName.trim() && fatherName.trim() && mobileNumber.trim()) {
+    const errors: typeof detailErrors = {};
+
+    if (!personNameSchema.safeParse(fullName).success) errors.name = NAME_ERROR;
+    if (!personNameSchema.safeParse(fatherName).success) errors.fatherName = NAME_ERROR;
+    if (!isValidIndianMobile(mobileNumber)) errors.phone = MOBILE_ERROR;
+
+    setDetailErrors(errors);
+    if (Object.keys(errors).length === 0) {
       setStep('district');
     }
   };
@@ -233,6 +248,9 @@ export default function Registration() {
                   required
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:outline-none transition-colors text-lg"
                 />
+                {detailErrors.name && (
+                  <p className="text-sm text-red-600 mt-1">{detailErrors.name}</p>
+                )}
               </div>
 
               <div>
@@ -248,6 +266,9 @@ export default function Registration() {
                   required
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:outline-none transition-colors text-lg"
                 />
+                {detailErrors.fatherName && (
+                  <p className="text-sm text-red-600 mt-1">{detailErrors.fatherName}</p>
+                )}
               </div>
 
               <div>
@@ -257,14 +278,18 @@ export default function Registration() {
                 </label>
                 <input
                   type="tel"
+                  inputMode="numeric"
                   value={mobileNumber}
-                  onChange={(e) => setMobileNumber(e.target.value)}
+                  onChange={(e) => setMobileNumber(e.target.value.replace(/[^\d]/g, '').slice(0, 10))}
                   placeholder="Enter your mobile number"
-                  pattern="[0-9]{10}"
                   required
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:outline-none transition-colors text-lg"
                 />
-                <p className="text-sm text-gray-500 mt-1">Enter 10-digit mobile number</p>
+                {detailErrors.phone ? (
+                  <p className="text-sm text-red-600 mt-1">{detailErrors.phone}</p>
+                ) : (
+                  <p className="text-sm text-gray-500 mt-1">Enter 10-digit mobile number</p>
+                )}
               </div>
 
               <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">

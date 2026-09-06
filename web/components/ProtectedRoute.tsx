@@ -1,6 +1,5 @@
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router';
-import { useAuth } from '@getmocha/users-service/react';
 import { Loader2 } from 'lucide-react';
 import { useApi } from '@web/hooks/useApi';
 import type { User } from '@shared/types';
@@ -10,14 +9,16 @@ interface ProtectedRouteProps {
   requireLocation?: boolean;
 }
 
+/**
+ * Gate for authenticated routes. Resolves the session server-side;
+ * unauthenticated users go to /login, citizens without a completed
+ * profile go to /registration.
+ */
 export default function ProtectedRoute({ children, requireLocation = true }: ProtectedRouteProps) {
-  const { user: authUser, isPending: authPending } = useAuth();
   const location = useLocation();
-  const { data: user, isLoading: userLoading } = useApi<User>('/api/users/me', {
-    enabled: !!authUser,
-  });
+  const { data, isLoading, error } = useApi<{ user: User }>('/api/users/me');
 
-  if (authPending || (authUser && userLoading)) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 flex items-center justify-center">
         <div className="animate-spin">
@@ -27,17 +28,17 @@ export default function ProtectedRoute({ children, requireLocation = true }: Pro
     );
   }
 
-  if (!authUser) {
+  const user = data?.user ?? null;
+
+  if (error || !user) {
     return <Navigate to="/login" replace />;
   }
 
-  // Check if user needs to complete registration
-  if (requireLocation && user && !user.village && location.pathname !== '/registration') {
+  if (requireLocation && (user.needsRegistration || !user.village) && location.pathname !== '/registration') {
     return <Navigate to="/registration" replace />;
   }
 
-  // Redirect to home if trying to access registration but already registered
-  if (!requireLocation && user && user.village && location.pathname === '/registration') {
+  if (!requireLocation && !user.needsRegistration && user.village && location.pathname === '/registration') {
     return <Navigate to="/" replace />;
   }
 

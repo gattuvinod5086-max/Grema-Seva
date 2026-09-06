@@ -1,25 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { useAuth } from '@getmocha/users-service/react';
 import { ArrowLeft, MapPin, CheckCircle, User, Phone, Users } from 'lucide-react';
 import { telanganaData, type District, type Mandal, type Village } from '@shared/data/telangana';
+import type { User as ApiUser } from '@shared/types';
 
 type Step = 'details' | 'district' | 'mandal' | 'village';
 
 export default function Registration() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const [user, setUser] = useState<ApiUser | null>(null);
   const [step, setStep] = useState<Step>('details');
-  
+
   // User details
   const [fullName, setFullName] = useState('');
   const [fatherName, setFatherName] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
-  
+
   // Location selection
   const [selectedDistrict, setSelectedDistrict] = useState<District | null>(null);
   const [selectedMandal, setSelectedMandal] = useState<Mandal | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/users/me', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body) => {
+        const u = body?.user as ApiUser | undefined;
+        if (!u) return;
+        setUser(u);
+        setFullName(u.name && u.name !== 'New User' ? u.name : '');
+        if (u.phone) setMobileNumber(u.phone.replace(/^\+91/, ''));
+      })
+      .catch(() => {});
+  }, []);
 
   const handleDetailsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,29 +55,32 @@ export default function Registration() {
 
   const handleVillageSelect = async (village: Village) => {
     setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
-      const response = await fetch('/api/users/me/complete-registration', {
+      const response = await fetch('/api/users/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({
           name: fullName,
-          father_name: fatherName,
+          fatherName: fatherName,
           phone: mobileNumber,
           district: selectedDistrict!.name,
           mandal: selectedMandal!.name,
           village: village.name,
         }),
       });
+      const body = await response.json().catch(() => ({}));
 
       if (response.ok) {
         navigate('/', { replace: true });
       } else {
-        alert('Failed to complete registration. Please try again.');
+        setSubmitError(body?.error?.message ?? 'Failed to complete registration. Please try again.');
         setIsSubmitting(false);
       }
     } catch {
-      alert('Failed to complete registration. Please try again.');
+      setSubmitError('Network error. Please try again.');
       setIsSubmitting(false);
     }
   };
@@ -181,6 +198,12 @@ export default function Registration() {
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-6">
+        {submitError && (
+          <div className="max-w-2xl mx-auto mb-4 bg-red-50 border-2 border-red-200 rounded-xl p-4 text-red-700 text-sm">
+            {submitError}
+          </div>
+        )}
+
         {/* Back Button */}
         {step !== 'details' && (
           <button
@@ -246,9 +269,11 @@ export default function Registration() {
 
               <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-gray-700">
-                  <strong>Email:</strong> {user?.email}
+                  <strong>Signed in as:</strong> {user?.email ?? (user?.phone ? `+91 ${user.phone.replace(/^\+91/, '')}` : 'your account')}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">Your email is automatically verified via Google</p>
+                {user?.email && (
+                  <p className="text-xs text-gray-500 mt-1">Your email is verified via Google</p>
+                )}
               </div>
 
               <button

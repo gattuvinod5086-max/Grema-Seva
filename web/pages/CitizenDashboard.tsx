@@ -6,7 +6,6 @@ import {
   Building2,
   MapPin,
 } from 'lucide-react';
-import { useAuth } from '@getmocha/users-service/react';
 import { useNavigate } from 'react-router';
 import IssueList from '@web/components/IssueList';
 import IssueForm from '@web/components/IssueForm';
@@ -59,7 +58,6 @@ function QuickAction({
 export default function CitizenDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [formPreset, setFormPreset] = useState<{ category?: string; priority?: string }>({});
-  const { logout } = useAuth();
   const navigate = useNavigate();
 
   const { data: user, error: userError, isLoading: userLoading, refetch: refetchUser } =
@@ -100,6 +98,11 @@ export default function CitizenDashboard() {
     return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const logout = async () => {
+    await fetch('/api/auth/logout', { credentials: 'same-origin' });
+    navigate('/login');
+  };
+
   const scrollToIssues = () => {
     document.getElementById('my-issues')?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -135,7 +138,7 @@ export default function CitizenDashboard() {
             </button>
             <button
               type="button"
-              onClick={() => logout()}
+              onClick={() => void logout()}
               className="p-2 rounded-lg border border-[#E5E7EB] text-[#64748B] hover:bg-slate-50"
               aria-label="Logout"
             >

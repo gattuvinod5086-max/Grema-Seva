@@ -1,0 +1,190 @@
+import { Hono } from "hono";
+import { z } from "zod";
+import { eq } from "drizzle-orm";
+import { getCookie, setCookie } from "hono/cookie";
+import { db, schema } from "../db/client";
+import { env, isGoogleOAuthConfigured } from "../env";
+import { normalizePhone } from "../lib/phone";
+import { generateToken } from "../lib/crypto";
+import { requestOtp, verifyOtp, assertVerificationOk } from "../services/otp";
+import { createSession, revokeCurrentSession } from "../services/session";
+import { findIdentityUser, linkIdentity, serializeUser } from "../services/users";
+import { badRequest } from "../middleware/error";
+import { requireAuth } from "../middleware/auth";
+import { loadJurisdiction } from "../services/users";
+
+const otpRequestSchema = z.object({
+  phone: z.string().min(1),
+});
+
+const otpVerifySchema = z.object({
+  phone: z.string().min(1),
+  code: z.string().regex(/^\d{6}$/, "OTP must be 6 digits"),
+});
+
+const GOOGLE_STATE_COOKIE = "grama_oauth_state";
+const GOOGLE_CALLBACK_PATH = "/api/auth/google/callback";
+
+export const authRoutes = new Hono()
+  /* ---------- Phone OTP ---------- */
+  .post("/otp/request", async (c) => {
+    const { phone: rawPhone } = otpRequestSchema.parse(await c.req.json());
+    const phone = normalizePhone(rawPhone);
+    if (!phone) throw badRequest("Enter a valid mobile number");
+
+    const result = await requestOtp(phone, c.req.header("x-forwarded-for") ?? c.req.header("x-real-ip"));
+    return c.json({ sent: true, expiresInSec: result.expiresInSec });
+  })
+  .post("/otp/verify", async (c) => {
+    const { phone: rawPhone, code } = otpVerifySchema.parse(await c.req.json());
+    const phone = normalizePhone(rawPhone);
+    if (!phone) throw badRequest("Enter a valid mobile number");
+
+    assertVerificationOk(await verifyOtp(phone, code));
+
+    // Find or provision the account behind this phone.
+    let user = await findIdentityUser("phone", phone);
+    if (!user) {
+      const [byPhone] = await db.select().from(schema.users).where(eq(schema.users.phone, phone)).limit(1);
+      if (byPhone) {
+        user = byPhone;
+      } else {
+        const [created] = await db
+          .insert(schema.users)
+          .values({ name: "New User", phone, role: "citizen", approvalStatus: "approved" })
+          .returning();
+        user = created;
+      }
+      await linkIdentity(user.id, "phone", phone);
+    }
+
+    await createSession(c, user.id, {
+      ip: c.req.header("x-forwarded-for") ?? c.req.header("x-real-ip"),
+      device: c.req.header("user-agent"),
+    });
+
+    const jurisdiction = await loadJurisdiction(user.jurisdictionId);
+    return c.json({ user: serializeUser(user, jurisdiction) });
+  })
+
+  /* ---------- Google OAuth ---------- */
+  .get("/google/redirect-url", (c) => {
+    if (!isGoogleOAuthConfigured()) {
+      return c.json(
+        {
+          error: {
+            code: "GOOGLE_NOT_CONFIGURED",
+            message:
+              "Google sign-in is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env.",
+          },
+        },
+        503
+      );
+    }
+
+    const state = generateToken();
+    setCookie(c, GOOGLE_STATE_COOKIE, state, {
+      httpOnly: true,
+      sameSite: "Lax",
+      secure: env.APP_BASE_URL.startsWith("https"),
+      path: "/",
+      maxAge: 600,
+    });
+
+    const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    url.searchParams.set("client_id", env.GOOGLE_CLIENT_ID!);
+    url.searchParams.set("redirect_uri", `${env.APP_BASE_URL}${GOOGLE_CALLBACK_PATH}`);
+    url.searchParams.set("response_type", "code");
+    url.searchParams.set("scope", "openid email profile");
+    url.searchParams.set("state", state);
+    url.searchParams.set("prompt", "select_account");
+
+    return c.json({ redirectUrl: url.toString() });
+  })
+  .get("/google/callback", async (c) => {
+    const redirectTo = (path: string) => c.redirect(`${env.APP_BASE_URL}${path}`);
+
+    const code = c.req.query("code");
+    const state = c.req.query("state");
+    const expectedState = getCookie(c, GOOGLE_STATE_COOKIE);
+    setCookie(c, GOOGLE_STATE_COOKIE, "", { path: "/", maxAge: 0 });
+
+    if (!code || !state || !expectedState || state !== expectedState) {
+      return redirectTo("/login?error=google_state");
+    }
+
+    if (!isGoogleOAuthConfigured()) {
+      return redirectTo("/login?error=google_config");
+    }
+
+    // Exchange the authorization code for tokens.
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: env.GOOGLE_CLIENT_ID!,
+        client_secret: env.GOOGLE_CLIENT_SECRET!,
+        redirect_uri: `${env.APP_BASE_URL}${GOOGLE_CALLBACK_PATH}`,
+        grant_type: "authorization_code",
+      }),
+    });
+    const tokens = (await tokenRes.json().catch(() => ({}))) as { access_token?: string };
+    if (!tokenRes.ok || !tokens.access_token) {
+      return redirectTo("/login?error=google_token");
+    }
+
+    // Resolve the verified identity from Google's userinfo endpoint.
+    const userInfoRes = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    });
+    const info = (await userInfoRes.json().catch(() => ({}))) as {
+      sub?: string;
+      email?: string;
+      email_verified?: boolean;
+      name?: string;
+    };
+    if (!userInfoRes.ok || !info.sub) {
+      return redirectTo("/login?error=google_userinfo");
+    }
+    if (!info.email || info.email_verified !== true) {
+      return redirectTo("/login?error=google_email_unverified");
+    }
+
+    // Existing identity → login; matching email → link; else provision.
+    let user = await findIdentityUser("google", info.sub);
+    if (!user && info.email) {
+      const [byEmail] = await db
+        .select()
+        .from(schema.users)
+        .where(eq(schema.users.email, info.email))
+        .limit(1);
+      if (byEmail) user = byEmail;
+    }
+    if (!user) {
+      const [created] = await db
+        .insert(schema.users)
+        .values({
+          name: info.name ?? info.email,
+          email: info.email,
+          role: "citizen",
+          approvalStatus: "approved",
+        })
+        .returning();
+      user = created;
+    }
+    await linkIdentity(user.id, "google", info.sub);
+
+    await createSession(c, user.id, {
+      ip: c.req.header("x-forwarded-for") ?? c.req.header("x-real-ip"),
+      device: c.req.header("user-agent"),
+    });
+
+    return redirectTo("/");
+  })
+
+  /* ---------- Session ---------- */
+  .get("/logout", requireAuth, async (c) => {
+    await revokeCurrentSession(c);
+    return c.json({ ok: true });
+  });

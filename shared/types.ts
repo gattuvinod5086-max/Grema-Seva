@@ -44,21 +44,34 @@ export const IssueSchema = z.object({
   updated_at: z.string(),
 });
 
+export const USER_ROLES = [
+  "citizen",
+  "ward_member",
+  "sarpanch",
+  "admin",
+  "super_admin",
+] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
+export const APPROVAL_STATUSES = ["pending", "approved", "declined"] as const;
+export type ApprovalStatus = (typeof APPROVAL_STATUSES)[number];
+
 export const UserSchema = z.object({
   id: z.string(),
-  email: z.string(),
-  name: z.string().nullable(),
-  father_name: z.string().nullable(),
-  role: z.string(),
-  ward_id: z.number().nullable(),
+  name: z.string(),
+  phone: z.string().nullable(),
+  email: z.string().nullable(),
+  fatherName: z.string().nullable(),
+  role: z.enum(USER_ROLES),
+  approvalStatus: z.enum(APPROVAL_STATUSES),
+  approvalNote: z.string().nullable(),
+  wardNumber: z.string().nullable(),
   district: z.string().nullable(),
   mandal: z.string().nullable(),
   village: z.string().nullable(),
-  phone: z.string().nullable(),
-  ward_number: z.number().nullable(),
-  google_sub: z.string().nullable(),
-  created_at: z.string(),
-  updated_at: z.string(),
+  jurisdictionId: z.string().nullable(),
+  needsRegistration: z.boolean(),
+  createdAt: z.string(),
 });
 
 export const WardSchema = z.object({

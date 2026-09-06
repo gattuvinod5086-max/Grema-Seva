@@ -1,4 +1,4 @@
-import type { Context, Next } from "hono";
+import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { ZodError } from "zod";
 
@@ -12,29 +12,31 @@ export function errorResponse(
   return { error: { code, message, ...(details !== undefined ? { details } : {}) } };
 }
 
-/** One error shape for every route: { error: { code, message, details? } }. */
-export async function errorMiddleware(c: Context, next: Next) {
-  try {
-    await next();
-  } catch (err) {
-    if (err instanceof ZodError) {
-      return c.json(
-        errorResponse(
-          "VALIDATION_ERROR",
-          "Invalid request payload",
-          err.issues.map((i) => ({ path: i.path.join("."), message: i.message }))
-        ),
-        400
-      );
-    }
-
-    if (err instanceof HttpError) {
-      return c.json(errorResponse(err.code, err.message, err.details), err.status as ContentfulStatusCode);
-    }
-
-    console.error("[unhandled]", err);
-    return c.json(errorResponse("INTERNAL_ERROR", "Something went wrong"), 500);
+/**
+ * One error shape for every route: { error: { code, message, details? } }.
+ * Registered with app.onError — Hono's supported way to catch handler errors.
+ */
+export async function onError(err: unknown, c: Context) {
+  if (err instanceof ZodError) {
+    return c.json(
+      errorResponse(
+        "VALIDATION_ERROR",
+        "Invalid request payload",
+        err.issues.map((i) => ({ path: i.path.join("."), message: i.message }))
+      ),
+      400
+    );
   }
+
+  if (err instanceof HttpError) {
+    return c.json(
+      errorResponse(err.code, err.message, err.details),
+      err.status as ContentfulStatusCode
+    );
+  }
+
+  console.error("[unhandled]", err);
+  return c.json(errorResponse("INTERNAL_ERROR", "Something went wrong"), 500);
 }
 
 export class HttpError extends Error {

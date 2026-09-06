@@ -1,13 +1,15 @@
 import { Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
-import { errorMiddleware } from "./middleware/error";
+import { onError } from "./middleware/error";
 import { healthRoutes } from "./routes/health";
+import { authRoutes } from "./routes/auth";
+import { userRoutes } from "./routes/users";
 
 export function createApp() {
   const app = new Hono();
 
   app.use(secureHeaders());
-  app.use(errorMiddleware);
+  app.onError(onError);
 
   app.notFound((c) =>
     c.json({ error: { code: "NOT_FOUND", message: "Route not found" } }, 404)
@@ -15,6 +17,8 @@ export function createApp() {
 
   const api = new Hono();
   api.route("/", healthRoutes);
+  api.route("/auth", authRoutes);
+  api.route("/users", userRoutes);
   app.route("/api", api);
 
   return app;

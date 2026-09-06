@@ -15,9 +15,10 @@ async function main() {
 
   // Serve the built web app in production (single deploy, no CORS).
   if (existsSync("dist/web/index.html")) {
-    const indexHtml = readFileSync("dist/web/index.html", "utf8");
     app.use("*", serveStatic({ root: "dist/web" }));
     // SPA fallback for client-side routes, but never swallow /api.
+    // index.html is read per request so a rebuild is picked up without
+    // restarting the server.
     app.get("*", (c) => {
       if (c.req.path.startsWith("/api/")) {
         return c.json(
@@ -25,7 +26,11 @@ async function main() {
           404
         );
       }
-      return c.html(indexHtml);
+      try {
+        return c.html(readFileSync("dist/web/index.html", "utf8"));
+      } catch {
+        return c.text("Web bundle missing — run `npm run build`", 503);
+      }
     });
   }
 

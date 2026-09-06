@@ -5,6 +5,7 @@ import { healthRoutes } from "./routes/health";
 import { authRoutes } from "./routes/auth";
 import { userRoutes } from "./routes/users";
 import { adminRoutes } from "./routes/admin";
+import { issuesRoutes, filesRoutes } from "./routes/issues";
 
 export function createApp() {
   const app = new Hono();
@@ -21,6 +22,8 @@ export function createApp() {
   api.route("/auth", authRoutes);
   api.route("/users", userRoutes);
   api.route("/admin", adminRoutes);
+  api.route("/issues", issuesRoutes);
+  api.route("/files", filesRoutes);
   app.route("/api", api);
 
   return app;

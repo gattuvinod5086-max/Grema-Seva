@@ -1,0 +1,225 @@
+import { Hono } from "hono";
+import { z } from "zod";
+import { eq } from "drizzle-orm";
+import { db, schema } from "../db/client";
+import { requireAuth, getAuth } from "../middleware/auth";
+import { badRequest, notFound, forbidden } from "../middleware/error";
+import {
+  createIssue,
+  listIssuesForUser,
+  getIssueForUser,
+  updateIssueStatus,
+  addProgressNote,
+  confirmResolution,
+  reopenIssue,
+} from "../services/issues";
+import { issueVisibilityFilter, canViewIssue, assertCanManageIssue } from "../services/issueScope";
+import { ISSUE_CATEGORIES } from "../../../shared/constants/governance";
+import { ISSUE_STATUSES, ISSUE_VISIBILITIES } from "../db/schema";
+import { getStorage, ALLOWED_MIME, MAX_UPLOAD_BYTES } from "../providers/storage";
+
+const createIssueSchema = z.object({
+  category: z.enum(ISSUE_CATEGORIES),
+  description: z.string().trim().min(5).max(4000),
+  latitude: z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
+  accuracyM: z.number().min(0).max(100000).nullable().optional(),
+  addressText: z.string().trim().max(500).nullable().optional(),
+  visibility: z.enum(ISSUE_VISIBILITIES).optional(),
+  wardNumber: z.string().trim().max(20).nullable().optional(),
+  idempotencyKey: z.string().trim().min(8).max(100).nullable().optional(),
+});
+
+const statusSchema = z.object({
+  status: z.enum(ISSUE_STATUSES),
+  note: z.string().trim().max(2000).optional(),
+});
+
+const progressSchema = z.object({
+  note: z.string().trim().min(3).max(2000),
+});
+
+export const issuesRoutes = new Hono()
+  .use("*", requireAuth)
+  /* List — the visibility filter is composed from the session user. */
+  .get("/", async (c) => {
+    const { user, jurisdiction } = getAuth(c);
+    const page = Math.max(1, Number(c.req.query("page") ?? "1") || 1);
+    const limit = Math.min(100, Math.max(1, Number(c.req.query("limit") ?? "20") || 20));
+
+    const result = await listIssuesForUser(issueVisibilityFilter(user, jurisdiction), {
+      status: c.req.query("status") ?? undefined,
+      category: c.req.query("category") ?? undefined,
+      page,
+      limit,
+    });
+    return c.json(result);
+  })
+  /* Create — jurisdiction comes from the authenticated profile, never the body. */
+  .post("/", async (c) => {
+    const { user, jurisdiction } = getAuth(c);
+    if (!jurisdiction) {
+      throw badRequest("Complete your registration before reporting issues");
+    }
+
+    const body = await c.req.json().catch(() => null);
+    const parsed = createIssueSchema.parse(body);
+    const idempotencyKey =
+      parsed.idempotencyKey ?? c.req.header("Idempotency-Key") ?? null;
+
+    const { issue, duplicate } = await createIssue(user, jurisdiction, {
+      ...parsed,
+      idempotencyKey,
+    });
+    return c.json(
+      {
+        issue: {
+          ...issue,
+          district: jurisdiction.district,
+          mandal: jurisdiction.mandal,
+          village: jurisdiction.village,
+        },
+        duplicate,
+      },
+      duplicate ? 200 : 201
+    );
+  })
+  /* Detail with timeline + attachments. */
+  .get("/:id", async (c) => {
+    const { user, jurisdiction } = getAuth(c);
+    const id = c.req.param("id") ?? "";
+    if (!/^[0-9a-f-]{36}$/i.test(id)) throw badRequest("Invalid issue id");
+    return c.json({ issue: await getIssueForUser(user, jurisdiction, id) });
+  })
+  /* Official status update. */
+  .patch("/:id/status", async (c) => {
+    const { user, jurisdiction } = getAuth(c);
+    const id = c.req.param("id") ?? "";
+    const { status, note } = statusSchema.parse(await c.req.json());
+
+    const issueJurisdiction = await loadIssueJurisdiction(id);
+    const updated = await updateIssueStatus(user, jurisdiction, issueJurisdiction, id, status, note);
+    return c.json({ issue: updated });
+  })
+  /* Official progress report. */
+  .post("/:id/progress", async (c) => {
+    const { user, jurisdiction } = getAuth(c);
+    const id = c.req.param("id") ?? "";
+    const { note } = progressSchema.parse(await c.req.json());
+
+    const issueJurisdiction = await loadIssueJurisdiction(id);
+    const update = await addProgressNote(user, jurisdiction, issueJurisdiction, id, note);
+    return c.json({ update }, 201);
+  })
+  /* Reporter confirms resolution → Closed. */
+  .post("/:id/confirm", async (c) => {
+    const { user } = getAuth(c);
+    const id = c.req.param("id") ?? "";
+    const issue = await confirmResolution(user, id);
+    return c.json({ issue });
+  })
+  /* Reporter reopens a resolved issue. */
+  .post("/:id/reopen", async (c) => {
+    const { user } = getAuth(c);
+    const id = c.req.param("id") ?? "";
+    const { reason } = z
+      .object({ reason: z.string().trim().max(1000) })
+      .parse(await c.req.json().catch(() => ({ reason: "Not actually resolved" })));
+    const issue = await reopenIssue(user, id, reason);
+    return c.json({ issue });
+  })
+  /* Evidence upload (multipart): photo/voice attached to the issue. */
+  .post("/:id/attachments", async (c) => {
+    const { user, jurisdiction } = getAuth(c);
+    const id = c.req.param("id") ?? "";
+
+    const [issue] = await db.select().from(schema.issues).where(eq(schema.issues.id, id)).limit(1);
+    if (!issue) throw notFound("Issue not found");
+
+    const isReporter = issue.reporterId === user.id;
+    if (!isReporter) {
+      // Officials may attach evidence; ACL mirrors the manage rule.
+      const issueJurisdiction = await loadIssueJurisdiction(id);
+      assertCanManageIssue(user, jurisdiction, issue, issueJurisdiction);
+    }
+
+    const body = await c.req.parseBody();
+    const file = body["file"];
+    const phaseRaw = body["phase"];
+    const phase = phaseRaw === "progress" || phaseRaw === "resolution" ? phaseRaw : "report";
+
+    if (!(file instanceof File)) throw badRequest("Missing 'file' field");
+    if (file.size > MAX_UPLOAD_BYTES) throw badRequest("File too large (max 10 MB)");
+    const mime = file.type || "application/octet-stream";
+    if (!ALLOWED_MIME.includes(mime)) throw badRequest(`Unsupported file type: ${mime}`);
+
+    const stored = await getStorage().save(Buffer.from(await file.arrayBuffer()), mime);
+    const kind = mime.startsWith("audio/") ? "voice" : "photo";
+
+    const [attachment] = await db
+      .insert(schema.issueAttachments)
+      .values({
+        issueId: id,
+        uploadedById: user.id,
+        kind,
+        storageKey: stored.key,
+        mime: stored.mime,
+        bytes: stored.bytes,
+        phase,
+      })
+      .returning();
+
+    await db.insert(schema.issueUpdates).values({
+      issueId: id,
+      actorId: user.id,
+      action: "attachment",
+      note: `Uploaded ${kind} (${phase})`,
+    });
+
+    return c.json({ attachment: { id: attachment.id, key: attachment.storageKey, kind, mime, phase } }, 201);
+  });
+
+async function loadIssueJurisdiction(issueId: string) {
+  const [row] = await db
+    .select({ jurisdiction: schema.jurisdictions })
+    .from(schema.issues)
+    .innerJoin(schema.jurisdictions, eq(schema.issues.jurisdictionId, schema.jurisdictions.id))
+    .where(eq(schema.issues.id, issueId))
+    .limit(1);
+  if (!row) throw notFound("Issue not found");
+  return row.jurisdiction;
+}
+
+/** Auth-gated file serving — no issue photo is readable without a session. */
+export const filesRoutes = new Hono()
+  .use("*", requireAuth)
+  .get("/:key", async (c) => {
+    const { user, jurisdiction } = getAuth(c);
+    const key = c.req.param("key") ?? "";
+
+    const [row] = await db
+      .select({ attachment: schema.issueAttachments, issue: schema.issues })
+      .from(schema.issueAttachments)
+      .innerJoin(schema.issues, eq(schema.issueAttachments.issueId, schema.issues.id))
+      .where(eq(schema.issueAttachments.storageKey, key))
+      .limit(1);
+    if (!row) throw notFound("File not found");
+
+    if (
+      row.issue.reporterId !== user.id &&
+      !(await canViewIssue(user, jurisdiction, row.issue))
+    ) {
+      throw forbidden();
+    }
+
+    const data = await getStorage().read(key);
+    return c.body(
+      new Uint8Array(data),
+      200,
+      {
+        "Content-Type": row.attachment.mime,
+        "Cache-Control": "private, max-age=3600",
+        "Content-Disposition": "inline",
+      }
+    );
+  });

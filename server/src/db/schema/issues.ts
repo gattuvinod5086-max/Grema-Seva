@@ -22,7 +22,7 @@ export const ISSUE_STATUSES = [
 ] as const;
 export type IssueStatus = (typeof ISSUE_STATUSES)[number];
 
-export const ISSUE_PRIORITIES = ["Low", "Medium", "High", "Critical"] as const;
+export const ISSUE_PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"] as const;
 export type IssuePriority = (typeof ISSUE_PRIORITIES)[number];
 
 /**
@@ -51,7 +51,7 @@ export const issues = pgTable(
     description: text("description").notNull(),
 
     status: text("status").$type<IssueStatus>().notNull().default("Submitted"),
-    priority: text("priority").$type<IssuePriority>().notNull().default("Medium"),
+    priority: text("priority").$type<IssuePriority>().notNull().default("MEDIUM"),
     department: text("department"),
     /** Official currently responsible (sarpanch by default, may be reassigned). */
     assignedToId: uuid("assigned_to_id").references(() => users.id),

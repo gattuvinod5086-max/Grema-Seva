@@ -38,16 +38,18 @@
     "tsx": "^4.19.2",
     "typescript": "5.8.3",
     "typescript-eslint": "8.31.0",
-    "vite": "^7.1.3"
+    "vite": "^7.1.3",
+    "vitest": "^5.0.0"
   },
   "scripts": {
     "build": "tsc -b && vite build",
     "check": "tsc -b && vite build",
+    "test": "vitest run",
     "dev": "vite",
-    "dev:server": "tsx watch server/src/index.ts",
+    "dev:server": "tsx watch --tsconfig tsconfig.server.json server/src/index.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx server/src/db/seed.ts",
+    "db:seed": "tsx --tsconfig tsconfig.server.json server/src/db/seed.ts",
     "knip": "knip",
     "lint": "eslint .",
     "cap:init": "cap add android && cap add ios",

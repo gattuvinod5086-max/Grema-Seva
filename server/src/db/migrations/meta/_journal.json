@@ -8,6 +8,13 @@
       "when": 1788701289685,
       "tag": "0000_red_living_mummy",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788703217637,
+      "tag": "0001_normal_masque",
+      "breakpoints": true
     }
   ]
 }

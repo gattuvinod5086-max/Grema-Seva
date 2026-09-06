@@ -1,4 +1,4 @@
-import { and, eq, inArray, or } from "drizzle-orm";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { db, schema } from "../db/client";
 import type { Jurisdiction, User } from "../db/schema";
@@ -52,7 +52,14 @@ export function issueVisibilityFilter(
   if (isApprovedOfficial(user) && userJurisdiction) {
     const villageScope = eq(schema.issues.jurisdictionId, userJurisdiction.id);
     if (user.role === "ward_member" && user.wardNumber) {
-      return or(own, and(villageScope, eq(schema.issues.wardNumber, user.wardNumber)));
+      // Their ward's issues plus unassigned ones (no ward recorded yet).
+      return or(
+        own,
+        and(
+          villageScope,
+          or(eq(schema.issues.wardNumber, user.wardNumber), isNull(schema.issues.wardNumber))
+        )
+      );
     }
     return villageScope;
   }
@@ -90,7 +97,7 @@ export async function canViewIssue(
   if (isApprovedOfficial(user) && userJurisdiction) {
     if (issue.jurisdictionId !== userJurisdiction.id) return false;
     if (user.role === "ward_member" && user.wardNumber) {
-      return issue.wardNumber === user.wardNumber;
+      return issue.wardNumber === user.wardNumber || issue.wardNumber == null;
     }
     return true;
   }

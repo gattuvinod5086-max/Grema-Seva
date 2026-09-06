@@ -8,7 +8,7 @@ import { classifyIssue } from "../../../shared/services/issueClassification";
 import { getSlaHours } from "../../../shared/services/sla";
 import { getDepartmentForCategory } from "../../../shared/services/departmentRouting";
 import { generateToken } from "../lib/crypto";
-import { assertCanManageIssue, canViewIssue } from "./issueScope";
+import { assertCanManageIssue, canViewIssue, isApprovedOfficial } from "./issueScope";
 
 const DEDUP_RADIUS_METERS = 50;
 const DEDUP_WINDOW_DAYS = 7;
@@ -113,7 +113,7 @@ export async function createIssue(
       priority,
       department,
       assignedToId: sarpanch?.id ?? null,
-      visibility: input.visibility ?? "private",
+      visibility: input.visibility ?? "village",
       slaHours,
       slaDueAt: new Date(Date.now() + slaHours * 60 * 60 * 1000),
       latitude: input.latitude ?? null,
@@ -144,6 +144,7 @@ export interface ListIssuesOptions {
 }
 
 export async function listIssuesForUser(
+  user: User,
   visibilityFilter: SQL | undefined,
   options: ListIssuesOptions
 ) {
@@ -178,9 +179,15 @@ export async function listIssuesForUser(
   const photoByIssue = new Map<string, string>();
   for (const p of photos) photoByIssue.set(p.issueId, p.key);
 
+  const canSeeIdentity = (reporterId: string) =>
+    reporterId === user.id || isApprovedOfficial(user);
+
   return {
     issues: rows.map(({ issue, jurisdiction: j }) => ({
       ...issue,
+      // Villagers see village issues transparently, but not who reported
+      // them — only officials (and the reporter) see the identity.
+      reporterId: canSeeIdentity(issue.reporterId) ? issue.reporterId : null,
       district: j.district,
       mandal: j.mandal,
       village: j.village,
@@ -224,6 +231,11 @@ export async function getIssueForUser(
 
   return {
     ...row.issue,
+    // Same anonymization rule as the list view.
+    reporterId:
+      row.issue.reporterId === user.id || isApprovedOfficial(user)
+        ? row.issue.reporterId
+        : null,
     district: row.jurisdiction.district,
     mandal: row.jurisdiction.mandal,
     village: row.jurisdiction.village,
@@ -391,3 +403,82 @@ export async function reopenIssue(user: User, issueId: string, reason: string) {
   return updated;
 }
 
+
+/** Status counts for one village — "how many issues and their status". */
+export async function getVillageIssueStats(
+  visibilityFilter: SQL | undefined
+) {
+  // The caller's own visibility filter already encodes what they may see
+  // (citizens never see others' private issues; officials do).
+  const conditions = [visibilityFilter].filter((c): c is SQL => c !== undefined);
+
+  const rows = await db
+    .select({ status: schema.issues.status, category: schema.issues.category, n: count() })
+    .from(schema.issues)
+    .where(and(...conditions))
+    .groupBy(schema.issues.status, schema.issues.category);
+
+  const byStatus: Record<string, number> = {};
+  const byCategory: Record<string, Record<string, number>> = {};
+  let total = 0;
+  for (const r of rows) {
+    const n = Number(r.n);
+    byStatus[r.status] = (byStatus[r.status] ?? 0) + n;
+    byCategory[r.category] = byCategory[r.category] ?? {};
+    byCategory[r.category][r.status] = (byCategory[r.category][r.status] ?? 0) + n;
+    total += n;
+  }
+
+  return { total, byStatus, byCategory };
+}
+
+/** Open village-public issues similar to what the user is about to file. */
+export async function findSimilarIssues(
+  visibilityFilter: SQL | undefined,
+  category: string,
+  latitude: number | null,
+  longitude: number | null,
+  limit = 5
+) {
+  const conditions = [
+    visibilityFilter,
+    eq(schema.issues.category, category),
+    inArray(schema.issues.status, ACTIVE_STATUSES),
+    eq(schema.issues.visibility, "village"),
+  ].filter((c): c is SQL => c !== undefined);
+
+  const rows = await db
+    .select({ issue: schema.issues, jurisdiction: schema.jurisdictions })
+    .from(schema.issues)
+    .innerJoin(schema.jurisdictions, eq(schema.issues.jurisdictionId, schema.jurisdictions.id))
+    .where(and(...conditions))
+    .orderBy(desc(schema.issues.createdAt))
+    .limit(limit * 4);
+
+  // Prefer geographically close matches; fall back to most recent.
+  const withDistance = rows
+    .map(({ issue, jurisdiction: j }) => ({
+      code: issue.code,
+      category: issue.category,
+      description: issue.description.slice(0, 160),
+      status: issue.status,
+      village: j.village,
+      createdAt: issue.createdAt.toISOString(),
+      distanceM:
+        latitude != null &&
+        longitude != null &&
+        issue.latitude != null &&
+        issue.longitude != null
+          ? Math.round(haversineMeters(latitude, longitude, issue.latitude, issue.longitude))
+          : null,
+    }))
+    .sort((a, b) => {
+      if (a.distanceM == null && b.distanceM == null) return 0;
+      if (a.distanceM == null) return 1;
+      if (b.distanceM == null) return -1;
+      return a.distanceM - b.distanceM;
+    })
+    .slice(0, limit);
+
+  return withDistance;
+}

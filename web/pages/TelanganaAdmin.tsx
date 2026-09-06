@@ -1,9 +1,14 @@
 import { useState } from 'react';
-import { ArrowLeft, MapPin, Users, Building2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Users, Building2, LogOut } from 'lucide-react';
 import { telanganaData, getTotalVillages, getTotalMandals, type District, type Mandal } from '@shared/data/telangana';
 import { useNavigate } from 'react-router';
 
 type ViewLevel = 'districts' | 'mandals' | 'villages';
+
+async function logout(navigate: (p: string) => void) {
+  await fetch('/api/auth/logout', { credentials: 'same-origin' });
+  navigate('/login');
+}
 
 function DemoStatsBar({ label }: { label: string }) {
   return (
@@ -43,10 +48,28 @@ export default function TelanganaAdmin() {
 
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
-      <header className="bg-white border-b border-[#E5E7EB]">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-heading text-[#67001A]">Telangana Command Center</h1>
-          <p className="text-sm text-[#64748B] mt-1 font-telugu telugu-text">తెలంగాణ రాష్ట్ర నిర్వాహక డాష్‌బోర్డ్</p>
+      <header className="bg-white border-b border-[#E5E7EB] sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm font-semibold text-[#1F2937] hover:bg-slate-50"
+          >
+            <ArrowLeft className="w-4 h-4" aria-hidden />
+            Dashboard
+          </button>
+          <div className="text-center min-w-0">
+            <h1 className="text-lg md:text-xl font-heading text-[#67001A] leading-tight truncate">Telangana Command Center</h1>
+            <p className="text-[11px] text-[#64748B] font-telugu telugu-text truncate">తెలంగాణ రాష్ట్ర నిర్వాహక డాష్‌బోర్డ్</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void logout(navigate)}
+            className="p-2 rounded-lg border border-[#E5E7EB] text-[#64748B] hover:bg-slate-50"
+            aria-label="Logout"
+          >
+            <LogOut size={18} />
+          </button>
         </div>
       </header>
 

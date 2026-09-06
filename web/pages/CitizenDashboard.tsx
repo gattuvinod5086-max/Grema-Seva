@@ -16,7 +16,9 @@ import { UI } from '@web/constants/design';
 import { BRANDING } from '@web/constants/branding';
 import { useApi } from '@web/hooks/useApi';
 import { computeVillageAnalytics } from '@shared/services/analytics';
-import type { IssueDetail, IssueListResponse, User } from '@shared/types';
+import type { IssueDetail, IssueListResponse, User, VillageIssueStats } from '@shared/types';
+import { ISSUE_CATEGORIES } from '@shared/constants/governance';
+import { ISSUE_STATUSES } from '@shared/types';
 
 function QuickAction({
   icon,
@@ -60,14 +62,25 @@ export default function CitizenDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<IssueDetail | null>(null);
   const [, setDetailLoading] = useState(false);
+  const [tab, setTab] = useState<'village' | 'mine'>('village');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const navigate = useNavigate();
 
   const { data: user, error: userError, isLoading: userLoading, refetch: refetchUser } =
     useApi<{ user: User }>('/api/users/me');
   const { data: issuesData, error: issuesError, isLoading: issuesLoading, refetch: refetchIssues } =
     useApi<IssueListResponse>('/api/issues');
+  const { data: stats } = useApi<VillageIssueStats>('/api/issues/stats');
 
   const issues = useMemo(() => issuesData?.issues ?? [], [issuesData]);
+  const me = user?.user ?? null;
+
+  const filteredIssues = useMemo(() => {
+    let list = issues;
+    if (categoryFilter) list = list.filter((i) => i.category === categoryFilter);
+    if (tab === 'mine') list = list.filter((i) => i.reporterId != null && i.reporterId === me?.id);
+    return list;
+  }, [issues, categoryFilter, tab, me?.id]);
 
   const openIssueDetail = async (issueId: string) => {
     setDetailLoading(true);
@@ -80,11 +93,9 @@ export default function CitizenDashboard() {
     }
   };
 
-  const me = user?.user ?? null;
-
   const activeIssues = useMemo(
-    () => (issues ?? []).filter((i) => !['Resolved', 'Closed'].includes(i.status)),
-    [issues]
+    () => filteredIssues.filter((i) => !['Resolved', 'Closed'].includes(i.status)),
+    [filteredIssues]
   );
 
   const villageScore = useMemo(() => {
@@ -211,13 +222,61 @@ export default function CitizenDashboard() {
           </section>
         )}
 
-        {/* My issues */}
+        {/* Village issue board: stats + filters + list */}
         <section id="my-issues" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-[#1F2937]">My active issues</h3>
-            {(issues?.length ?? 0) > 0 && (
-              <span className="text-xs font-semibold text-[#64748B]">{activeIssues.length} open</span>
-            )}
+            <h3 className="text-lg font-semibold text-[#1F2937]">
+              {me?.village ? `${me.village} issues` : 'Issues'}
+            </h3>
+            <span className="text-xs font-semibold text-[#64748B]">{activeIssues.length} open</span>
+          </div>
+
+          {/* Status counts */}
+          {stats && (
+            <div className="flex flex-wrap gap-2">
+              {ISSUE_STATUSES.map((s) =>
+                stats.byStatus[s] ? (
+                  <span
+                    key={s}
+                    className="px-2.5 py-1 rounded-full text-xs font-semibold bg-white border border-[#E5E7EB] text-[#1F2937]"
+                  >
+                    {s}: <strong>{stats.byStatus[s]}</strong>
+                  </span>
+                ) : null
+              )}
+              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-[#67001A] text-white">
+                Total: {stats.total}
+              </span>
+            </div>
+          )}
+
+          {/* Tabs + category filter */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex rounded-xl border border-[#E5E7EB] overflow-hidden">
+              {(['village', 'mine'] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTab(t)}
+                  className={`px-4 py-2 text-sm font-semibold transition-colors ${
+                    tab === t ? 'bg-[#67001A] text-white' : 'bg-white text-[#64748B] hover:bg-slate-50'
+                  }`}
+                >
+                  {t === 'village' ? 'Village' : 'My reports'}
+                </button>
+              ))}
+            </div>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="ml-auto px-3 py-2 rounded-xl border border-[#E5E7EB] text-sm text-[#1F2937] bg-white"
+              aria-label="Filter by category"
+            >
+              <option value="">All categories</option>
+              {ISSUE_CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
           </div>
 
           {issuesLoading ? (
@@ -238,14 +297,16 @@ export default function CitizenDashboard() {
                 </p>
               )}
             </GsCard>
-          ) : activeIssues.length === 0 ? (
+          ) : filteredIssues.length === 0 ? (
             <GsCard className="text-center py-10">
               <ClipboardList size={32} className="mx-auto text-[#64748B] mb-3" aria-hidden />
-              <p className="font-semibold text-[#1F2937]">No active issues</p>
+              <p className="font-semibold text-[#1F2937]">
+                {tab === 'mine' ? 'You haven&apos;t reported anything yet' : 'No issues match the filter'}
+              </p>
               <p className="text-sm text-[#64748B] mt-1">Tap &quot;Report a Problem&quot; when you need help.</p>
             </GsCard>
           ) : (
-            <IssueList issues={activeIssues} onSelectIssue={(i) => void openIssueDetail(i.id)} />
+            <IssueList issues={filteredIssues} onSelectIssue={(i) => void openIssueDetail(i.id)} />
           )}
         </section>
       </main>

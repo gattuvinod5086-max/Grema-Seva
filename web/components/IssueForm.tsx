@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { X, Upload, Camera, AlertTriangle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { X, Upload, Camera, AlertTriangle, Copy } from 'lucide-react';
 import { classifyIssue } from '@shared/services/issueClassification';
 import VoiceInput from '@web/components/VoiceInput';
 import LocationPicker from '@web/components/map/LocationPicker';
 import { ISSUE_CATEGORIES } from '@shared/constants/governance';
-import type { CreateIssue } from '@shared/types';
+import type { CreateIssue, SimilarIssue } from '@shared/types';
 
 interface IssueFormProps {
   onClose: () => void;
@@ -21,6 +21,32 @@ export default function IssueForm({ onClose, onSubmitted }: IssueFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [duplicateWarning, setDuplicateWarning] = useState(false);
+  const [similar, setSimilar] = useState<SimilarIssue[]>([]);
+
+  // As soon as a category is picked, surface open issues already reported
+  // in the village (nearest first) so the user doesn't file duplicates.
+  useEffect(() => {
+    if (!category) {
+      setSimilar([]);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams({ category });
+      if (latitude != null && longitude != null) {
+        params.set('lat', String(latitude));
+        params.set('lng', String(longitude));
+      }
+      fetch(`/api/issues/similar?${params}`, { credentials: 'same-origin', signal: controller.signal })
+        .then((r) => (r.ok ? r.json() : { similar: [] }))
+        .then((b) => setSimilar(b.similar ?? []))
+        .catch(() => {});
+    }, 600);
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [category, latitude, longitude]);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -162,6 +188,34 @@ export default function IssueForm({ onClose, onSubmitted }: IssueFormProps) {
               ))}
             </div>
           </div>
+
+          {/* Already-reported check */}
+          {similar.length > 0 && (
+            <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4">
+              <p className="text-sm font-bold text-amber-900 flex items-center gap-2">
+                <Copy size={15} />
+                Already reported in your village ({similar.length})
+              </p>
+              <p className="text-xs text-amber-700 mt-1">
+                If yours is the same problem, you don&apos;t need to file again — the sarpanch
+                already has it. Otherwise, continue below.
+              </p>
+              <ul className="mt-3 space-y-2">
+                {similar.map((s) => (
+                  <li key={s.code} className="bg-white rounded-lg border border-amber-200 p-3 text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-slate-800">{s.category}</span>
+                      <span className="text-xs font-semibold text-slate-500">
+                        {s.status}
+                        {s.distanceM != null ? ` · ~${s.distanceM} m away` : ''}
+                      </span>
+                    </div>
+                    <p className="text-slate-600 mt-0.5 line-clamp-2">{s.description}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Description */}
           <div>

@@ -26,8 +26,9 @@ export const ISSUE_PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"] as const;
 export type IssuePriority = (typeof ISSUE_PRIORITIES)[number];
 
 /**
- * 'private': visible to the reporter and jurisdiction officials only.
- * 'village': additionally visible to registered users of the same village.
+ * 'village': visible to everyone registered in the same village (the
+ * transparency default — villagers can see what's already reported).
+ * 'private': reporter and jurisdiction officials only.
  */
 export const ISSUE_VISIBILITIES = ["private", "village"] as const;
 export type IssueVisibility = (typeof ISSUE_VISIBILITIES)[number];
@@ -57,7 +58,7 @@ export const issues = pgTable(
     assignedToId: uuid("assigned_to_id").references(() => users.id),
 
     /** 'private' | 'village' */
-    visibility: text("visibility").$type<IssueVisibility>().notNull().default("private"),
+    visibility: text("visibility").$type<IssueVisibility>().notNull().default("village"),
 
     slaHours: integer("sla_hours"),
     slaDueAt: timestamp("sla_due_at", { withTimezone: true }),

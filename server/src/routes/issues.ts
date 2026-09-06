@@ -12,10 +12,12 @@ import {
   addProgressNote,
   confirmResolution,
   reopenIssue,
+  getVillageIssueStats,
+  findSimilarIssues,
 } from "../services/issues";
 import { issueVisibilityFilter, canViewIssue, assertCanManageIssue } from "../services/issueScope";
-import { ISSUE_CATEGORIES } from "../../../shared/constants/governance";
 import { ISSUE_STATUSES, ISSUE_VISIBILITIES } from "../db/schema";
+import { ISSUE_CATEGORIES } from "../../../shared/constants/governance";
 import { getStorage, ALLOWED_MIME, MAX_UPLOAD_BYTES } from "../providers/storage";
 
 const createIssueSchema = z.object({
@@ -41,13 +43,39 @@ const progressSchema = z.object({
 
 export const issuesRoutes = new Hono()
   .use("*", requireAuth)
+  /* Village stats: how many issues and their status, scoped to the caller. */
+  .get("/stats", async (c) => {
+    const { user, jurisdiction } = getAuth(c);
+    if (!jurisdiction) return c.json({ total: 0, byStatus: {}, byCategory: {} });
+    return c.json(await getVillageIssueStats(issueVisibilityFilter(user, jurisdiction)));
+  })
+  /* Similar open issues in the village — check before filing. */
+  .get("/similar", async (c) => {
+    const { user, jurisdiction } = getAuth(c);
+    if (!jurisdiction) return c.json({ similar: [] });
+
+    const category = c.req.query("category");
+    if (!category || !ISSUE_CATEGORIES.includes(category as (typeof ISSUE_CATEGORIES)[number])) {
+      throw badRequest("Provide a valid category");
+    }
+    const lat = c.req.query("lat") ? Number(c.req.query("lat")) : null;
+    const lng = c.req.query("lng") ? Number(c.req.query("lng")) : null;
+
+    const similar = await findSimilarIssues(
+      issueVisibilityFilter(user, jurisdiction),
+      category,
+      lat != null && !Number.isNaN(lat) ? lat : null,
+      lng != null && !Number.isNaN(lng) ? lng : null
+    );
+    return c.json({ similar });
+  })
   /* List — the visibility filter is composed from the session user. */
   .get("/", async (c) => {
     const { user, jurisdiction } = getAuth(c);
     const page = Math.max(1, Number(c.req.query("page") ?? "1") || 1);
     const limit = Math.min(100, Math.max(1, Number(c.req.query("limit") ?? "20") || 20));
 
-    const result = await listIssuesForUser(issueVisibilityFilter(user, jurisdiction), {
+    const result = await listIssuesForUser(user, issueVisibilityFilter(user, jurisdiction), {
       status: c.req.query("status") ?? undefined,
       category: c.req.query("category") ?? undefined,
       page,

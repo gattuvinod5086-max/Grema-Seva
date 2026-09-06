@@ -151,3 +151,19 @@ export const IssueListResponseSchema = z.object({
   limit: z.number(),
 });
 export type IssueListResponse = z.infer<typeof IssueListResponseSchema>;
+
+export interface VillageIssueStats {
+  total: number;
+  byStatus: Record<string, number>;
+  byCategory: Record<string, Record<string, number>>;
+}
+
+export interface SimilarIssue {
+  code: string;
+  category: string;
+  description: string;
+  status: string;
+  village: string;
+  createdAt: string;
+  distanceM: number | null;
+}

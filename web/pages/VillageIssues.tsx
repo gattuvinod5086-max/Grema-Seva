@@ -1,14 +1,18 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ArrowLeft, AlertCircle, RefreshCw } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useApi } from "@web/hooks/useApi";
 import IssueList from "@web/components/IssueList";
 import IssuesMap from "@web/components/map/IssuesMap";
 import type { IssueListResponse } from "@shared/types";
+import { ISSUE_CATEGORIES } from "@shared/constants/governance";
+import { ISSUE_STATUSES } from "@shared/types";
 
 export default function VillageIssues() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
 
   const district = searchParams.get("district") ?? "";
   const mandal = searchParams.get("mandal") ?? "";
@@ -16,10 +20,21 @@ export default function VillageIssues() {
 
   // The API scopes results server-side to the signed-in official's
   // jurisdiction; location params here are display context only.
-  const apiUrl = useMemo(() => "/api/issues?limit=50", []);
+  const apiUrl = useMemo(() => {
+    const params = new URLSearchParams({ limit: "50" });
+    if (statusFilter) params.set("status", statusFilter);
+    if (categoryFilter) params.set("category", categoryFilter);
+    return `/api/issues?${params}`;
+  }, [statusFilter, categoryFilter]);
 
   const { data, isLoading, error, refetch } = useApi<IssueListResponse>(apiUrl);
   const issues = data?.issues ?? [];
+
+  const stats = useMemo(() => {
+    const byStatus: Record<string, number> = {};
+    for (const i of issues) byStatus[i.status] = (byStatus[i.status] ?? 0) + 1;
+    return byStatus;
+  }, [issues]);
 
   const title = village || mandal || district || "Issues";
   const subtitle = [district, mandal, village].filter(Boolean).join(" • ");
@@ -61,6 +76,38 @@ export default function VillageIssues() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        <section className="flex flex-wrap items-center gap-2">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white"
+            aria-label="Filter by status"
+          >
+            <option value="">All statuses</option>
+            {ISSUE_STATUSES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white"
+            aria-label="Filter by category"
+          >
+            <option value="">All categories</option>
+            {ISSUE_CATEGORIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <div className="ml-auto flex flex-wrap gap-2">
+            {Object.entries(stats).map(([s, n]) => (
+              <span key={s} className="px-2.5 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-700">
+                {s}: <strong>{n}</strong>
+              </span>
+            ))}
+          </div>
+        </section>
+
         <section>
           <h2 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-3">Map view</h2>
           <IssuesMap issues={issues} />

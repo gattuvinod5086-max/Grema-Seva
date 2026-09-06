@@ -15,6 +15,13 @@
       "when": 1788703217637,
       "tag": "0001_normal_masque",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788714163826,
+      "tag": "0002_ambitious_karnak",
+      "breakpoints": true
     }
   ]
 }

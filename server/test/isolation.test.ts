@@ -24,6 +24,7 @@ let sarpanchY: Actor;
 let wardMemberX1: Actor;
 let adminX: Actor;
 let citizenX: Actor;
+let citizenX2: Actor;
 let citizenY: Actor;
 let pendingSarpanch: Actor;
 
@@ -155,6 +156,7 @@ describe("isolation contract", () => {
     });
     adminX = await insertUser({ name: "Admin A", role: "admin", jurisdictionId: villageX.id });
     citizenX = await insertUser({ name: "Citizen X", role: "citizen", jurisdictionId: villageX.id });
+    citizenX2 = await insertUser({ name: "Citizen X2", role: "citizen", jurisdictionId: villageX.id });
     citizenY = await insertUser({ name: "Citizen Y", role: "citizen", jurisdictionId: villageY.id });
     pendingSarpanch = await insertUser({
       name: "Pending Sarpanch",
@@ -194,6 +196,53 @@ describe("isolation contract", () => {
     // citizenY tries to read citizenX's private issue
     const res = await req(citizenY, `/api/issues/${issueX1}`);
     expect(res.status).toBe(404);
+  });
+
+  it("newly filed issues are village-public: neighbours see them, without reporter identity", async () => {
+    // citizenX files via the API — default visibility is now 'village'
+    const created = await req(citizenX, "/api/issues", "POST", {
+      category: "Sanitation",
+      description: "Garbage not collected near the community hall",
+    });
+    expect(created.status).toBe(201);
+    const { issue } = await created.json();
+
+    // A same-village neighbour can read it…
+    const neighbour = await req(citizenX2, `/api/issues/${issue.id}`);
+    expect(neighbour.status).toBe(200);
+    const neighbourBody = (await neighbour.json()).issue;
+    // …but the reporter's identity is masked for them
+    expect(neighbourBody.reporterId).toBeNull();
+
+    // …while the reporter sees their own identity
+    const own = await req(citizenX, `/api/issues/${issue.id}`);
+    expect(((await own.json()).issue).reporterId).toBe(citizenX.user.id);
+
+    // Officials see the reporter identity
+    const list = await req(wardMemberX1, "/api/issues?category=Sanitation");
+    const listed = (await list.json()).issues.find((i: { id: string }) => i.id === issue.id);
+    expect(listed).toBeDefined();
+    expect(listed.reporterId).toBe(citizenX.user.id);
+  });
+
+  it("village stats are scoped and count by status", async () => {
+    const res = await req(sarpanchX, "/api/issues/stats");
+    const stats = await res.json();
+    expect(stats.total).toBeGreaterThanOrEqual(2); // village-public village X fixtures
+    expect(stats.byStatus["Submitted"]).toBeGreaterThan(0);
+    // village Y numbers must not leak in
+    const resY = await req(sarpanchY, "/api/issues/stats");
+    const statsY = await resY.json();
+    expect(statsY.total).toBeGreaterThanOrEqual(1);
+    expect(statsY.total).toBeLessThan(stats.total);
+  });
+
+  it("similar-issues search finds village-public matches for a category", async () => {
+    const res = await req(citizenX, "/api/issues/similar?category=Sanitation");
+    const { similar } = await res.json();
+    expect(similar.length).toBeGreaterThanOrEqual(1);
+    expect(similar[0].status).not.toBe("Closed");
+    expect(similar[0].code).toMatch(/^GS-/);
   });
 
   it("sarpanch of village X sees all village X issues, none of village Y", async () => {

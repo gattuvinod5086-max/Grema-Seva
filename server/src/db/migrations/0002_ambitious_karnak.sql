@@ -1,0 +1,1 @@
+ALTER TABLE "issues" ALTER COLUMN "visibility" SET DEFAULT 'village';

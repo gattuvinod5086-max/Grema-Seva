@@ -4,7 +4,7 @@ import Login from "@web/pages/Login";
 import PhoneLogin from "@web/pages/PhoneLogin";
 import OfficialRegister from "@web/pages/OfficialRegister";
 import AdminOfficials from "@web/pages/AdminOfficials";
-import CitizenDashboard from "@web/pages/CitizenDashboard";
+import RoleHome from "@web/pages/RoleHome";
 import TelanganaAdmin from "@web/pages/TelanganaAdmin";
 import VillageIssues from "@web/pages/VillageIssues";
 import Registration from "@web/pages/Registration";
@@ -41,9 +41,7 @@ export default function App() {
         <Route
           path="/"
           element={
-            <ProtectedRoute key="home">
-              <CitizenDashboard />
-            </ProtectedRoute>
+            <RoleHome />
           }
         />
         <Route

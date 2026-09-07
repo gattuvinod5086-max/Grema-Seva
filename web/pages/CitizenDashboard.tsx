@@ -145,6 +145,15 @@ export default function CitizenDashboard() {
             <div className="w-9 h-9 rounded-lg bg-[#67001A] text-white flex items-center justify-center text-xs font-bold">
               {getInitials(me?.name ?? null)}
             </div>
+            {me?.role === 'super_admin' && (
+              <button
+                type="button"
+                onClick={() => navigate('/admin/officials')}
+                className="px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs font-bold text-[#67001A] hover:bg-slate-50"
+              >
+                Registrations
+              </button>
+            )}
             <button
               type="button"
               onClick={() => navigate('/telangana')}
@@ -166,6 +175,15 @@ export default function CitizenDashboard() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+        {/* Pending official notice */}
+        {me && me.role !== 'citizen' && me.role !== 'super_admin' && me.approvalStatus === 'pending' && (
+          <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 text-sm text-amber-900">
+            <strong>Your official registration is awaiting approval.</strong> You currently have
+            citizen-level access. Once the super admin approves you, sarpanch/official controls
+            will appear here automatically.
+          </div>
+        )}
+
         {/* Greeting & village identity */}
         <section className="space-y-2">
           <p className="text-sm text-[#64748B]">{greeting()},</p>
@@ -321,9 +339,10 @@ export default function CitizenDashboard() {
         />
       )}
 
-      {selectedIssue && (
+      {selectedIssue && me && (
         <IssueDetailModal
           issue={selectedIssue}
+          me={me}
           onClose={() => setSelectedIssue(null)}
           onChanged={() => {
             void openIssueDetail(selectedIssue.id);

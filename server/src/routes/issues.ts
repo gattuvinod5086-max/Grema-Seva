@@ -125,8 +125,7 @@ export const issuesRoutes = new Hono()
     const id = c.req.param("id") ?? "";
     const { status, note } = statusSchema.parse(await c.req.json());
 
-    const issueJurisdiction = await loadIssueJurisdiction(id);
-    const updated = await updateIssueStatus(user, jurisdiction, issueJurisdiction, id, status, note);
+    const updated = await updateIssueStatus(user, jurisdiction, id, status, note);
     return c.json({ issue: updated });
   })
   /* Official progress report. */
@@ -135,8 +134,7 @@ export const issuesRoutes = new Hono()
     const id = c.req.param("id") ?? "";
     const { note } = progressSchema.parse(await c.req.json());
 
-    const issueJurisdiction = await loadIssueJurisdiction(id);
-    const update = await addProgressNote(user, jurisdiction, issueJurisdiction, id, note);
+    const update = await addProgressNote(user, jurisdiction, id, note);
     return c.json({ update }, 201);
   })
   /* Reporter confirms resolution → Closed. */
@@ -167,8 +165,7 @@ export const issuesRoutes = new Hono()
     const isReporter = issue.reporterId === user.id;
     if (!isReporter) {
       // Officials may attach evidence; ACL mirrors the manage rule.
-      const issueJurisdiction = await loadIssueJurisdiction(id);
-      assertCanManageIssue(user, jurisdiction, issue, issueJurisdiction);
+      assertCanManageIssue(user, jurisdiction, issue);
     }
 
     const body = await c.req.parseBody();
@@ -207,16 +204,6 @@ export const issuesRoutes = new Hono()
     return c.json({ attachment: { id: attachment.id, key: attachment.storageKey, kind, mime, phase } }, 201);
   });
 
-async function loadIssueJurisdiction(issueId: string) {
-  const [row] = await db
-    .select({ jurisdiction: schema.jurisdictions })
-    .from(schema.issues)
-    .innerJoin(schema.jurisdictions, eq(schema.issues.jurisdictionId, schema.jurisdictions.id))
-    .where(eq(schema.issues.id, issueId))
-    .limit(1);
-  if (!row) throw notFound("Issue not found");
-  return row.jurisdiction;
-}
 
 /** Auth-gated file serving — no issue photo is readable without a session. */
 export const filesRoutes = new Hono()

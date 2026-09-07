@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Navigate } from 'react-router';
+import { Link, Navigate } from 'react-router';
 import { CheckCircle2, XCircle, Loader2, ShieldAlert } from 'lucide-react';
 import { useApi } from '@web/hooks/useApi';
 import type { OfficialRecord, User } from '@shared/types';
@@ -60,6 +60,7 @@ export default function AdminOfficials() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 text-slate-600">
         <ShieldAlert className="w-10 h-10 text-red-600" />
         <p className="font-semibold">Super admin access only.</p>
+        <Link to="/" className="text-sm underline text-[#67001A]">Go to dashboard</Link>
       </div>
     );
   }
@@ -72,7 +73,13 @@ export default function AdminOfficials() {
             <h1 className="text-lg font-bold text-slate-900">Official Registrations</h1>
             <p className="text-xs text-slate-500">Approve or decline sarpanch, ward member and admin sign-ups</p>
           </div>
-          <div className="flex gap-1">
+          <div className="flex items-center gap-2">
+            <Link
+              to="/"
+              className="px-3 py-2 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Issue board
+            </Link>
             {(['pending', 'approved', 'declined'] as StatusFilter[]).map((s) => (
               <button
                 key={s}

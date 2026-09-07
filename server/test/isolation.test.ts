@@ -291,12 +291,19 @@ describe("isolation contract", () => {
     expect(forbidden.status).toBe(403);
   });
 
-  it("district admin sees all villages of their district only", async () => {
+  it("admin manages the whole app: sees and updates every village's issues", async () => {
     const list = await req(adminX, "/api/issues");
     const ids = (await list.json()).issues.map((i: { id: string }) => i.id);
     expect(ids).toContain(issueX1);
     expect(ids).toContain(issueX2);
-    expect(ids).not.toContain(issueY1);
+    expect(ids).toContain(issueY1); // app-wide, not village-scoped
+
+    // cross-village status update is ALLOWED for admin
+    const update = await req(adminX, `/api/issues/${issueY1}/status`, "PATCH", {
+      status: "Acknowledged",
+      note: "App-level admin action",
+    });
+    expect(update.status).toBe(200);
   });
 
   it("pending sarpanch holds citizen-level access only", async () => {

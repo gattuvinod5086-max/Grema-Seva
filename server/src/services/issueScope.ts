@@ -1,6 +1,6 @@
-import { and, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
-import { db, schema } from "../db/client";
+import { schema } from "../db/client";
 import type { Jurisdiction, User } from "../db/schema";
 import { forbidden } from "../middleware/error";
 
@@ -10,8 +10,7 @@ import { forbidden } from "../middleware/error";
  * data because the filter is composed from the authenticated user.
  *
  * Role matrix (POC):
- *   super_admin                 → everything
- *   admin (approved)            → all issues in the admin's district
+ *   super_admin, admin          → the whole app (all villages)
  *   sarpanch (approved)         → all issues in the sarpanch's village
  *   ward_member (approved)      → their ward's issues + issues they reported
  *   citizen / pending / declined→ own issues + 'village'-visible issues
@@ -31,23 +30,10 @@ export function issueVisibilityFilter(
   user: User,
   userJurisdiction: Jurisdiction | null
 ): SQL | undefined {
-  if (user.role === "super_admin") return undefined; // no restriction
+  // Admin manages the whole app; super admin the same.
+  if (user.role === "super_admin" || user.role === "admin") return undefined;
 
   const own = eq(schema.issues.reporterId, user.id);
-
-  if (user.role === "admin" && isApprovedOfficial(user) && userJurisdiction) {
-    // District-wide view via the canonical geography.
-    return or(
-      own,
-      inArray(
-        schema.issues.jurisdictionId,
-        db
-          .select({ id: schema.jurisdictions.id })
-          .from(schema.jurisdictions)
-          .where(eq(schema.jurisdictions.district, userJurisdiction.district))
-      )
-    );
-  }
 
   if (isApprovedOfficial(user) && userJurisdiction) {
     const villageScope = eq(schema.issues.jurisdictionId, userJurisdiction.id);
@@ -82,17 +68,9 @@ export async function canViewIssue(
   userJurisdiction: Jurisdiction | null,
   issue: { reporterId: string; jurisdictionId: string; visibility: string; wardNumber: string | null }
 ): Promise<boolean> {
-  if (user.role === "super_admin") return true;
+  // Admin manages the whole app.
+  if (user.role === "super_admin" || user.role === "admin") return true;
   if (issue.reporterId === user.id) return true;
-
-  if (user.role === "admin" && isApprovedOfficial(user) && userJurisdiction) {
-    const [j] = await db
-      .select()
-      .from(schema.jurisdictions)
-      .where(eq(schema.jurisdictions.id, issue.jurisdictionId))
-      .limit(1);
-    return j?.district === userJurisdiction.district;
-  }
 
   if (isApprovedOfficial(user) && userJurisdiction) {
     if (issue.jurisdictionId !== userJurisdiction.id) return false;
@@ -111,20 +89,16 @@ export async function canViewIssue(
 export function assertCanManageIssue(
   user: User,
   userJurisdiction: Jurisdiction | null,
-  issue: { jurisdictionId: string; wardNumber: string | null },
-  issueJurisdiction: Jurisdiction | null
+  issue: { jurisdictionId: string; wardNumber: string | null }
 ): void {
-  if (user.role === "super_admin") return;
+  // Admin manages the whole app.
+  if (user.role === "super_admin" || user.role === "admin") return;
 
   if (!isApprovedOfficial(user) || !userJurisdiction) {
     throw forbidden("Only approved officials can update issues");
   }
 
-  if (user.role === "admin") {
-    if (issueJurisdiction?.district === userJurisdiction.district) return;
-    throw forbidden("This issue belongs to a different district");
-  }
-
+  // Sarpanch: village-scoped. Ward member: ward-scoped.
   if (issue.jurisdictionId !== userJurisdiction.id) {
     throw forbidden("This issue belongs to a different village");
   }

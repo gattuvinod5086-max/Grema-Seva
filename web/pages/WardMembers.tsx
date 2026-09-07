@@ -1,75 +1,91 @@
-import { ArrowLeft, Phone, MapPin, User, Crown, Sparkles } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ArrowLeft, Phone, MapPin, User, Crown, Sparkles, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useApi } from '@web/hooks/useApi';
 import type { User as UserType } from '@shared/types';
+import {
+  telanganaData,
+  getMandalNames,
+  getVillageNames,
+  sanitizeGeoSelection,
+  type District,
+} from '@shared/data/telangana';
 
+interface OfficialCard {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  wardNumber: string | null;
+}
+
+interface DirectoryResponse {
+  village: { district: string; mandal: string; village: string } | null;
+  sarpanch: OfficialCard | null;
+  wardMembers: OfficialCard[];
+}
+
+/**
+ * Village directory: the real sarpanch and ward members registered in the
+ * app for a village. Citizens see their own village; admins can look up
+ * any village.
+ */
 export function WardMembers() {
   const navigate = useNavigate();
-  const { data: user } = useApi<UserType>('/api/users/me');
+  const { data: meData, isLoading: meLoading } = useApi<{ user: UserType }>('/api/users/me');
+  const me = meData?.user ?? null;
 
-  // Generate Sarpanch data for village
-  const getSarpanch = (villageName: string, districtName: string) => {
-    const villageHash = villageName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const firstNames = ['Venkatesh', 'Laxmi', 'Narasimha', 'Savitha', 'Balaji', 'Manjula', 'Srinivas', 'Padma', 'Krishna', 'Rekha'];
-    const lastNames = ['Reddy', 'Rao', 'Naidu', 'Goud', 'Kumar', 'Prasad'];
-    
-    return {
-      name: `${firstNames[villageHash % firstNames.length]} ${lastNames[villageHash % lastNames.length]}`,
-      phone: `+91 ${9500000000 + villageHash}`,
-      email: `sarpanch.${villageName.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
-      village: villageName,
-      district: districtName
-    };
-  };
+  const [picked, setPicked] = useState<{ district: string; mandal: string; village: string } | null>(null);
 
-  // Generate 15 ward members for village
-  const getWardMembers = (villageName: string, districtName: string) => {
-    const villageHash = villageName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const firstNames = [
-      'Rajesh', 'Srinivas', 'Lakshmi', 'Padma', 'Kumar', 'Ramesh', 'Sunita',
-      'Anitha', 'Venkat', 'Priya', 'Suresh', 'Kavitha', 'Ravi', 'Swathi', 'Mahesh',
-      'Deepa', 'Kiran', 'Vijaya', 'Anil', 'Jyothi'
-    ];
-    const lastNames = ['Reddy', 'Rao', 'Naidu', 'Goud', 'Kumar', 'Prasad', 'Sharma', 'Patel'];
-    
-    return Array.from({ length: 15 }, (_, i) => ({
-      id: `${villageName}-ward-${i + 1}`,
-      name: `${firstNames[(villageHash + i) % firstNames.length]} ${lastNames[(villageHash + i) % lastNames.length]}`,
-      wardNumber: i + 1,
-      phone: `+91 ${9000000000 + (villageHash * 100) + i}`,
-      village: villageName,
-      district: districtName
-    }));
-  };
+  // Viewers with a village see it by default; admins pick one.
+  const directoryUrl = useMemo(() => {
+    if (me?.district && me?.mandal && me?.village) {
+      return '/api/users/directory';
+    }
+    if (picked) {
+      const p = new URLSearchParams(picked as Record<string, string>);
+      return `/api/users/directory?${p}`;
+    }
+    return null;
+  }, [me?.district, me?.mandal, me?.village, picked]);
 
-  const sarpanch = user?.village && user?.district ? getSarpanch(user.village, user.district) : null;
-  const wardMembers = user?.village && user?.district ? getWardMembers(user.village, user.district) : [];
+  const { data: directory, isLoading: dirLoading } = useApi<DirectoryResponse>(directoryUrl ?? '/api/users/directory', {
+    enabled: directoryUrl !== null,
+  });
 
-  if (!user) {
+  const [district, setDistrict] = useState('');
+  const [mandal, setMandal] = useState('');
+  const [village, setVillage] = useState('');
+
+  const lookupFor = (d: string, m: string, v: string) => setPicked({ district: d, mandal: m, village: v });
+
+  if (meLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-blue-50 to-purple-50 flex items-center justify-center">
-        <div className="animate-spin w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full"></div>
+        <Loader2 className="w-12 h-12 animate-spin text-pink-500" />
       </div>
     );
   }
 
-  if (!user.village || !user.district || !user.mandal) {
+  if (!me) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md text-center">
           <div className="text-6xl mb-4">📍</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Location Not Set</h2>
-          <p className="text-gray-600 mb-6">Please complete your registration to view Sarpanch and Ward Members for your village.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Sign in required</h2>
+          <p className="text-gray-600 mb-6">Sign in to view the village directory.</p>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/login')}
             className="bg-gradient-to-r from-pink-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all"
           >
-            Go to Dashboard
+            Go to Login
           </button>
         </div>
       </div>
     );
   }
+
+  const needsPick = !directory?.village;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-blue-50 to-purple-50">
@@ -100,17 +116,78 @@ export function WardMembers() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-blue-600 bg-clip-text text-transparent">
               Sarpanch & Ward Members
             </h1>
-            <p className="text-gray-600 mt-2 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-pink-600" />
-              <span className="font-semibold">{user.village}, {user.mandal} - {user.district} District</span>
-            </p>
+            {directory?.village && (
+              <p className="text-gray-600 mt-2 flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-pink-600" />
+                <span className="font-semibold">
+                  {directory.village.village}, {directory.village.mandal} - {directory.village.district} District
+                </span>
+              </p>
+            )}
           </div>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Village lookup for admins / users without a village */}
+        {needsPick && (
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 max-w-md">
+            <h2 className="font-bold text-gray-900 mb-1">Choose a village</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              Your profile has no village set. Pick one to view its registered representatives.
+            </p>
+            <div className="space-y-2">
+              <select
+                className="w-full p-3 rounded-xl border-2 border-gray-200 text-sm"
+                value={district}
+                onChange={(e) => {
+                  const next = sanitizeGeoSelection(e.target.value, '', '');
+                  setDistrict(next.district);
+                  setMandal(next.mandal);
+                  setVillage(next.village);
+                }}
+              >
+                <option value="">District</option>
+                {telanganaData.map((d: District) => (
+                  <option key={d.name} value={d.name}>{d.name}</option>
+                ))}
+              </select>
+              {district && (
+                <select className="w-full p-3 rounded-xl border-2 border-gray-200 text-sm" value={mandal} onChange={(e) => { setMandal(e.target.value); setVillage(''); }}>
+                  <option value="">Mandal</option>
+                  {getMandalNames(district).map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              )}
+              {mandal && (
+                <select className="w-full p-3 rounded-xl border-2 border-gray-200 text-sm" value={village} onChange={(e) => setVillage(e.target.value)}>
+                  <option value="">Village</option>
+                  {getVillageNames(district, mandal).map((v) => (
+                    <option key={v} value={v}>{v}</option>
+                  ))}
+                </select>
+              )}
+              <button
+                type="button"
+                disabled={!village}
+                onClick={() => lookupFor(district, mandal, village)}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-600 to-blue-600 text-white font-semibold disabled:opacity-50"
+              >
+                View directory
+              </button>
+            </div>
+          </div>
+        )}
+
+        {dirLoading && !needsPick && (
+          <div className="text-center py-16">
+            <Loader2 className="w-10 h-10 animate-spin mx-auto text-pink-500" />
+          </div>
+        )}
+
         {/* Sarpanch Card */}
-        {sarpanch && (
+        {directory?.sarpanch && (
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-4">
               <Crown className="w-8 h-8 text-yellow-500" />
@@ -120,10 +197,10 @@ export function WardMembers() {
               <div className="bg-white/10 backdrop-blur-sm px-8 py-5">
                 <div className="flex items-center space-x-3">
                   <Crown className="w-8 h-8 text-yellow-300" />
-                  <span className="text-white font-bold text-2xl">Sarpanch of {user.village}</span>
+                  <span className="text-white font-bold text-2xl">Sarpanch of {directory.village?.village}</span>
                 </div>
               </div>
-              
+
               <div className="bg-white p-8">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="flex items-start space-x-4">
@@ -132,7 +209,7 @@ export function WardMembers() {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-600 mb-1">Name</p>
-                      <p className="text-2xl font-bold text-gray-900">{sarpanch.name}</p>
+                      <p className="text-2xl font-bold text-gray-900">{directory.sarpanch.name}</p>
                     </div>
                   </div>
 
@@ -142,40 +219,44 @@ export function WardMembers() {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-600 mb-1">Village</p>
-                      <p className="text-xl font-bold text-gray-900">{sarpanch.village}</p>
-                      <p className="text-sm text-gray-600">{user.mandal}, {sarpanch.district} District</p>
+                      <p className="text-xl font-bold text-gray-900">{directory.village?.village}</p>
+                      <p className="text-sm text-gray-600">{directory.village?.mandal}, {directory.village?.district} District</p>
                     </div>
                   </div>
 
-                  <div className="flex items-start space-x-4">
-                    <div className="bg-green-100 p-4 rounded-xl">
-                      <Phone className="w-7 h-7 text-green-600" />
+                  {directory.sarpanch.phone && (
+                    <div className="flex items-start space-x-4">
+                      <div className="bg-green-100 p-4 rounded-xl">
+                        <Phone className="w-7 h-7 text-green-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-600 mb-1">Contact</p>
+                        <a
+                          href={`tel:${directory.sarpanch.phone}`}
+                          className="text-xl font-bold text-blue-600 hover:text-blue-700"
+                        >
+                          {directory.sarpanch.phone}
+                        </a>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600 mb-1">Contact</p>
-                      <a 
-                        href={`tel:${sarpanch.phone}`}
-                        className="text-xl font-bold text-blue-600 hover:text-blue-700"
-                      >
-                        {sarpanch.phone}
-                      </a>
-                    </div>
-                  </div>
+                  )}
 
-                  <div className="flex items-start space-x-4">
-                    <div className="bg-orange-100 p-4 rounded-xl">
-                      <User className="w-7 h-7 text-orange-600" />
+                  {directory.sarpanch.email && (
+                    <div className="flex items-start space-x-4">
+                      <div className="bg-orange-100 p-4 rounded-xl">
+                        <User className="w-7 h-7 text-orange-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-600 mb-1">Email</p>
+                        <a
+                          href={`mailto:${directory.sarpanch.email}`}
+                          className="text-lg font-bold text-blue-600 hover:text-blue-700 break-all"
+                        >
+                          {directory.sarpanch.email}
+                        </a>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600 mb-1">Email</p>
-                      <a 
-                        href={`mailto:${sarpanch.email}`}
-                        className="text-lg font-bold text-blue-600 hover:text-blue-700 break-all"
-                      >
-                        {sarpanch.email}
-                      </a>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -183,74 +264,81 @@ export function WardMembers() {
         )}
 
         {/* Ward Members List */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-blue-600 bg-clip-text text-transparent mb-2">
-            Ward Members
-          </h2>
-          <p className="text-gray-600">{user.village} - 15 Ward Representatives</p>
-        </div>
-        
-        <div className="space-y-6">
-          {wardMembers.map((member) => (
-            <div
-              key={member.id}
-              className="bg-white rounded-3xl shadow-lg hover:shadow-2xl border-2 border-gray-100 hover:border-pink-300 overflow-hidden transition-all transform hover:scale-[1.01]"
-            >
-              <div className="bg-gradient-to-r from-pink-500 to-blue-500 px-8 py-5">
-                <div className="flex items-center justify-between">
-                  <span className="text-white font-bold text-2xl">Ward {member.wardNumber}</span>
-                  <div className="bg-white px-6 py-2 rounded-full">
-                    <span className="bg-gradient-to-r from-pink-600 to-blue-600 bg-clip-text text-transparent font-bold text-sm">
-                      WARD MEMBER
-                    </span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-8">
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="flex items-start space-x-4">
-                    <div className="bg-gradient-to-br from-pink-100 to-blue-100 p-4 rounded-xl">
-                      <User className="w-7 h-7 text-pink-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600 mb-1">Name</p>
-                      <p className="text-xl font-bold text-gray-900">{member.name}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-4">
-                    <div className="bg-gradient-to-br from-blue-100 to-purple-100 p-4 rounded-xl">
-                      <Phone className="w-7 h-7 text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600 mb-1">Contact</p>
-                      <a 
-                        href={`tel:${member.phone}`}
-                        className="text-xl font-bold text-blue-600 hover:text-blue-700"
-                      >
-                        {member.phone}
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-4">
-                    <div className="bg-gradient-to-br from-purple-100 to-pink-100 p-4 rounded-xl">
-                      <MapPin className="w-7 h-7 text-purple-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600 mb-1">Location</p>
-                      <p className="text-lg font-bold text-gray-900">
-                        {member.village}
-                      </p>
-                      <p className="text-sm text-gray-600">{user.mandal}, {user.district}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+        {directory && !needsPick && (
+          <>
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                Ward Members
+              </h2>
+              <p className="text-gray-600">
+                {directory.village?.village} — {directory.wardMembers.length} registered ward{' '}
+                {directory.wardMembers.length === 1 ? 'member' : 'members'}
+              </p>
             </div>
-          ))}
-        </div>
+
+            {directory.wardMembers.length === 0 ? (
+              <div className="bg-white rounded-2xl shadow p-8 text-center">
+                <p className="font-semibold text-gray-800">No ward members registered yet</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Ward members appear here after they register and the super admin approves them.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {directory.wardMembers.map((member) => (
+                  <div
+                    key={member.id}
+                    className="bg-white rounded-3xl shadow-lg hover:shadow-2xl border-2 border-gray-100 hover:border-pink-300 overflow-hidden transition-all transform hover:scale-[1.01]"
+                  >
+                    <div className="bg-gradient-to-r from-pink-500 to-blue-500 px-8 py-5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-white font-bold text-2xl">
+                          {member.wardNumber ? `Ward ${member.wardNumber}` : 'Ward Member'}
+                        </span>
+                        <div className="bg-white px-6 py-2 rounded-full">
+                          <span className="bg-gradient-to-r from-pink-600 to-blue-600 bg-clip-text text-transparent font-bold text-sm">
+                            WARD MEMBER
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-8">
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="flex items-start space-x-4">
+                          <div className="bg-gradient-to-br from-pink-100 to-blue-100 p-4 rounded-xl">
+                            <User className="w-7 h-7 text-pink-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-600 mb-1">Name</p>
+                            <p className="text-xl font-bold text-gray-900">{member.name}</p>
+                          </div>
+                        </div>
+
+                        {member.phone && (
+                          <div className="flex items-start space-x-4">
+                            <div className="bg-gradient-to-br from-blue-100 to-purple-100 p-4 rounded-xl">
+                              <Phone className="w-7 h-7 text-blue-600" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-600 mb-1">Contact</p>
+                              <a
+                                href={`tel:${member.phone}`}
+                                className="text-xl font-bold text-blue-600 hover:text-blue-700"
+                              >
+                                {member.phone}
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

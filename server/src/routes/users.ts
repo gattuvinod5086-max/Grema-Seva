@@ -1,10 +1,11 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db, schema } from "../db/client";
 import { serializeUser, loadJurisdiction } from "../services/users";
+import { findJurisdictionByName } from "../services/jurisdictions";
 import { requireAuth, getAuth } from "../middleware/auth";
-import { badRequest, conflict } from "../middleware/error";
+import { badRequest, conflict, notFound } from "../middleware/error";
 import { normalizePhone } from "../lib/phone";
 import {
   personNameSchema,
@@ -88,4 +89,56 @@ export const userRoutes = new Hono()
         : await loadJurisdiction(updated.jurisdictionId);
 
     return c.json({ user: serializeUser(updated, jurisdictionAfter) });
+  })
+  /**
+   * Village directory: the elected representatives of a village (public
+   * info, like the panchayat notice board). Defaults to the caller's own
+   * village; admins/super admins may query any village.
+   */
+  .get("/directory", async (c) => {
+    const { user, jurisdiction } = getAuth(c);
+
+    let target = jurisdiction;
+    const qd = c.req.query("district");
+    const qm = c.req.query("mandal");
+    const qv = c.req.query("village");
+    if (qd && qm && qv) {
+      if (user.role !== "admin" && user.role !== "super_admin") {
+        throw badRequest("Only admins can look up other villages");
+      }
+      target = await findJurisdictionByName(qd, qm, qv);
+      if (!target) throw notFound("Village not found");
+    }
+
+    if (!target) {
+      return c.json({ village: null, sarpanch: null, wardMembers: [] });
+    }
+
+    const rows = await db
+      .select()
+      .from(schema.users)
+      .where(
+        and(
+          eq(schema.users.jurisdictionId, target.id),
+          eq(schema.users.approvalStatus, "approved"),
+          inArray(schema.users.role, ["sarpanch", "ward_member"])
+        )
+      );
+
+    const toCard = (u: typeof schema.users.$inferSelect) => ({
+      id: u.id,
+      name: u.name,
+      phone: u.phone,
+      email: u.email,
+      wardNumber: u.wardNumber,
+    });
+
+    return c.json({
+      village: { district: target.district, mandal: target.mandal, village: target.village },
+      sarpanch: rows.find((r) => r.role === "sarpanch") ?? null,
+      wardMembers: rows
+        .filter((r) => r.role === "ward_member")
+        .sort((a, b) => (a.wardNumber ?? "").localeCompare(b.wardNumber ?? "", undefined, { numeric: true }))
+        .map(toCard),
+    });
   });

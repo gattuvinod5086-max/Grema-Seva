@@ -1,5 +1,5 @@
-import { useMemo, useState, useEffect } from "react";
-import { ArrowLeft, AlertCircle, RefreshCw, Bell } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ArrowLeft, AlertCircle, RefreshCw, Bell, MapPin, X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useApi } from "@web/hooks/useApi";
 import IssueList from "@web/components/IssueList";
@@ -7,28 +7,34 @@ import IssuesMap from "@web/components/map/IssuesMap";
 import { UserProfileCapsule } from "@web/components/ui/UserRoleBadge";
 import { useRealtimeEvent, LiveIndicator } from "@web/context/RealtimeContext";
 import NotificationBell from "@web/components/NotificationBell";
+import { getDistrictNames, getMandalNames, getVillageNames } from "@shared/data/telangana";
 import type { IssueListResponse, User } from "@shared/types";
 import { ISSUE_CATEGORIES } from "@shared/constants/governance";
 import { ISSUE_STATUSES } from "@shared/types";
 
 export default function VillageIssues() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [statusFilter, setStatusFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
 
   const { data: meData } = useApi<{ user: User }>('/api/users/me');
   const me = meData?.user ?? null;
 
-  useEffect(() => {
-    if (me && me.role === 'citizen') {
-      navigate('/board', { replace: true });
-    }
-  }, [me, navigate]);
-
   const district = searchParams.get("district")?.trim() ?? "";
   const mandal = searchParams.get("mandal")?.trim() ?? "";
   const village = searchParams.get("village")?.trim() ?? "";
+
+  const updateLocation = (newDistrict: string, newMandal = "", newVillage = "") => {
+    const p = new URLSearchParams(searchParams);
+    if (newDistrict) p.set("district", newDistrict);
+    else p.delete("district");
+    if (newMandal) p.set("mandal", newMandal);
+    else p.delete("mandal");
+    if (newVillage) p.set("village", newVillage);
+    else p.delete("village");
+    setSearchParams(p);
+  };
 
   const apiUrl = useMemo(() => {
     const params = new URLSearchParams({ limit: "50" });
@@ -65,10 +71,10 @@ export default function VillageIssues() {
             <button
               type="button"
               onClick={() => navigate("/telangana")}
-              className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow hover:shadow-md transition-all text-gray-700 font-medium border border-gray-100"
+              className="flex items-center gap-2 px-3.5 py-2 bg-white rounded-xl shadow hover:shadow-md transition-all text-gray-700 font-bold text-xs border border-gray-100"
             >
-              <ArrowLeft className="w-5 h-5" />
-              Back
+              <ArrowLeft className="w-4 h-4" />
+              <span>Districts & Villages</span>
             </button>
             <div className="min-w-0">
               <h1 className="text-xl md:text-2xl font-bold text-gray-900 truncate">
@@ -116,6 +122,7 @@ export default function VillageIssues() {
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         <section className="flex flex-wrap items-center gap-2">
+          {/* Status filter */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -127,6 +134,8 @@ export default function VillageIssues() {
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
+
+          {/* Category filter */}
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
@@ -138,6 +147,71 @@ export default function VillageIssues() {
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
+
+          {/* Location filter: District */}
+          <select
+            value={district}
+            onChange={(e) => updateLocation(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white"
+            aria-label="Filter by district"
+          >
+            <option value="">All Districts</option>
+            {getDistrictNames().map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+
+          {/* Location filter: Mandal */}
+          {district && (
+            <select
+              value={mandal}
+              onChange={(e) => updateLocation(district, e.target.value)}
+              className="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white animate-in"
+              aria-label="Filter by mandal"
+            >
+              <option value="">All Mandals ({district})</option>
+              {getMandalNames(district).map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          )}
+
+          {/* Location filter: Village */}
+          {district && mandal && (
+            <select
+              value={village}
+              onChange={(e) => updateLocation(district, mandal, e.target.value)}
+              className="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white animate-in"
+              aria-label="Filter by village"
+            >
+              <option value="">All Villages ({mandal})</option>
+              {getVillageNames(district, mandal).map((v) => (
+                <option key={v} value={v}>{v}</option>
+              ))}
+            </select>
+          )}
+
+          {/* Clear location filter */}
+          {(district || mandal || village) && (
+            <>
+              <button
+                type="button"
+                onClick={() => updateLocation("", "", "")}
+                className="px-2.5 py-2 rounded-xl border border-red-200 bg-red-50 text-red-700 text-xs font-bold hover:bg-red-100 flex items-center gap-1 transition-colors"
+                title="Clear location filter"
+              >
+                <X size={13} />
+                <span>Reset Location</span>
+              </button>
+              <div className="inline-flex items-center gap-1.5 text-xs bg-amber-50 border border-amber-200/70 text-amber-900 px-3 py-1.5 rounded-xl">
+                <MapPin size={13} className="text-[#67001A]" />
+                <span>
+                  Location:{' '}
+                  <strong>{[district, mandal, village].filter(Boolean).join(' → ')}</strong>
+                </span>
+              </div>
+            </>
+          )}
           <div className="ml-auto flex flex-wrap gap-2">
             {Object.entries(stats).map(([s, n]) => (
               <span key={s} className="px-2.5 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-700">

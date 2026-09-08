@@ -15,6 +15,7 @@ export const translations = {
       emergency: "Emergency & Help",
       officialDashboard: "Official Dashboard",
       analytics: "Village Analytics",
+      districtsAndVillages: "Districts & Villages",
     },
     issue: {
       category: "Category",
@@ -115,6 +116,7 @@ export const translations = {
       emergency: "అత్యవసర సహాయం",
       officialDashboard: "అధికారి డాష్‌బోర్డ్",
       analytics: "గ్రామ విశ్లేషణ",
+      districtsAndVillages: "జిల్లాలు & గ్రామాలు",
     },
     issue: {
       category: "వర్గం",

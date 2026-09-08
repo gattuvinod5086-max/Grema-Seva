@@ -17,7 +17,6 @@ import {
   Siren,
   BarChart3,
   Building2,
-  MapPin,
   Crown,
 } from "lucide-react";
 import { BRANDING } from "@web/constants/branding";
@@ -231,6 +230,14 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
           />
 
           <SidebarItem
+            icon={<Building2 size={18} strokeWidth={2.5} />}
+            label={t.nav.districtsAndVillages ?? "Districts & Villages"}
+            active={pathname === "/telangana"}
+            onClick={() => navigate("/telangana")}
+            collapsed={isCollapsed}
+          />
+
+          <SidebarItem
             icon={<Award size={18} strokeWidth={2.5} />}
             label={t.nav.welfareHub ?? "Welfare Hub"}
             active={pathname === "/schemes"}
@@ -294,14 +301,6 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
                   collapsed={isCollapsed}
                 />
               )}
-
-              <SidebarItem
-                icon={<MapPin size={18} strokeWidth={2.5} />}
-                label="Telangana Map"
-                active={pathname === "/telangana"}
-                onClick={() => navigate("/telangana")}
-                collapsed={isCollapsed}
-              />
 
               <SidebarItem
                 icon={<Building2 size={18} strokeWidth={2.5} />}

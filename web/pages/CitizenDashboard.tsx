@@ -9,6 +9,7 @@ import {
   Siren,
   Award,
   Leaf,
+  X,
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import IssueList from '@web/components/IssueList';
@@ -21,6 +22,7 @@ import { useRealtimeEvent } from '@web/context/RealtimeContext';
 import { UI } from '@web/constants/design';
 import { useApi } from '@web/hooks/useApi';
 import { computeVillageAnalytics } from '@shared/services/analytics';
+import { getDistrictNames, getMandalNames, getVillageNames } from '@shared/data/telangana';
 import type { IssueDetail, IssueListResponse, User, VillageIssueStats } from '@shared/types';
 import { ISSUE_CATEGORIES } from '@shared/constants/governance';
 import { ISSUE_STATUSES } from '@shared/types';
@@ -69,13 +71,35 @@ export default function CitizenDashboard() {
   const [, setDetailLoading] = useState(false);
   const [tab, setTab] = useState<'village' | 'mine'>('village');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [locationDistrict, setLocationDistrict] = useState('');
+  const [locationMandal, setLocationMandal] = useState('');
+  const [locationVillage, setLocationVillage] = useState('');
   const navigate = useNavigate();
 
   const { data: user, error: userError, isLoading: userLoading, refetch: refetchUser } =
     useApi<{ user: User }>('/api/users/me');
+
+  const issuesApiUrl = useMemo(() => {
+    const p = new URLSearchParams({ limit: '100' });
+    if (categoryFilter) p.set('category', categoryFilter);
+    if (locationDistrict) p.set('district', locationDistrict);
+    if (locationMandal) p.set('mandal', locationMandal);
+    if (locationVillage) p.set('village', locationVillage);
+    return `/api/issues?${p.toString()}`;
+  }, [categoryFilter, locationDistrict, locationMandal, locationVillage]);
+
+  const statsApiUrl = useMemo(() => {
+    const p = new URLSearchParams();
+    if (locationDistrict) p.set('district', locationDistrict);
+    if (locationMandal) p.set('mandal', locationMandal);
+    if (locationVillage) p.set('village', locationVillage);
+    const str = p.toString();
+    return `/api/issues/stats${str ? `?${str}` : ''}`;
+  }, [locationDistrict, locationMandal, locationVillage]);
+
   const { data: issuesData, error: issuesError, isLoading: issuesLoading, refetch: refetchIssues } =
-    useApi<IssueListResponse>('/api/issues');
-  const { data: stats } = useApi<VillageIssueStats>('/api/issues/stats');
+    useApi<IssueListResponse>(issuesApiUrl);
+  const { data: stats } = useApi<VillageIssueStats>(statsApiUrl);
 
   // Realtime updates: automatically refresh dashboard whenever an issue, notice, or news is posted/updated
   useRealtimeEvent('all', () => {
@@ -88,9 +112,12 @@ export default function CitizenDashboard() {
   const filteredIssues = useMemo(() => {
     let list = issues;
     if (categoryFilter) list = list.filter((i) => i.category === categoryFilter);
+    if (locationDistrict) list = list.filter((i) => i.district?.toLowerCase() === locationDistrict.toLowerCase());
+    if (locationMandal) list = list.filter((i) => i.mandal?.toLowerCase() === locationMandal.toLowerCase());
+    if (locationVillage) list = list.filter((i) => i.village?.toLowerCase() === locationVillage.toLowerCase());
     if (tab === 'mine') list = list.filter((i) => i.reporterId != null && i.reporterId === me?.id);
     return list;
-  }, [issues, categoryFilter, tab, me?.id]);
+  }, [issues, categoryFilter, locationDistrict, locationMandal, locationVillage, tab, me?.id]);
 
   const openIssueDetail = async (issueId: string) => {
     setDetailLoading(true);
@@ -329,33 +356,133 @@ export default function CitizenDashboard() {
             </div>
           )}
 
-          {/* Tabs + category filter */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex rounded-xl border border-[#E5E7EB] overflow-hidden">
-              {(['village', 'mine'] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTab(t)}
-                  className={`px-4 py-2 text-sm font-semibold transition-colors ${
-                    tab === t ? 'bg-[#67001A] text-white' : 'bg-white text-[#64748B] hover:bg-slate-50'
-                  }`}
+          {/* Tabs + category filter + location filter */}
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              {/* Tabs: Village Logs vs My Reports */}
+              <div className="flex rounded-xl border border-[#E5E7EB] overflow-hidden shrink-0">
+                {(['village', 'mine'] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTab(t)}
+                    className={`px-4 py-2 text-xs md:text-sm font-bold transition-colors ${
+                      tab === t ? 'bg-[#67001A] text-white' : 'bg-white text-[#64748B] hover:bg-slate-50'
+                    }`}
+                  >
+                    {t === 'village'
+                      ? me?.role === 'super_admin' || me?.role === 'admin'
+                        ? 'Statewide Logs'
+                        : 'Village Logs'
+                      : 'My reports'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Filters Container */}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Category Filter */}
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#1F2937] bg-white shadow-2xs"
+                  aria-label="Filter by category"
                 >
-                  {t === 'village' ? (me?.role === 'super_admin' || me?.role === 'admin' ? 'All logs' : 'Village Logs') : 'My reports'}
-                </button>
-              ))}
+                  <option value="">All categories</option>
+                  {ISSUE_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Location Filter: District */}
+                <select
+                  value={locationDistrict}
+                  onChange={(e) => {
+                    setLocationDistrict(e.target.value);
+                    setLocationMandal('');
+                    setLocationVillage('');
+                  }}
+                  className="px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#1F2937] bg-white shadow-2xs"
+                  aria-label="Filter by district"
+                >
+                  <option value="">All Districts</option>
+                  {getDistrictNames().map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Location Filter: Mandal */}
+                {locationDistrict && (
+                  <select
+                    value={locationMandal}
+                    onChange={(e) => {
+                      setLocationMandal(e.target.value);
+                      setLocationVillage('');
+                    }}
+                    className="px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#1F2937] bg-white shadow-2xs animate-in"
+                    aria-label="Filter by mandal"
+                  >
+                    <option value="">All Mandals ({locationDistrict})</option>
+                    {getMandalNames(locationDistrict).map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {/* Location Filter: Village */}
+                {locationDistrict && locationMandal && (
+                  <select
+                    value={locationVillage}
+                    onChange={(e) => setLocationVillage(e.target.value)}
+                    className="px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#1F2937] bg-white shadow-2xs animate-in"
+                    aria-label="Filter by village"
+                  >
+                    <option value="">All Villages ({locationMandal})</option>
+                    {getVillageNames(locationDistrict, locationMandal).map((v) => (
+                      <option key={v} value={v}>
+                        {v}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {/* Clear Location Filter */}
+                {(locationDistrict || locationMandal || locationVillage) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocationDistrict('');
+                      setLocationMandal('');
+                      setLocationVillage('');
+                    }}
+                    className="px-2.5 py-1.5 rounded-xl border border-red-200 bg-red-50 text-red-700 text-xs font-bold hover:bg-red-100 flex items-center gap-1 transition-colors"
+                    title="Clear location filter"
+                  >
+                    <X size={13} />
+                    <span>Reset Location</span>
+                  </button>
+                )}
+              </div>
             </div>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="ml-auto px-3 py-2 rounded-xl border border-[#E5E7EB] text-sm text-[#1F2937] bg-white"
-              aria-label="Filter by category"
-            >
-              <option value="">All categories</option>
-              {ISSUE_CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+
+            {/* Active location filter pill */}
+            {(locationDistrict || locationMandal || locationVillage) && (
+              <div className="flex items-center gap-2 text-xs bg-amber-50 border border-amber-200/70 text-amber-900 px-3 py-1.5 rounded-xl w-fit">
+                <MapPin size={13} className="text-[#67001A]" />
+                <span>
+                  Filtered by location:{' '}
+                  <strong>
+                    {[locationDistrict, locationMandal, locationVillage].filter(Boolean).join(' → ')}
+                  </strong>
+                </span>
+              </div>
+            )}
           </div>
 
           {issuesLoading ? (

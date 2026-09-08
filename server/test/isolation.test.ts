@@ -607,5 +607,55 @@ describe("admin governance & approvals", () => {
     const bodyIncompleteName = await resIncompleteName.json();
     expect(bodyIncompleteName.error.message).toMatch(/complete your profile details/i);
   });
+
+  it("admin and super-admin approve and filter mandal and panchayat officials", async () => {
+    // 1. Create a pending Mandal official (admin role) and a pending Panchayat official (sarpanch role)
+    const pendingMandal = await insertUser({
+      name: "Mandal Officer Candidate",
+      role: "admin",
+      approvalStatus: "pending",
+      jurisdictionId: villageX.id,
+    });
+    const pendingPanchayat = await insertUser({
+      name: "Sarpanch Candidate",
+      role: "sarpanch",
+      approvalStatus: "pending",
+      jurisdictionId: villageX.id,
+    });
+
+    // 2. Query officials with tier filter role=mandal
+    const mandalRes = await req(superAdmin, "/api/admin/officials?role=mandal");
+    expect(mandalRes.status).toBe(200);
+    const mandalBody = await mandalRes.json();
+    expect(mandalBody.officials.some((o: { id: string }) => o.id === pendingMandal.user.id)).toBe(true);
+    expect(mandalBody.officials.some((o: { id: string }) => o.id === pendingPanchayat.user.id)).toBe(false);
+
+    // 3. Query officials with tier filter role=panchayat
+    const panchayatRes = await req(superAdmin, "/api/admin/officials?role=panchayat");
+    expect(panchayatRes.status).toBe(200);
+    const panchayatBody = await panchayatRes.json();
+    expect(panchayatBody.officials.some((o: { id: string }) => o.id === pendingPanchayat.user.id)).toBe(true);
+    expect(panchayatBody.officials.some((o: { id: string }) => o.id === pendingMandal.user.id)).toBe(false);
+
+    // 4. Admin can approve Mandal official
+    const approveMandalRes = await req(adminX, `/api/admin/officials/${pendingMandal.user.id}/approve`, "POST");
+    expect(approveMandalRes.status).toBe(200);
+    const approveMandalBody = await approveMandalRes.json();
+    expect(approveMandalBody.official.approvalStatus).toBe("approved");
+
+    // 5. Admin can approve Panchayat official
+    const approvePanchayatRes = await req(adminX, `/api/admin/officials/${pendingPanchayat.user.id}/approve`, "POST");
+    expect(approvePanchayatRes.status).toBe(200);
+    const approvePanchayatBody = await approvePanchayatRes.json();
+    expect(approvePanchayatBody.official.approvalStatus).toBe("approved");
+
+    // 6. Admin can decline official with custom reason note
+    const declineRes = await req(adminX, `/api/admin/officials/${pendingPanchayat.user.id}/decline`, "POST", {
+      note: "Jurisdiction documentation mismatch",
+    });
+    expect(declineRes.status).toBe(200);
+    const declineBody = await declineRes.json();
+    expect(declineBody.official.approvalStatus).toBe("declined");
+  });
 });
 

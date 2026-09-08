@@ -25,6 +25,10 @@ export const adminRoutes = new Hono()
     }
     if (role && OFFICIAL_ROLES.includes(role as (typeof OFFICIAL_ROLES)[number])) {
       conditions.push(eq(schema.users.role, role as (typeof OFFICIAL_ROLES)[number]));
+    } else if (role === "mandal") {
+      conditions.push(eq(schema.users.role, "admin"));
+    } else if (role === "panchayat") {
+      conditions.push(inArray(schema.users.role, ["sarpanch", "ward_member"]));
     }
 
     const rows = await db

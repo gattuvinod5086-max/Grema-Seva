@@ -18,6 +18,7 @@ import {
   BarChart3,
   Building2,
   Crown,
+  Users,
 } from "lucide-react";
 import { BRANDING } from "@web/constants/branding";
 import { LanguageToggle, useLanguage } from "@web/context/LanguageContext";
@@ -118,11 +119,13 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
     navigate("/login");
   };
 
+  const isAdmin = user?.role === "super_admin" || user?.role === "admin";
+  const isMandal = user?.role === "mandal_official";
   const isOfficial =
     user?.role === "sarpanch" ||
     user?.role === "ward_member" ||
-    user?.role === "admin" ||
-    user?.role === "super_admin";
+    isMandal ||
+    isAdmin;
 
   return (
     <div
@@ -194,122 +197,236 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
 
         {/* Navigation Items */}
         <nav className="flex-1 min-h-0 space-y-1.5 overflow-y-auto no-scrollbar pr-1">
-          <SidebarItem
-            icon={<Home size={18} strokeWidth={2.5} />}
-            label={t.nav.home ?? "Home"}
-            active={pathname === "/" || pathname === "/board"}
-            onClick={() => navigate("/")}
-            collapsed={isCollapsed}
-          />
+          {isAdmin ? (
+            <>
+              {/* Primary Administration Console & Oversight */}
+              <SidebarItem
+                icon={<Crown size={18} strokeWidth={2.5} />}
+                label={t.nav.officialApprovals ?? "Official Approvals"}
+                active={pathname === "/admin/officials" || (pathname === "/" && !location.search.includes("view=board"))}
+                onClick={() => navigate("/admin/officials")}
+                collapsed={isCollapsed}
+              />
 
-          {user?.role === "citizen" && user?.village && (
-            <SidebarItem
-              icon={<PlusCircle size={18} strokeWidth={2.5} />}
-              label={t.nav.reportIssue ?? "Report Issue"}
-              active={false}
-              onClick={() => setShowReportModal(true)}
-              collapsed={isCollapsed}
-              badge="New"
-            />
-          )}
+              <SidebarItem
+                icon={<ClipboardList size={18} strokeWidth={2.5} />}
+                label={t.nav.statewideLogs ?? "Statewide Logs"}
+                active={
+                  pathname === "/issues" ||
+                  pathname === "/telangana/issues" ||
+                  pathname === "/board" ||
+                  (pathname === "/" && location.search.includes("view=board"))
+                }
+                onClick={() => navigate("/issues")}
+                collapsed={isCollapsed}
+              />
 
-          <SidebarItem
-            icon={<ClipboardList size={18} strokeWidth={2.5} />}
-            label={t.nav.villageLogs ?? "Village Logs"}
-            active={pathname === "/issues" || pathname === "/telangana/issues"}
-            onClick={() => navigate("/issues")}
-            collapsed={isCollapsed}
-          />
-
-          <SidebarItem
-            icon={<Contact size={18} strokeWidth={2.5} />}
-            label={t.nav.panchayat ?? "Panchayat"}
-            active={pathname === "/sarpanches" || pathname === "/admin/sarpanches"}
-            onClick={() => navigate("/sarpanches")}
-            collapsed={isCollapsed}
-          />
-
-          <SidebarItem
-            icon={<Building2 size={18} strokeWidth={2.5} />}
-            label={t.nav.districtsAndVillages ?? "Districts & Villages"}
-            active={pathname === "/telangana"}
-            onClick={() => navigate("/telangana")}
-            collapsed={isCollapsed}
-          />
-
-          <SidebarItem
-            icon={<Award size={18} strokeWidth={2.5} />}
-            label={t.nav.welfareHub ?? "Welfare Hub"}
-            active={pathname === "/schemes"}
-            onClick={() => navigate("/schemes")}
-            collapsed={isCollapsed}
-          />
-
-          <SidebarItem
-            icon={<Newspaper size={18} strokeWidth={2.5} />}
-            label={t.nav.news ?? "News & Announcements"}
-            active={pathname === "/notices" || pathname === "/news"}
-            onClick={() => navigate("/notices")}
-            collapsed={isCollapsed}
-          />
-
-          <SidebarItem
-            icon={<Siren size={18} strokeWidth={2.5} />}
-            label={t.nav.emergency ?? "Emergency & Help"}
-            active={pathname === "/emergency"}
-            onClick={() => navigate("/emergency")}
-            collapsed={isCollapsed}
-            urgent
-          />
-
-          <SidebarItem
-            icon={<Bot size={18} strokeWidth={2.5} />}
-            label={t.nav.krishiAi ?? "Krishi AI"}
-            active={pathname === "/krishi"}
-            onClick={() => navigate("/krishi")}
-            collapsed={isCollapsed}
-          />
-
-          <SidebarItem
-            icon={<Sparkles size={18} strokeWidth={2.5} />}
-            label={t.nav.aiAssistant ?? "AI Assistant"}
-            active={pathname === "/vikas"}
-            onClick={() => navigate("/vikas")}
-            collapsed={isCollapsed}
-          />
-
-          <SidebarItem
-            icon={<BarChart3 size={18} strokeWidth={2.5} />}
-            label={t.nav.analytics ?? "Village Analytics"}
-            active={pathname === "/analytics"}
-            onClick={() => navigate("/analytics")}
-            collapsed={isCollapsed}
-          />
-
-          {isOfficial && (
-            <div className="pt-2 mt-2 border-t border-white/10 space-y-1.5">
-              <p className={`text-[9px] font-black uppercase tracking-wider text-[#CCB252] px-3 ${isCollapsed ? "hidden" : "block"}`}>
-                Governance & Admin
-              </p>
-
-              {(user?.role === "super_admin" || user?.role === "admin") && (
-                <SidebarItem
-                  icon={<Crown size={18} strokeWidth={2.5} />}
-                  label="Official Approvals"
-                  active={pathname === "/admin/officials"}
-                  onClick={() => navigate("/admin/officials")}
-                  collapsed={isCollapsed}
-                />
-              )}
+              <SidebarItem
+                icon={<BarChart3 size={18} strokeWidth={2.5} />}
+                label={t.nav.statewideAnalytics ?? "Statewide Analytics"}
+                active={pathname === "/analytics"}
+                onClick={() => navigate("/analytics")}
+                collapsed={isCollapsed}
+              />
 
               <SidebarItem
                 icon={<Building2 size={18} strokeWidth={2.5} />}
-                label="Ward Members"
+                label={t.nav.districtsAndVillages ?? "Districts & Villages"}
+                active={pathname === "/telangana"}
+                onClick={() => navigate("/telangana")}
+                collapsed={isCollapsed}
+              />
+
+              <SidebarItem
+                icon={<Contact size={18} strokeWidth={2.5} />}
+                label={t.nav.panchayatDirectory ?? "Panchayat Directory"}
+                active={pathname === "/sarpanches" || pathname === "/admin/sarpanches"}
+                onClick={() => navigate("/sarpanches")}
+                collapsed={isCollapsed}
+              />
+
+              <SidebarItem
+                icon={<Users size={18} strokeWidth={2.5} />}
+                label={t.nav.wardMembers ?? "Ward Members"}
                 active={pathname === "/ward-members"}
                 onClick={() => navigate("/ward-members")}
                 collapsed={isCollapsed}
               />
-            </div>
+
+              {/* Public Services & Information */}
+              <div className="pt-2 mt-2 border-t border-white/10 space-y-1.5">
+                <p
+                  className={`text-[9px] font-black uppercase tracking-wider text-[#CCB252] px-3 ${
+                    isCollapsed ? "hidden" : "block"
+                  }`}
+                >
+                  Services & Information
+                </p>
+
+                <SidebarItem
+                  icon={<Newspaper size={18} strokeWidth={2.5} />}
+                  label={t.nav.news ?? "News & Announcements"}
+                  active={pathname === "/notices" || pathname === "/news"}
+                  onClick={() => navigate("/notices")}
+                  collapsed={isCollapsed}
+                />
+
+                <SidebarItem
+                  icon={<Award size={18} strokeWidth={2.5} />}
+                  label={t.nav.welfareHub ?? "Welfare Hub"}
+                  active={pathname === "/schemes"}
+                  onClick={() => navigate("/schemes")}
+                  collapsed={isCollapsed}
+                />
+
+                <SidebarItem
+                  icon={<Siren size={18} strokeWidth={2.5} />}
+                  label={t.nav.emergency ?? "Emergency & Help"}
+                  active={pathname === "/emergency"}
+                  onClick={() => navigate("/emergency")}
+                  collapsed={isCollapsed}
+                  urgent
+                />
+
+                <SidebarItem
+                  icon={<Sparkles size={18} strokeWidth={2.5} />}
+                  label={t.nav.aiAssistant ?? "AI Assistant"}
+                  active={pathname === "/vikas"}
+                  onClick={() => navigate("/vikas")}
+                  collapsed={isCollapsed}
+                />
+
+                <SidebarItem
+                  icon={<Bot size={18} strokeWidth={2.5} />}
+                  label={t.nav.krishiAi ?? "Krishi AI"}
+                  active={pathname === "/krishi"}
+                  onClick={() => navigate("/krishi")}
+                  collapsed={isCollapsed}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <SidebarItem
+                icon={<Home size={18} strokeWidth={2.5} />}
+                label={t.nav.home ?? "Home"}
+                active={pathname === "/" || pathname === "/board"}
+                onClick={() => navigate("/")}
+                collapsed={isCollapsed}
+              />
+
+              {user?.role === "citizen" && user?.village && (
+                <SidebarItem
+                  icon={<PlusCircle size={18} strokeWidth={2.5} />}
+                  label={t.nav.reportIssue ?? "Report Issue"}
+                  active={false}
+                  onClick={() => setShowReportModal(true)}
+                  collapsed={isCollapsed}
+                  badge="New"
+                />
+              )}
+
+              <SidebarItem
+                icon={<ClipboardList size={18} strokeWidth={2.5} />}
+                label={
+                  isMandal
+                    ? `${user?.mandal || "Mandal"} Logs`
+                    : t.nav.villageLogs ?? "Village Logs"
+                }
+                active={pathname === "/issues" || pathname === "/telangana/issues"}
+                onClick={() => navigate("/issues")}
+                collapsed={isCollapsed}
+              />
+
+              <SidebarItem
+                icon={<BarChart3 size={18} strokeWidth={2.5} />}
+                label={
+                  isMandal
+                    ? `${user?.mandal || "Mandal"} Analytics`
+                    : t.nav.analytics ?? "Village Analytics"
+                }
+                active={pathname === "/analytics"}
+                onClick={() => navigate("/analytics")}
+                collapsed={isCollapsed}
+              />
+
+              <SidebarItem
+                icon={<Contact size={18} strokeWidth={2.5} />}
+                label={t.nav.panchayat ?? "Panchayat"}
+                active={pathname === "/sarpanches" || pathname === "/admin/sarpanches"}
+                onClick={() => navigate("/sarpanches")}
+                collapsed={isCollapsed}
+              />
+
+              <SidebarItem
+                icon={<Building2 size={18} strokeWidth={2.5} />}
+                label={t.nav.districtsAndVillages ?? "Districts & Villages"}
+                active={pathname === "/telangana"}
+                onClick={() => navigate("/telangana")}
+                collapsed={isCollapsed}
+              />
+
+              <SidebarItem
+                icon={<Award size={18} strokeWidth={2.5} />}
+                label={t.nav.welfareHub ?? "Welfare Hub"}
+                active={pathname === "/schemes"}
+                onClick={() => navigate("/schemes")}
+                collapsed={isCollapsed}
+              />
+
+              <SidebarItem
+                icon={<Newspaper size={18} strokeWidth={2.5} />}
+                label={t.nav.news ?? "News & Announcements"}
+                active={pathname === "/notices" || pathname === "/news"}
+                onClick={() => navigate("/notices")}
+                collapsed={isCollapsed}
+              />
+
+              <SidebarItem
+                icon={<Siren size={18} strokeWidth={2.5} />}
+                label={t.nav.emergency ?? "Emergency & Help"}
+                active={pathname === "/emergency"}
+                onClick={() => navigate("/emergency")}
+                collapsed={isCollapsed}
+                urgent
+              />
+
+              <SidebarItem
+                icon={<Bot size={18} strokeWidth={2.5} />}
+                label={t.nav.krishiAi ?? "Krishi AI"}
+                active={pathname === "/krishi"}
+                onClick={() => navigate("/krishi")}
+                collapsed={isCollapsed}
+              />
+
+              <SidebarItem
+                icon={<Sparkles size={18} strokeWidth={2.5} />}
+                label={t.nav.aiAssistant ?? "AI Assistant"}
+                active={pathname === "/vikas"}
+                onClick={() => navigate("/vikas")}
+                collapsed={isCollapsed}
+              />
+
+              {isOfficial && (
+                <div className="pt-2 mt-2 border-t border-white/10 space-y-1.5">
+                  <p
+                    className={`text-[9px] font-black uppercase tracking-wider text-[#CCB252] px-3 ${
+                      isCollapsed ? "hidden" : "block"
+                    }`}
+                  >
+                    Governance
+                  </p>
+
+                  <SidebarItem
+                    icon={<Users size={18} strokeWidth={2.5} />}
+                    label={t.nav.wardMembers ?? "Ward Members"}
+                    active={pathname === "/ward-members"}
+                    onClick={() => navigate("/ward-members")}
+                    collapsed={isCollapsed}
+                  />
+                </div>
+              )}
+            </>
           )}
         </nav>
 
@@ -328,7 +445,11 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
               <div className="flex-1 min-w-0 overflow-hidden">
                 <p className="text-xs font-black text-white truncate">{user?.name ?? "Citizen"}</p>
                 <p className="text-[9px] font-bold text-[#CCB252] uppercase tracking-wider truncate">
-                  {user?.village || "Telangana"} • {user?.mandal || "Citizen"}
+                  {isAdmin
+                    ? "Statewide · Administrator"
+                    : isMandal
+                    ? `${user?.mandal || "Mandal"} Official`
+                    : `${user?.village || "Telangana"} • ${user?.mandal || "Citizen"}`}
                 </p>
                 {user?.role && (
                   <div className="mt-1">
@@ -374,7 +495,13 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
                 GramSeva Terminal
               </h1>
               <p className="text-xs text-[#64748B] truncate">
-                {user?.village ? `${user.village}, ${user.mandal}` : "Telangana Digital Village Governance"}
+                {isAdmin
+                  ? "Telangana State Administration"
+                  : isMandal
+                  ? `${user?.mandal || "Mandal"} Administration`
+                  : user?.village
+                  ? `${user.village}, ${user.mandal}`
+                  : "Telangana Digital Village Governance"}
               </p>
             </div>
           </div>

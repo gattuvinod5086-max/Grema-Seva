@@ -286,7 +286,7 @@ export async function updateIssueStatus(
   const [issue] = await db.select().from(schema.issues).where(eq(schema.issues.id, issueId)).limit(1);
   if (!issue) throw notFound("Issue not found");
 
-  assertCanManageIssue(user, userJurisdiction, issue);
+  await assertCanManageIssue(user, userJurisdiction, issue);
 
   const allowed = OFFICIAL_TRANSITIONS[issue.status];
   if (!allowed.includes(newStatus)) {
@@ -336,7 +336,7 @@ export async function addProgressNote(
   const [issue] = await db.select().from(schema.issues).where(eq(schema.issues.id, issueId)).limit(1);
   if (!issue) throw notFound("Issue not found");
 
-  assertCanManageIssue(user, userJurisdiction, issue);
+  await assertCanManageIssue(user, userJurisdiction, issue);
 
   if (!issue.resolvedAt) {
     // Implicit acknowledgement: first official touch starts the clock truthfully.

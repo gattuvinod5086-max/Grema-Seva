@@ -6,6 +6,7 @@ export const USER_ROLES = [
   "citizen",
   "ward_member",
   "sarpanch",
+  "mandal_official",
   "admin",
   "super_admin",
 ] as const;

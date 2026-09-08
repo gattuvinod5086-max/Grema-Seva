@@ -1,4 +1,4 @@
-import { Crown, Shield, ShieldCheck, Users, User as UserIcon } from 'lucide-react';
+import { Crown, Shield, ShieldCheck, Users, Building2, User as UserIcon } from 'lucide-react';
 import type { UserRole } from '@shared/types';
 
 interface RoleConfig {
@@ -17,6 +17,11 @@ const ROLE_CONFIGS: Record<UserRole, RoleConfig> = {
     label: 'Admin',
     badgeClass: 'bg-blue-100 text-blue-900 border-blue-300 font-bold',
     icon: Shield,
+  },
+  mandal_official: {
+    label: 'Mandal Official',
+    badgeClass: 'bg-indigo-100 text-indigo-900 border-indigo-300 font-bold',
+    icon: Building2,
   },
   sarpanch: {
     label: 'Sarpanch',

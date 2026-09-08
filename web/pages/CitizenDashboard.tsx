@@ -9,6 +9,7 @@ import {
   Siren,
   Award,
   Leaf,
+  Users,
   X,
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
@@ -78,24 +79,40 @@ export default function CitizenDashboard() {
 
   const { data: user, error: userError, isLoading: userLoading, refetch: refetchUser } =
     useApi<{ user: User }>('/api/users/me');
+  const me = user?.user ?? null;
+
+  const isAdmin = me?.role === 'super_admin' || me?.role === 'admin';
+  const isMandal = me?.role === 'mandal_official';
 
   const issuesApiUrl = useMemo(() => {
     const p = new URLSearchParams({ limit: '100' });
     if (categoryFilter) p.set('category', categoryFilter);
-    if (locationDistrict) p.set('district', locationDistrict);
-    if (locationMandal) p.set('mandal', locationMandal);
-    if (locationVillage) p.set('village', locationVillage);
+    if (isMandal) {
+      if (me?.district) p.set('district', me.district);
+      if (me?.mandal) p.set('mandal', me.mandal);
+      if (locationVillage) p.set('village', locationVillage);
+    } else if (isAdmin) {
+      if (locationDistrict) p.set('district', locationDistrict);
+      if (locationMandal) p.set('mandal', locationMandal);
+      if (locationVillage) p.set('village', locationVillage);
+    }
     return `/api/issues?${p.toString()}`;
-  }, [categoryFilter, locationDistrict, locationMandal, locationVillage]);
+  }, [categoryFilter, locationDistrict, locationMandal, locationVillage, isMandal, isAdmin, me?.district, me?.mandal]);
 
   const statsApiUrl = useMemo(() => {
     const p = new URLSearchParams();
-    if (locationDistrict) p.set('district', locationDistrict);
-    if (locationMandal) p.set('mandal', locationMandal);
-    if (locationVillage) p.set('village', locationVillage);
+    if (isMandal) {
+      if (me?.district) p.set('district', me.district);
+      if (me?.mandal) p.set('mandal', me.mandal);
+      if (locationVillage) p.set('village', locationVillage);
+    } else if (isAdmin) {
+      if (locationDistrict) p.set('district', locationDistrict);
+      if (locationMandal) p.set('mandal', locationMandal);
+      if (locationVillage) p.set('village', locationVillage);
+    }
     const str = p.toString();
     return `/api/issues/stats${str ? `?${str}` : ''}`;
-  }, [locationDistrict, locationMandal, locationVillage]);
+  }, [locationDistrict, locationMandal, locationVillage, isMandal, isAdmin, me?.district, me?.mandal]);
 
   const { data: issuesData, error: issuesError, isLoading: issuesLoading, refetch: refetchIssues } =
     useApi<IssueListResponse>(issuesApiUrl);
@@ -107,17 +124,22 @@ export default function CitizenDashboard() {
   });
 
   const issues = useMemo(() => issuesData?.issues ?? [], [issuesData]);
-  const me = user?.user ?? null;
 
   const filteredIssues = useMemo(() => {
     let list = issues;
     if (categoryFilter) list = list.filter((i) => i.category === categoryFilter);
-    if (locationDistrict) list = list.filter((i) => i.district?.toLowerCase() === locationDistrict.toLowerCase());
-    if (locationMandal) list = list.filter((i) => i.mandal?.toLowerCase() === locationMandal.toLowerCase());
-    if (locationVillage) list = list.filter((i) => i.village?.toLowerCase() === locationVillage.toLowerCase());
+    if (isMandal) {
+      if (me?.district) list = list.filter((i) => i.district?.toLowerCase() === me.district?.toLowerCase());
+      if (me?.mandal) list = list.filter((i) => i.mandal?.toLowerCase() === me.mandal?.toLowerCase());
+      if (locationVillage) list = list.filter((i) => i.village?.toLowerCase() === locationVillage.toLowerCase());
+    } else if (isAdmin) {
+      if (locationDistrict) list = list.filter((i) => i.district?.toLowerCase() === locationDistrict.toLowerCase());
+      if (locationMandal) list = list.filter((i) => i.mandal?.toLowerCase() === locationMandal.toLowerCase());
+      if (locationVillage) list = list.filter((i) => i.village?.toLowerCase() === locationVillage.toLowerCase());
+    }
     if (tab === 'mine') list = list.filter((i) => i.reporterId != null && i.reporterId === me?.id);
     return list;
-  }, [issues, categoryFilter, locationDistrict, locationMandal, locationVillage, tab, me?.id]);
+  }, [issues, categoryFilter, locationDistrict, locationMandal, locationVillage, tab, me?.id, isMandal, isAdmin, me?.district, me?.mandal]);
 
   const openIssueDetail = async (issueId: string) => {
     setDetailLoading(true);
@@ -193,6 +215,39 @@ export default function CitizenDashboard() {
                   All Villages & Mandals
                 </p>
                 <p className="text-sm text-[#64748B]">Telangana State ({me?.role === 'super_admin' ? 'Super Admin' : 'Admin'} Oversight)</p>
+              </div>
+            </GsCard>
+          ) : me?.role === 'mandal_official' && me?.mandal ? (
+            <GsCard padding="p-4" className="flex items-start gap-3 bg-indigo-50/70 border-indigo-200">
+              <Building2 size={18} className="text-indigo-700 shrink-0 mt-0.5" aria-hidden />
+              <div>
+                <p className={UI.label}>Mandal Jurisdiction</p>
+                <p className="font-semibold text-[#1F2937] mt-0.5">
+                  {me.mandal} Mandal
+                </p>
+                <p className="text-sm text-[#64748B]">{me.district} District (All Villages Governance)</p>
+              </div>
+            </GsCard>
+          ) : me?.role === 'sarpanch' && me?.village ? (
+            <GsCard padding="p-4" className="flex items-start gap-3 bg-amber-50/60 border-amber-200">
+              <Crown size={18} className="text-[#CCB252] shrink-0 mt-0.5" aria-hidden />
+              <div>
+                <p className={UI.label}>Gram Panchayat Jurisdiction</p>
+                <p className="font-semibold text-[#1F2937] mt-0.5">
+                  {me.village} Village (Panchayat Head)
+                </p>
+                <p className="text-sm text-[#64748B]">{me.mandal} Mandal, {me.district} District</p>
+              </div>
+            </GsCard>
+          ) : me?.role === 'ward_member' && me?.village ? (
+            <GsCard padding="p-4" className="flex items-start gap-3 bg-purple-50/60 border-purple-200">
+              <Users size={18} className="text-purple-700 shrink-0 mt-0.5" aria-hidden />
+              <div>
+                <p className={UI.label}>Ward Jurisdiction</p>
+                <p className="font-semibold text-[#1F2937] mt-0.5">
+                  {me.village} • Ward {me.wardNumber || '1'}
+                </p>
+                <p className="text-sm text-[#64748B]">{me.mandal} Mandal, {me.district} District</p>
               </div>
             </GsCard>
           ) : me?.village ? (
@@ -331,8 +386,14 @@ export default function CitizenDashboard() {
         {/* Village issue board: stats + filters + list */}
         <section id="my-issues" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-[#1F2937]">
-              {me?.village ? `${me.village} Logs` : (me?.role === 'super_admin' || me?.role === 'admin' ? 'Statewide Logs' : 'Village Logs')}
+            <h3 className="font-bold text-lg text-[#1F2937]">
+              {me?.village
+                ? `${me.village} Logs`
+                : me?.role === 'super_admin' || me?.role === 'admin'
+                ? 'Statewide Logs'
+                : me?.role === 'mandal_official'
+                ? `${me?.mandal} Logs`
+                : 'Village Logs'}
             </h3>
             <span className="text-xs font-semibold text-[#64748B]">{activeIssues.length} open</span>
           </div>
@@ -375,6 +436,8 @@ export default function CitizenDashboard() {
                     {t === 'village'
                       ? me?.role === 'super_admin' || me?.role === 'admin'
                         ? 'Statewide Logs'
+                        : me?.role === 'mandal_official'
+                        ? 'Mandal Logs'
                         : 'Village Logs'
                       : 'My reports'}
                   </button>
@@ -398,90 +461,196 @@ export default function CitizenDashboard() {
                   ))}
                 </select>
 
-                {/* Location Filter: District */}
-                <select
-                  value={locationDistrict}
-                  onChange={(e) => {
-                    setLocationDistrict(e.target.value);
-                    setLocationMandal('');
-                    setLocationVillage('');
-                  }}
-                  className="px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#1F2937] bg-white shadow-2xs"
-                  aria-label="Filter by district"
-                >
-                  <option value="">All Districts</option>
-                  {getDistrictNames().map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
+                {/* Location Filters by Hierarchy */}
+                {/* 1. Admin / Super Admin: Statewide oversight with full District -> Mandal -> Village dropdowns */}
+                {(me?.role === 'super_admin' || me?.role === 'admin') && (
+                  <>
+                    {/* District */}
+                    <select
+                      value={locationDistrict}
+                      onChange={(e) => {
+                        setLocationDistrict(e.target.value);
+                        setLocationMandal('');
+                        setLocationVillage('');
+                      }}
+                      className="px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#1F2937] bg-white shadow-2xs"
+                      aria-label="Filter by district"
+                    >
+                      <option value="">All Districts (Statewide)</option>
+                      {getDistrictNames().map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
 
-                {/* Location Filter: Mandal */}
-                {locationDistrict && (
-                  <select
-                    value={locationMandal}
-                    onChange={(e) => {
-                      setLocationMandal(e.target.value);
-                      setLocationVillage('');
-                    }}
-                    className="px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#1F2937] bg-white shadow-2xs animate-in"
-                    aria-label="Filter by mandal"
-                  >
-                    <option value="">All Mandals ({locationDistrict})</option>
-                    {getMandalNames(locationDistrict).map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
+                    {/* Mandal */}
+                    {locationDistrict && (
+                      <select
+                        value={locationMandal}
+                        onChange={(e) => {
+                          setLocationMandal(e.target.value);
+                          setLocationVillage('');
+                        }}
+                        className="px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#1F2937] bg-white shadow-2xs animate-in"
+                        aria-label="Filter by mandal"
+                      >
+                        <option value="">All Mandals ({locationDistrict})</option>
+                        {getMandalNames(locationDistrict).map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {/* Village */}
+                    {locationDistrict && locationMandal && (
+                      <select
+                        value={locationVillage}
+                        onChange={(e) => setLocationVillage(e.target.value)}
+                        className="px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#1F2937] bg-white shadow-2xs animate-in"
+                        aria-label="Filter by village"
+                      >
+                        <option value="">All Villages ({locationMandal})</option>
+                        {getVillageNames(locationDistrict, locationMandal).map((v) => (
+                          <option key={v} value={v}>
+                            {v}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {/* Reset Location */}
+                    {(locationDistrict || locationMandal || locationVillage) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLocationDistrict('');
+                          setLocationMandal('');
+                          setLocationVillage('');
+                        }}
+                        className="px-2.5 py-1.5 rounded-xl border border-red-200 bg-red-50 text-red-700 text-xs font-bold hover:bg-red-100 flex items-center gap-1 transition-colors"
+                        title="Clear location filter"
+                      >
+                        <X size={13} />
+                        <span>Reset Location</span>
+                      </button>
+                    )}
+                  </>
                 )}
 
-                {/* Location Filter: Village */}
-                {locationDistrict && locationMandal && (
-                  <select
-                    value={locationVillage}
-                    onChange={(e) => setLocationVillage(e.target.value)}
-                    className="px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#1F2937] bg-white shadow-2xs animate-in"
-                    aria-label="Filter by village"
-                  >
-                    <option value="">All Villages ({locationMandal})</option>
-                    {getVillageNames(locationDistrict, locationMandal).map((v) => (
-                      <option key={v} value={v}>
-                        {v}
-                      </option>
-                    ))}
-                  </select>
+                {/* 2. Mandal Official: scoped to their mandal, can filter by village */}
+                {me?.role === 'mandal_official' && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs font-bold">
+                      <Building2 size={13} className="text-indigo-600" />
+                      <span>{me.mandal} Mandal</span>
+                    </div>
+
+                    {me.district && me.mandal && (
+                      <select
+                        value={locationVillage}
+                        onChange={(e) => setLocationVillage(e.target.value)}
+                        className="px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#1F2937] bg-white shadow-2xs"
+                        aria-label="Filter by village"
+                      >
+                        <option value="">All Villages in {me.mandal}</option>
+                        {getVillageNames(me.district, me.mandal).map((v) => (
+                          <option key={v} value={v}>
+                            {v}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {locationVillage && (
+                      <button
+                        type="button"
+                        onClick={() => setLocationVillage('')}
+                        className="px-2.5 py-1.5 rounded-xl border border-red-200 bg-red-50 text-red-700 text-xs font-bold hover:bg-red-100 flex items-center gap-1 transition-colors"
+                        title="Reset to all villages"
+                      >
+                        <X size={13} />
+                        <span>All Villages</span>
+                      </button>
+                    )}
+                  </div>
                 )}
 
-                {/* Clear Location Filter */}
-                {(locationDistrict || locationMandal || locationVillage) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLocationDistrict('');
-                      setLocationMandal('');
-                      setLocationVillage('');
-                    }}
-                    className="px-2.5 py-1.5 rounded-xl border border-red-200 bg-red-50 text-red-700 text-xs font-bold hover:bg-red-100 flex items-center gap-1 transition-colors"
-                    title="Clear location filter"
-                  >
-                    <X size={13} />
-                    <span>Reset Location</span>
-                  </button>
+                {/* 3. Panchayat / Sarpanch: strictly scoped to their village */}
+                {me?.role === 'sarpanch' && me?.village && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold">
+                    <Crown size={13} className="text-[#CCB252]" />
+                    <span>Panchayat: {me.village}</span>
+                  </div>
+                )}
+
+                {/* 4. Ward Member: strictly scoped to their ward */}
+                {me?.role === 'ward_member' && me?.village && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 text-xs font-bold">
+                    <Users size={13} className="text-purple-600" />
+                    <span>{me.village} • Ward {me.wardNumber || '1'}</span>
+                  </div>
+                )}
+
+                {/* 5. Citizen: scoped to their village */}
+                {me?.role === 'citizen' && me?.village && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold">
+                    <MapPin size={13} className="text-[#008A3B]" />
+                    <span>{me.village}</span>
+                  </div>
                 )}
               </div>
             </div>
 
             {/* Active location filter pill */}
-            {(locationDistrict || locationMandal || locationVillage) && (
+            {(me?.role === 'super_admin' || me?.role === 'admin') && (
               <div className="flex items-center gap-2 text-xs bg-amber-50 border border-amber-200/70 text-amber-900 px-3 py-1.5 rounded-xl w-fit">
                 <MapPin size={13} className="text-[#67001A]" />
                 <span>
-                  Filtered by location:{' '}
-                  <strong>
-                    {[locationDistrict, locationMandal, locationVillage].filter(Boolean).join(' → ')}
-                  </strong>
+                  {locationDistrict || locationMandal || locationVillage ? (
+                    <>
+                      Filtered by location:{' '}
+                      <strong>
+                        {[locationDistrict, locationMandal, locationVillage].filter(Boolean).join(' → ')}
+                      </strong>
+                    </>
+                  ) : (
+                    <>Statewide Oversight: <strong>All Districts & Villages</strong></>
+                  )}
+                </span>
+              </div>
+            )}
+
+            {me?.role === 'mandal_official' && (
+              <div className="flex items-center gap-2 text-xs bg-indigo-50 border border-indigo-200/70 text-indigo-900 px-3 py-1.5 rounded-xl w-fit">
+                <Building2 size={13} className="text-indigo-600" />
+                <span>
+                  Mandal Scope: <strong>{me.district} → {me.mandal}</strong>
+                  {locationVillage ? (
+                    <> • Filtered to Village: <strong>{locationVillage}</strong></>
+                  ) : (
+                    <> • <strong>All Villages</strong></>
+                  )}
+                </span>
+              </div>
+            )}
+
+            {me?.role === 'sarpanch' && me?.village && (
+              <div className="flex items-center gap-2 text-xs bg-amber-50 border border-amber-200/70 text-amber-900 px-3 py-1.5 rounded-xl w-fit">
+                <Crown size={13} className="text-[#CCB252]" />
+                <span>
+                  Gram Panchayat Scope: <strong>{me.district} → {me.mandal} → {me.village}</strong>
+                </span>
+              </div>
+            )}
+
+            {me?.role === 'ward_member' && me?.village && (
+              <div className="flex items-center gap-2 text-xs bg-purple-50 border border-purple-200/70 text-purple-900 px-3 py-1.5 rounded-xl w-fit">
+                <Users size={13} className="text-purple-600" />
+                <span>
+                  Ward Scope: <strong>{me.village} • Ward {me.wardNumber || '1'}</strong>
                 </span>
               </div>
             )}

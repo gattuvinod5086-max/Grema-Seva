@@ -27,12 +27,16 @@ let citizenX: Actor;
 let citizenX2: Actor;
 let citizenY: Actor;
 let pendingSarpanch: Actor;
+let mandalOfficialA: Actor;
+let citizenX2Village2: Actor;
 
 let villageX: { id: string };
 let villageY: { id: string };
+let villageX2: { id: string };
 let issueX1: string; // citizenX, ward 1, private
 let issueX1v: string; // citizenX, ward 1, village-visible
 let issueX2: string; // ward 2 (for ward-member boundary test)
+let issueX3: string; // citizenX2Village2 in villageX2
 let issueY1: string; // citizenY
 
 async function insertUser(opts: {
@@ -134,16 +138,17 @@ afterAll(async () => {
 
 describe("isolation contract", () => {
   it("seeds the fixture world", async () => {
-    [villageX, villageY] = await db
+    [villageX, villageY, villageX2] = await db
       .insert(schema.jurisdictions)
       .values([
         { district: "TestDistA", mandal: "MandalA1", village: "VillageX" },
         { district: "TestDistB", mandal: "MandalB1", village: "VillageY" },
+        { district: "TestDistA", mandal: "MandalA1", village: "VillageX2" },
       ])
       .onConflictDoNothing()
       .returning()
       .then((rows) => {
-        if (rows.length < 2) throw new Error("fixture jurisdictions missing");
+        if (rows.length < 3) throw new Error("fixture jurisdictions missing");
         return rows.map((r) => ({ id: r.id }));
       });
 
@@ -157,8 +162,18 @@ describe("isolation contract", () => {
       wardNumber: "1",
     });
     adminX = await insertUser({ name: "Admin A", role: "admin", jurisdictionId: villageX.id });
+    mandalOfficialA = await insertUser({
+      name: "Mandal Official A",
+      role: "mandal_official",
+      jurisdictionId: villageX.id,
+    });
     citizenX = await insertUser({ name: "Citizen X", role: "citizen", jurisdictionId: villageX.id });
     citizenX2 = await insertUser({ name: "Citizen X2", role: "citizen", jurisdictionId: villageX.id });
+    citizenX2Village2 = await insertUser({
+      name: "Citizen X2 Village2",
+      role: "citizen",
+      jurisdictionId: villageX2.id,
+    });
     citizenY = await insertUser({ name: "Citizen Y", role: "citizen", jurisdictionId: villageY.id });
     pendingSarpanch = await insertUser({
       name: "Pending Sarpanch",
@@ -170,6 +185,7 @@ describe("isolation contract", () => {
     issueX1 = (await seedIssue({ reporterId: citizenX.user.id, jurisdictionId: villageX.id, wardNumber: "1" })).id;
     issueX1v = (await seedIssue({ reporterId: citizenX.user.id, jurisdictionId: villageX.id, wardNumber: "1", visibility: "village" })).id;
     issueX2 = (await seedIssue({ reporterId: citizenX.user.id, jurisdictionId: villageX.id, wardNumber: "2" })).id;
+    issueX3 = (await seedIssue({ reporterId: citizenX2Village2.user.id, jurisdictionId: villageX2.id, visibility: "village" })).id;
     issueY1 = (await seedIssue({ reporterId: citizenY.user.id, jurisdictionId: villageY.id })).id;
 
     expect(superAdmin.user.role).toBe("super_admin");
@@ -200,8 +216,8 @@ describe("isolation contract", () => {
     expect(res.status).toBe(404);
   });
 
-  it("non-citizens (sarpanch, admin, super_admin, ward_member) cannot file an issue (forbidden)", async () => {
-    for (const actor of [sarpanchX, adminX, superAdmin, wardMemberX1]) {
+  it("non-citizens (sarpanch, admin, super_admin, ward_member, mandal_official) cannot file an issue (forbidden)", async () => {
+    for (const actor of [sarpanchX, adminX, superAdmin, wardMemberX1, mandalOfficialA]) {
       const res = await req(actor, "/api/issues", "POST", {
         category: "Sanitation",
         description: "Official attempting to report an issue",
@@ -660,6 +676,146 @@ describe("admin governance & approvals", () => {
     expect(declineRes.status).toBe(200);
     const declineBody = await declineRes.json();
     expect(declineBody.official.approvalStatus).toBe("declined");
+  });
+});
+
+describe("hierarchy-based data isolation & mandal official scoping", () => {
+  it("mandal official sees all issues in their mandal across all villages, but none outside", async () => {
+    const res = await req(mandalOfficialA, "/api/issues");
+    expect(res.status).toBe(200);
+    const ids = (await res.json()).issues.map((i: { id: string }) => i.id);
+    // VillageX issues (same mandal MandalA1)
+    expect(ids).toContain(issueX1);
+    expect(ids).toContain(issueX2);
+    // VillageX2 issues (same mandal MandalA1, different village)
+    expect(ids).toContain(issueX3);
+    // VillageY issues (MandalB1 in TestDistB) - MUST NOT LEAK
+    expect(ids).not.toContain(issueY1);
+  });
+
+  it("mandal official can filter issues by village within their mandal", async () => {
+    // 1. Filter by VillageX2
+    const resX2 = await req(mandalOfficialA, "/api/issues?village=VillageX2");
+    expect(resX2.status).toBe(200);
+    const bodyX2 = await resX2.json();
+    const idsX2 = bodyX2.issues.map((i: { id: string }) => i.id);
+    expect(idsX2).toContain(issueX3);
+    expect(idsX2).not.toContain(issueX1);
+    expect(idsX2).not.toContain(issueX2);
+
+    // 2. Filter by VillageX
+    const resX = await req(mandalOfficialA, "/api/issues?village=VillageX");
+    expect(resX.status).toBe(200);
+    const bodyX = await resX.json();
+    const idsX = bodyX.issues.map((i: { id: string }) => i.id);
+    expect(idsX).toContain(issueX1);
+    expect(idsX).toContain(issueX2);
+    expect(idsX).not.toContain(issueX3);
+
+    // 3. Attempt to filter by a village outside their mandal (VillageY) returns 0 issues
+    const resY = await req(mandalOfficialA, "/api/issues?village=VillageY");
+    expect(resY.status).toBe(200);
+    const bodyY = await resY.json();
+    expect(bodyY.issues.length).toBe(0);
+    expect(bodyY.total).toBe(0);
+  });
+
+  it("mandal official can read and manage issues within their mandal, but denied for outside mandal", async () => {
+    // 1. Can read issues in VillageX and VillageX2
+    const readX1 = await req(mandalOfficialA, `/api/issues/${issueX1}`);
+    expect(readX1.status).toBe(200);
+    const readX3 = await req(mandalOfficialA, `/api/issues/${issueX3}`);
+    expect(readX3.status).toBe(200);
+
+    // 2. Cannot read issue in VillageY (MandalB1)
+    const readY = await req(mandalOfficialA, `/api/issues/${issueY1}`);
+    expect(readY.status).toBe(404);
+
+    // 3. Can update status and add progress note for issues in their mandal
+    const updateX3 = await req(mandalOfficialA, `/api/issues/${issueX3}/status`, "PATCH", {
+      status: "In Progress",
+      note: "Mandal officer inspected VillageX2 site",
+    });
+    expect(updateX3.status).toBe(200);
+    expect((await updateX3.json()).issue.status).toBe("In Progress");
+
+    const noteRes = await req(mandalOfficialA, `/api/issues/${issueX3}/progress`, "POST", {
+      note: "Allocated funds for VillageX2 repair",
+    });
+    expect(noteRes.status).toBe(201);
+
+    // 4. Cannot update issue outside their mandal (VillageY)
+    const updateY = await req(mandalOfficialA, `/api/issues/${issueY1}/status`, "PATCH", {
+      status: "In Progress",
+    });
+    expect(updateY.status).toBe(403);
+  });
+
+  it("mandal official stats are scoped to their mandal and support village filtering", async () => {
+    // 1. Overall stats for MandalA1 includes issues from VillageX and VillageX2, but NOT VillageY
+    const statsAll = await req(mandalOfficialA, "/api/issues/stats");
+    expect(statsAll.status).toBe(200);
+    const bodyAll = await statsAll.json();
+    expect(bodyAll.total).toBeGreaterThanOrEqual(3);
+
+    // 2. Stats filtered by VillageX2
+    const statsX2 = await req(mandalOfficialA, "/api/issues/stats?village=VillageX2");
+    expect(statsX2.status).toBe(200);
+    const bodyX2 = await statsX2.json();
+    expect(bodyX2.total).toBe(1);
+
+    // 3. Stats for village outside mandal returns 0
+    const statsY = await req(mandalOfficialA, "/api/issues/stats?village=VillageY");
+    expect(statsY.status).toBe(200);
+    const bodyY = await statsY.json();
+    expect(bodyY.total).toBe(0);
+  });
+
+  it("panchayat (sarpanch) cannot see other villages in the same mandal", async () => {
+    // Sarpanch of VillageX lists issues
+    const res = await req(sarpanchX, "/api/issues");
+    expect(res.status).toBe(200);
+    const ids = (await res.json()).issues.map((i: { id: string }) => i.id);
+    expect(ids).toContain(issueX1);
+    expect(ids).toContain(issueX2);
+    // VillageX2 is in the same mandal, but sarpanch must NOT see it
+    expect(ids).not.toContain(issueX3);
+    expect(ids).not.toContain(issueY1);
+
+    // Cannot manage VillageX2 issue
+    const update = await req(sarpanchX, `/api/issues/${issueX3}/status`, "PATCH", {
+      status: "In Progress",
+    });
+    expect(update.status).toBe(403);
+  });
+
+  it("admin and super-admin can filter across districts, mandals, and villages", async () => {
+    // 1. Filter by district TestDistA: sees issues in VillageX and VillageX2, but not VillageY
+    const distA = await req(superAdmin, "/api/issues?district=TestDistA");
+    expect(distA.status).toBe(200);
+    const distABody = await distA.json();
+    const distAIds = distABody.issues.map((i: { id: string }) => i.id);
+    expect(distAIds).toContain(issueX1);
+    expect(distAIds).toContain(issueX3);
+    expect(distAIds).not.toContain(issueY1);
+
+    // 2. Filter by mandal MandalA1
+    const mandalA = await req(adminX, "/api/issues?mandal=MandalA1");
+    expect(mandalA.status).toBe(200);
+    const mandalABody = await mandalA.json();
+    const mandalAIds = mandalABody.issues.map((i: { id: string }) => i.id);
+    expect(mandalAIds).toContain(issueX1);
+    expect(mandalAIds).toContain(issueX3);
+    expect(mandalAIds).not.toContain(issueY1);
+
+    // 3. Filter by mandal MandalB1
+    const mandalB = await req(adminX, "/api/issues?mandal=MandalB1");
+    expect(mandalB.status).toBe(200);
+    const mandalBBody = await mandalB.json();
+    const mandalBIds = mandalBBody.issues.map((i: { id: string }) => i.id);
+    expect(mandalBIds).toContain(issueY1);
+    expect(mandalBIds).not.toContain(issueX1);
+    expect(mandalBIds).not.toContain(issueX3);
   });
 });
 

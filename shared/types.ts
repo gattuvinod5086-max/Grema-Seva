@@ -6,6 +6,7 @@ export const USER_ROLES = [
   "citizen",
   "ward_member",
   "sarpanch",
+  "mandal_official",
   "admin",
   "super_admin",
 ] as const;
@@ -33,7 +34,12 @@ export const UserSchema = z.object({
 });
 export type User = z.infer<typeof UserSchema>;
 
-export const OFFICIAL_REGISTRATION_ROLES = ["sarpanch", "admin", "ward_member"] as const;
+export const OFFICIAL_REGISTRATION_ROLES = [
+  "sarpanch",
+  "ward_member",
+  "mandal_official",
+  "admin",
+] as const;
 export type OfficialRegistrationRole = (typeof OFFICIAL_REGISTRATION_ROLES)[number];
 
 export const OfficialRecordSchema = z.object({

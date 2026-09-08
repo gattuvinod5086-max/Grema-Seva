@@ -51,9 +51,16 @@ export const issuesRoutes = new Hono()
     if (!jurisdiction && user.role !== "super_admin" && user.role !== "admin") {
       return c.json({ total: 0, byStatus: {}, byCategory: {} });
     }
-    const district = c.req.query("district")?.trim() || undefined;
-    const mandal = c.req.query("mandal")?.trim() || undefined;
-    const village = c.req.query("village")?.trim() || undefined;
+    let district = c.req.query("district")?.trim() || undefined;
+    let mandal = c.req.query("mandal")?.trim() || undefined;
+    let village = c.req.query("village")?.trim() || undefined;
+
+    // Hierarchy enforcement: mandal officials are always bound to their district and mandal
+    if (user.role === "mandal_official" && jurisdiction) {
+      district = jurisdiction.district;
+      mandal = jurisdiction.mandal;
+    }
+
     return c.json(
       await getVillageIssueStats(issueVisibilityFilter(user, jurisdiction), {
         district,
@@ -87,9 +94,17 @@ export const issuesRoutes = new Hono()
     const { user, jurisdiction } = getAuth(c);
     const page = Math.max(1, Number(c.req.query("page") ?? "1") || 1);
     const limit = Math.min(100, Math.max(1, Number(c.req.query("limit") ?? "20") || 20));
-    const district = c.req.query("district")?.trim() || undefined;
-    const mandal = c.req.query("mandal")?.trim() || undefined;
+    let district = c.req.query("district")?.trim() || undefined;
+    let mandal = c.req.query("mandal")?.trim() || undefined;
     const village = c.req.query("village")?.trim() || undefined;
+
+    // Hierarchy enforcement:
+    // admin / super_admin: sees all data, can filter freely by district, mandal, village
+    // mandal_official: forced to their district and mandal; can filter by village within that mandal
+    if (user.role === "mandal_official" && jurisdiction) {
+      district = jurisdiction.district;
+      mandal = jurisdiction.mandal;
+    }
 
     const result = await listIssuesForUser(user, issueVisibilityFilter(user, jurisdiction), {
       status: c.req.query("status") ?? undefined,
@@ -274,7 +289,7 @@ export const issuesRoutes = new Hono()
     const isReporter = issue.reporterId === user.id;
     if (!isReporter) {
       // Officials may attach evidence; ACL mirrors the manage rule.
-      assertCanManageIssue(user, jurisdiction, issue);
+      await assertCanManageIssue(user, jurisdiction, issue);
     }
 
     const body = await c.req.parseBody();

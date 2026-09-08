@@ -19,9 +19,10 @@ interface OtpRequestResponse {
 }
 
 const ROLE_META: Record<OfficialRegistrationRole, { label: string; hint: string }> = {
-  sarpanch: { label: 'Sarpanch', hint: 'Head of the gram panchayat' },
+  sarpanch: { label: 'Sarpanch (Panchayat)', hint: 'Head of the gram panchayat' },
   ward_member: { label: 'Ward Member', hint: 'Ward-level representative' },
-  admin: { label: 'Mandal / District Official', hint: 'Government official at mandal or district level' },
+  mandal_official: { label: 'Mandal Official', hint: 'Government official at mandal level' },
+  admin: { label: 'State / District Admin', hint: 'Administrative official with statewide oversight' },
 };
 
 /**

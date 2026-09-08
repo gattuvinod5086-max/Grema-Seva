@@ -7,7 +7,7 @@ import { notFound, badRequest } from "../middleware/error";
 
 const decisionSchema = z.object({ note: z.string().trim().max(500).optional() });
 
-const OFFICIAL_ROLES = ["sarpanch", "admin", "ward_member"] as const;
+const OFFICIAL_ROLES = ["sarpanch", "admin", "ward_member", "mandal_official"] as const;
 
 /**
  * Super-admin approval queue. Officials register by phone + jurisdiction and
@@ -26,7 +26,7 @@ export const adminRoutes = new Hono()
     if (role && OFFICIAL_ROLES.includes(role as (typeof OFFICIAL_ROLES)[number])) {
       conditions.push(eq(schema.users.role, role as (typeof OFFICIAL_ROLES)[number]));
     } else if (role === "mandal") {
-      conditions.push(eq(schema.users.role, "admin"));
+      conditions.push(inArray(schema.users.role, ["mandal_official", "admin"]));
     } else if (role === "panchayat") {
       conditions.push(inArray(schema.users.role, ["sarpanch", "ward_member"]));
     }

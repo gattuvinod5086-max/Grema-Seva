@@ -54,7 +54,7 @@ export default function AdminOfficials() {
     const params = new URLSearchParams();
     if (statusFilter !== 'all') params.set('status', statusFilter);
     if (tierFilter === 'mandal') {
-      params.set('role', 'admin');
+      params.set('role', 'mandal');
     } else if (tierFilter === 'panchayat') {
       if (panchayatSubRole !== 'all') {
         params.set('role', panchayatSubRole);
@@ -80,7 +80,7 @@ export default function AdminOfficials() {
     const pending = officials.filter((o) => o.approvalStatus === 'pending').length;
     const approved = officials.filter((o) => o.approvalStatus === 'approved').length;
     const declined = officials.filter((o) => o.approvalStatus === 'declined').length;
-    const mandalCount = officials.filter((o) => o.role === 'admin').length;
+    const mandalCount = officials.filter((o) => o.role === 'admin' || (o.role as string) === 'mandal_official').length;
     const panchayatCount = officials.filter((o) => o.role === 'sarpanch' || o.role === 'ward_member').length;
     return { pending, approved, declined, mandalCount, panchayatCount, total: officials.length };
   }, [officials]);

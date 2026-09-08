@@ -25,9 +25,10 @@ import { OFFICIAL_REGISTRATION_ROLES, type OfficialRegistrationRole } from "@sha
 import { isValidIndianMobile, personNameSchema, NAME_ERROR } from "@shared/validation";
 
 const ROLE_META: Record<OfficialRegistrationRole, { label: string; hint: string }> = {
-  sarpanch: { label: "Sarpanch", hint: "Head of the Gram Panchayat" },
+  sarpanch: { label: "Sarpanch (Panchayat)", hint: "Head of the Gram Panchayat" },
   ward_member: { label: "Ward Member", hint: "Ward representative" },
-  admin: { label: "Mandal / District Official", hint: "Government administrative official" },
+  mandal_official: { label: "Mandal Official", hint: "Government official at mandal level" },
+  admin: { label: "State / District Admin", hint: "Administrative official with statewide oversight" },
 };
 
 interface OtpResponse {

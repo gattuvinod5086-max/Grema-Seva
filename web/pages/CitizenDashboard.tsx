@@ -209,8 +209,8 @@ export default function CitizenDashboard() {
           ) : null}
         </section>
 
-        {/* Primary action (citizens report issues for their village, sarpanch does NOT report) */}
-        {me?.role !== 'sarpanch' && (
+        {/* Primary action (citizens report issues for their village, officials do NOT report) */}
+        {me?.role === 'citizen' && (
           me?.village && me?.name && me.name !== 'New User' ? (
             <button
               type="button"
@@ -361,7 +361,9 @@ export default function CitizenDashboard() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               {/* Tabs: Village Logs vs My Reports */}
               <div className="flex rounded-xl border border-[#E5E7EB] overflow-hidden shrink-0">
-                {(['village', 'mine'] as const).map((t) => (
+                {(['village', 'mine'] as const)
+                  .filter((t) => t === 'village' || me?.role === 'citizen')
+                  .map((t) => (
                   <button
                     key={t}
                     type="button"
@@ -509,14 +511,18 @@ export default function CitizenDashboard() {
               <p className="font-semibold text-[#1F2937]">
                 {tab === 'mine' ? 'You haven&apos;t reported anything yet' : 'No issues match the filter'}
               </p>
-              <p className="text-sm text-[#64748B] mt-1">Tap &quot;Report a Problem&quot; when you need help.</p>
+              <p className="text-sm text-[#64748B] mt-1">
+                {me?.role === 'citizen'
+                  ? 'Tap "Report a Problem" when you need help.'
+                  : 'Civic grievances reported by citizens will appear here.'}
+              </p>
             </GsCard>
           ) : (
             <IssueList issues={filteredIssues} onSelectIssue={(i) => void openIssueDetail(i.id)} />
           )}
         </section>
 
-      {showForm && (
+      {showForm && me?.role === 'citizen' && (
         <IssueForm
           onClose={() => setShowForm(false)}
           onSubmitted={() => {

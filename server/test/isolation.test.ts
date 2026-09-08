@@ -200,12 +200,16 @@ describe("isolation contract", () => {
     expect(res.status).toBe(404);
   });
 
-  it("sarpanch cannot file an issue (forbidden)", async () => {
-    const res = await req(sarpanchX, "/api/issues", "POST", {
-      category: "Sanitation",
-      description: "Sarpanch attempting to report an issue",
-    });
-    expect(res.status).toBe(403);
+  it("non-citizens (sarpanch, admin, super_admin, ward_member) cannot file an issue (forbidden)", async () => {
+    for (const actor of [sarpanchX, adminX, superAdmin, wardMemberX1]) {
+      const res = await req(actor, "/api/issues", "POST", {
+        category: "Sanitation",
+        description: "Official attempting to report an issue",
+      });
+      expect(res.status).toBe(403);
+      const data = await res.json();
+      expect(data.error.message).toMatch(/Only citizens can report civic issues/);
+    }
   });
 
   it("newly filed issues are village-public: neighbours see them, without reporter identity", async () => {

@@ -202,7 +202,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
             collapsed={isCollapsed}
           />
 
-          {user?.village && user?.role !== "sarpanch" && (
+          {user?.role === "citizen" && user?.village && (
             <SidebarItem
               icon={<PlusCircle size={18} strokeWidth={2.5} />}
               label={t.nav.reportIssue ?? "Report Issue"}
@@ -408,8 +408,8 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
         </main>
       </div>
 
-      {/* Global Issue Report Modal */}
-      {showReportModal && (
+      {/* Global Issue Report Modal (Citizens only) */}
+      {showReportModal && user?.role === "citizen" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
           <div className="w-full max-w-lg my-8">
             <IssueForm

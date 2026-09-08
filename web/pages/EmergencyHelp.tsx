@@ -194,13 +194,9 @@ export default function EmergencyHelp() {
           isDemoMode={bundle.isDemoData}
           onUseGps={handleGps}
           gpsLoading={gpsLoading}
-          onReportIssue={(category, priority) => {
-            if (!user) {
-              navigate("/login");
-            } else {
-              navigate(`/board?category=${encodeURIComponent(category)}&priority=${encodeURIComponent(priority)}`);
-            }
-          }}
+          onReportIssue={!user ? () => navigate("/login") : user.role === "citizen" ? (category, priority) => {
+            navigate(`/board?category=${encodeURIComponent(category)}&priority=${encodeURIComponent(priority)}`);
+          } : undefined}
           onSearch={(q, type) => setSearchResults(searchLocalContacts(loc, q, type))}
           searchResults={searchResults}
         />

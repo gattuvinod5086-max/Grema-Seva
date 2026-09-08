@@ -105,8 +105,8 @@ export const issuesRoutes = new Hono()
   /* Create — jurisdiction comes from the authenticated profile, never the body. */
   .post("/", async (c) => {
     const { user, jurisdiction } = getAuth(c);
-    if (user.role === "sarpanch") {
-      throw forbidden("Sarpanches review and resolve governance issues, and cannot submit reports");
+    if (user.role !== "citizen") {
+      throw forbidden("Only citizens can report civic issues. Officials and administrators review and govern reports.");
     }
     if (!jurisdiction || !jurisdiction.village || !user.name || user.name === "New User") {
       throw badRequest("Please complete your profile details and village jurisdiction before reporting an issue.");

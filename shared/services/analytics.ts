@@ -111,8 +111,18 @@ export function computeVillageAnalytics(
   issues: IssueLike[],
   options?: { isDemoData?: boolean }
 ): VillageAnalyticsData {
-  const villageIssues = issues.filter((i) => !village || i.village === village);
-  const isDemoData = options?.isDemoData ?? villageIssues.length < 3;
+  const normalizedVillage = (village || "").trim();
+  const isAll =
+    !normalizedVillage ||
+    normalizedVillage.toLowerCase() === "all" ||
+    normalizedVillage.toLowerCase() === "all villages" ||
+    normalizedVillage.toLowerCase() === "statewide";
+
+  const villageIssues = isAll
+    ? issues
+    : issues.filter((i) => (i.village || "").trim().toLowerCase() === normalizedVillage.toLowerCase());
+
+  const isDemoData = options?.isDemoData ?? (villageIssues.length < 3 && !isAll);
   const stats = computeDashboardStats(villageIssues, { isDemoData });
 
   const categoryCounts: Record<string, number> = {};

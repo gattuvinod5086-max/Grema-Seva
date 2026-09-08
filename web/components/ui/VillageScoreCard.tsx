@@ -1,8 +1,14 @@
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { GsCard } from "./GsCard";
-import type { VillageDevelopmentScore } from "@shared/services/villageScore";
+import { getCategoryLabel, type VillageDevelopmentScore, type VillageScoreBreakdown } from "@shared/services/villageScore";
 
-export default function VillageScoreCard({ score }: { score: VillageDevelopmentScore }) {
+export default function VillageScoreCard({
+  score,
+  title = "Village Development Score",
+}: {
+  score: VillageDevelopmentScore;
+  title?: string;
+}) {
   const TrendIcon =
     score.trendPercent > 0 ? TrendingUp : score.trendPercent < 0 ? TrendingDown : Minus;
   const trendColor =
@@ -14,7 +20,7 @@ export default function VillageScoreCard({ score }: { score: VillageDevelopmentS
     <GsCard className="overflow-hidden" padding="p-0">
       <div className="p-5 md:p-6">
         <p className="text-xs font-semibold uppercase tracking-wide text-[#64748B] mb-1">
-          Village Development Score
+          {title}
         </p>
         <div className="flex items-end gap-3">
           <p className="text-4xl md:text-5xl font-bold text-[#67001A] tabular-nums">
@@ -41,7 +47,9 @@ export default function VillageScoreCard({ score }: { score: VillageDevelopmentS
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-[#E5E7EB] border-t border-[#E5E7EB]">
         {Object.entries(score.breakdown).map(([key, val]) => (
           <div key={key} className="bg-white p-3 text-center">
-            <p className="text-[10px] font-semibold uppercase text-[#64748B] truncate">{key}</p>
+            <p className="text-[10px] font-semibold uppercase text-[#64748B] truncate">
+              {getCategoryLabel(key as keyof VillageScoreBreakdown)}
+            </p>
             <p className="text-lg font-bold text-[#1F2937] tabular-nums">{val}</p>
           </div>
         ))}

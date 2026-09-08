@@ -157,10 +157,32 @@ export default function CitizenDashboard() {
     [filteredIssues]
   );
 
-  const villageScore = useMemo(() => {
+  const villageScoreData = useMemo(() => {
+    // For Admin: Hide by default on statewide/mandal issue board.
+    // Only show if Admin explicitly filters down to a specific single village!
+    if (isAdmin) {
+      if (!locationVillage || !issues) return null;
+      return {
+        score: computeVillageAnalytics(locationVillage, issues).developmentScore,
+        title: `${locationVillage} Development Score`,
+      };
+    }
+    // For Mandal Official: Show when a specific village is chosen in the dropdown
+    if (isMandal) {
+      const targetVillage = locationVillage;
+      if (!targetVillage || !issues) return null;
+      return {
+        score: computeVillageAnalytics(targetVillage, issues).developmentScore,
+        title: `${targetVillage} Development Score`,
+      };
+    }
+    // For Citizen / Sarpanch / Ward Member: Strictly their own village
     if (!me?.village || !issues) return null;
-    return computeVillageAnalytics(me.village, issues).developmentScore;
-  }, [me?.village, issues]);
+    return {
+      score: computeVillageAnalytics(me.village, issues).developmentScore,
+      title: `${me.village} Development Score`,
+    };
+  }, [isAdmin, isMandal, locationVillage, me?.village, issues]);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -376,10 +398,10 @@ export default function CitizenDashboard() {
           </section>
         )}
 
-        {/* Village score */}
-        {villageScore && (
+        {/* Village score: hidden for admin on statewide log; shown for citizen or when specific village is filtered */}
+        {villageScoreData && (
           <section>
-            <VillageScoreCard score={villageScore} />
+            <VillageScoreCard score={villageScoreData.score} title={villageScoreData.title} />
           </section>
         )}
 

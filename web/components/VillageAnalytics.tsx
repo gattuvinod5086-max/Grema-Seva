@@ -6,9 +6,10 @@ interface VillageAnalyticsProps {
   village: string;
   issues: Parameters<typeof computeVillageAnalytics>[1];
   isDemoData?: boolean;
+  title?: string;
 }
 
-export default function VillageAnalytics({ village, issues, isDemoData }: VillageAnalyticsProps) {
+export default function VillageAnalytics({ village, issues, isDemoData, title }: VillageAnalyticsProps) {
   const analytics: VillageAnalyticsData = computeVillageAnalytics(village, issues, { isDemoData });
 
   return (
@@ -19,7 +20,7 @@ export default function VillageAnalytics({ village, issues, isDemoData }: Villag
         </div>
       )}
 
-      <VillageScoreCard score={analytics.developmentScore} />
+      <VillageScoreCard score={analytics.developmentScore} title={title} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[

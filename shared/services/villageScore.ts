@@ -18,22 +18,25 @@ export interface VillageDevelopmentScore {
   label: string;
 }
 
-const CATEGORY_MAP: Record<string, keyof VillageScoreBreakdown> = {
-  Water: "water",
-  Roads: "roads",
-  Sanitation: "sanitation",
-  Electricity: "electricity",
-  Welfare: "welfare",
-  Agriculture: "welfare",
-  Other: "issueResolution",
-};
+function mapCategory(raw: string): keyof VillageScoreBreakdown {
+  const c = (raw || "").toLowerCase().trim();
+  if (c.includes("water") || c.includes("tap") || c.includes("leak") || c.includes("pipe")) return "water";
+  if (c.includes("road") || c.includes("pothole") || c.includes("street")) return "roads";
+  if (c.includes("sanitat") || c.includes("drain") || c.includes("garbage") || c.includes("waste") || c.includes("clean")) return "sanitation";
+  if (c.includes("electr") || c.includes("power") || c.includes("light") || c.includes("transformer")) return "electricity";
+  if (c.includes("welfare") || c.includes("agri") || c.includes("scheme") || c.includes("pension") || c.includes("farm")) return "welfare";
+  return "issueResolution";
+}
 
 function categoryScore(openCount: number, resolvedCount: number): number {
   const total = openCount + resolvedCount;
   if (total === 0) return 85;
   const resolutionRate = resolvedCount / total;
-  const openPenalty = Math.min(30, openCount * 3);
-  return Math.max(0, Math.min(100, Math.round(resolutionRate * 100 - openPenalty + 10)));
+  // Penalty of 4 points per open issue, capped at 35 points max penalty
+  const openPenalty = Math.min(35, openCount * 4);
+  // Base health 85, adjusted by resolution rate (+15 max bonus) minus open backlog penalty
+  const score = Math.round(85 + resolutionRate * 15 - openPenalty);
+  return Math.max(15, Math.min(100, score));
 }
 
 export function computeVillageDevelopmentScore(
@@ -70,7 +73,7 @@ export function computeVillageDevelopmentScore(
   let ratingCount = 0;
 
   for (const issue of issues) {
-    const key = CATEGORY_MAP[issue.category] ?? "issueResolution";
+    const key = mapCategory(issue.category);
     const resolved = issue.status === "Resolved" || issue.status === "Closed";
     if (resolved) buckets[key].resolved++;
     else buckets[key].open++;
@@ -109,11 +112,14 @@ export function computeVillageDevelopmentScore(
   }
 
   const recentRate = recentTotal ? recentResolved / recentTotal : 0;
-  const olderRate = olderTotal ? olderResolved / olderTotal : recentRate;
-  const trendPercent =
-    olderTotal === 0 && recentTotal === 0
-      ? 0
-      : Math.round((recentRate - olderRate) * 100);
+  let trendPercent = 0;
+  if (olderTotal > 0) {
+    const olderRate = olderResolved / olderTotal;
+    trendPercent = Math.round((recentRate - olderRate) * 100);
+  } else if (recentTotal > 0) {
+    // When all complaints are recent, compare resolution velocity vs 50% target benchmark
+    trendPercent = Math.round((recentRate - 0.5) * 100);
+  }
 
   const previous = Math.max(0, Math.min(100, current - trendPercent));
 

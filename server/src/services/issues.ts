@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, inArray, isNotNull } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, inArray, isNotNull } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { db, schema } from "../db/client";
 import type { Issue, IssueStatus, Jurisdiction, User } from "../db/schema";
@@ -139,6 +139,9 @@ export async function createIssue(
 export interface ListIssuesOptions {
   status?: string;
   category?: string;
+  district?: string;
+  mandal?: string;
+  village?: string;
   page: number;
   limit: number;
 }
@@ -152,12 +155,16 @@ export async function listIssuesForUser(
   if (visibilityFilter) conditions.push(visibilityFilter);
   if (options.status) conditions.push(eq(schema.issues.status, options.status as IssueStatus));
   if (options.category) conditions.push(eq(schema.issues.category, options.category));
+  if (options.district) conditions.push(ilike(schema.jurisdictions.district, options.district.trim()));
+  if (options.mandal) conditions.push(ilike(schema.jurisdictions.mandal, options.mandal.trim()));
+  if (options.village) conditions.push(ilike(schema.jurisdictions.village, options.village.trim()));
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
   const [{ total }] = await db
     .select({ total: count() })
     .from(schema.issues)
+    .innerJoin(schema.jurisdictions, eq(schema.issues.jurisdictionId, schema.jurisdictions.id))
     .where(where);
 
   const rows = await db
@@ -402,18 +409,24 @@ export async function reopenIssue(user: User, issueId: string, reason: string) {
 }
 
 
-/** Status counts for one village — "how many issues and their status". */
+/** Status counts for one village/location — "how many issues and their status". */
 export async function getVillageIssueStats(
-  visibilityFilter: SQL | undefined
+  visibilityFilter: SQL | undefined,
+  locationFilter?: { district?: string; mandal?: string; village?: string }
 ) {
   // The caller's own visibility filter already encodes what they may see
   // (citizens never see others' private issues; officials do).
   const conditions = [visibilityFilter].filter((c): c is SQL => c !== undefined);
+  if (locationFilter?.district) conditions.push(ilike(schema.jurisdictions.district, locationFilter.district.trim()));
+  if (locationFilter?.mandal) conditions.push(ilike(schema.jurisdictions.mandal, locationFilter.mandal.trim()));
+  if (locationFilter?.village) conditions.push(ilike(schema.jurisdictions.village, locationFilter.village.trim()));
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
 
   const rows = await db
     .select({ status: schema.issues.status, category: schema.issues.category, n: count() })
     .from(schema.issues)
-    .where(and(...conditions))
+    .innerJoin(schema.jurisdictions, eq(schema.issues.jurisdictionId, schema.jurisdictions.id))
+    .where(where)
     .groupBy(schema.issues.status, schema.issues.category);
 
   const byStatus: Record<string, number> = {};

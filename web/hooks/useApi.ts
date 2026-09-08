@@ -24,7 +24,7 @@ export function useApi<T>(url: string, options: UseApiOptions = {}) {
   const refetch = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(url, { credentials: 'same-origin' });
+      const response = await fetch(url, { credentials: 'include' });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new ApiError(body?.error?.message ?? `Request failed (${response.status})`, response.status, body?.error?.code);

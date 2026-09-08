@@ -15,12 +15,16 @@ const OFFICIAL_ROLES = ["sarpanch", "admin", "ward_member"] as const;
  */
 export const adminRoutes = new Hono()
   .use("*", requireAuth)
-  .get("/officials", requireRole("super_admin"), async (c) => {
+  .get("/officials", requireRole("super_admin", "admin"), async (c) => {
     const status = c.req.query("status");
+    const role = c.req.query("role");
 
     const conditions = [inArray(schema.users.role, OFFICIAL_ROLES), ne(schema.users.role, "super_admin")];
     if (status && ["pending", "approved", "declined"].includes(status)) {
       conditions.push(eq(schema.users.approvalStatus, status as "pending" | "approved" | "declined"));
+    }
+    if (role && OFFICIAL_ROLES.includes(role as (typeof OFFICIAL_ROLES)[number])) {
+      conditions.push(eq(schema.users.role, role as (typeof OFFICIAL_ROLES)[number]));
     }
 
     const rows = await db
@@ -28,7 +32,7 @@ export const adminRoutes = new Hono()
       .from(schema.users)
       .leftJoin(schema.jurisdictions, eq(schema.users.jurisdictionId, schema.jurisdictions.id))
       .where(and(...conditions))
-      .orderBy(desc(schema.users.createdAt))
+      .orderBy(desc(schema.users.updatedAt), desc(schema.users.createdAt))
       .limit(200);
 
     return c.json({
@@ -47,7 +51,7 @@ export const adminRoutes = new Hono()
       })),
     });
   })
-  .post("/officials/:id/approve", requireRole("super_admin"), async (c) => {
+  .post("/officials/:id/approve", requireRole("super_admin", "admin"), async (c) => {
     const { user } = getAuth(c);
     const targetId = c.req.param("id") ?? "";
 
@@ -77,7 +81,7 @@ export const adminRoutes = new Hono()
 
     return c.json({ ok: true, official: { id: updated.id, approvalStatus: updated.approvalStatus } });
   })
-  .post("/officials/:id/decline", requireRole("super_admin"), async (c) => {
+  .post("/officials/:id/decline", requireRole("super_admin", "admin"), async (c) => {
     const { user } = getAuth(c);
     const targetId = c.req.param("id") ?? "";
     const { note } = decisionSchema.parse(await c.req.json().catch(() => ({})));

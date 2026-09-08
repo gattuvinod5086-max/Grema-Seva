@@ -22,6 +22,20 @@
       "when": 1788714163826,
       "tag": "0002_ambitious_karnak",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788789978088,
+      "tag": "0003_flippant_white_tiger",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788790790258,
+      "tag": "0004_dusty_hellcat",
+      "breakpoints": true
     }
   ]
 }

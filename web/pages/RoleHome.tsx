@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router';
+import { Navigate, useSearchParams } from 'react-router';
 import { Loader2 } from 'lucide-react';
 import ProtectedRoute from '@web/components/ProtectedRoute';
 import CitizenDashboard from '@web/pages/CitizenDashboard';
@@ -6,6 +6,7 @@ import { useApi } from '@web/hooks/useApi';
 import type { User } from '@shared/types';
 
 function HomeByRole() {
+  const [params] = useSearchParams();
   // IMPORTANT: wait for isLoading — data is null on first render, and
   // treating that as "not logged in" bounces every user back to /login.
   const { data, error, isLoading } = useApi<{ user: User }>('/api/users/me');
@@ -17,9 +18,9 @@ function HomeByRole() {
     );
   }
   if (error || !data) return <Navigate to="/login" replace />;
-  // The super admin's home is the approvals console; everyone else gets
-  // the issue dashboard.
-  return data.user.role === 'super_admin' ? (
+  // The administrator's home is the approvals console; everyone else gets
+  // the issue dashboard. If ?view=board is set, admin lands on the issue board.
+  return (data.user.role === 'super_admin' || data.user.role === 'admin') && params.get('view') !== 'board' ? (
     <Navigate to="/admin/officials" replace />
   ) : (
     <CitizenDashboard />
@@ -29,7 +30,7 @@ function HomeByRole() {
 /** "/" is a role router: each role lands where it can actually work. */
 export default function RoleHome() {
   return (
-    <ProtectedRoute key="home">
+    <ProtectedRoute key="home" requireLocation={false}>
       <HomeByRole />
     </ProtectedRoute>
   );

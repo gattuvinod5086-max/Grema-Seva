@@ -167,3 +167,164 @@ export interface SimilarIssue {
   createdAt: string;
   distanceM: number | null;
 }
+
+/* ── Sarpanches & Village Directory ────────────────────────────── */
+
+export interface SarpanchRecord {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  role: "sarpanch";
+  approvalStatus: ApprovalStatus;
+  approvalNote: string | null;
+  wardNumber: string | null;
+  jurisdictionId: string | null;
+  district: string | null;
+  mandal: string | null;
+  village: string | null;
+  createdAt: string;
+  issuesCount?: {
+    total: number;
+    open: number;
+    resolved: number;
+  };
+}
+
+export interface SarpanchOverview {
+  totalSarpanches: number;
+  approvedSarpanches: number;
+  pendingSarpanches: number;
+  declinedSarpanches: number;
+  villagesCovered: number;
+}
+
+export interface SarpanchListResponse {
+  overview: SarpanchOverview;
+  sarpanches: SarpanchRecord[];
+}
+
+export interface VillageDetailResponse {
+  jurisdiction: {
+    id: string;
+    district: string;
+    mandal: string;
+    village: string;
+  };
+  sarpanch: SarpanchRecord | null;
+  allSarpanches: SarpanchRecord[];
+  wardMembers: Array<{
+    id: string;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    wardNumber: string | null;
+    approvalStatus: ApprovalStatus;
+    approvalNote: string | null;
+    createdAt: string;
+  }>;
+  issuesSummary: {
+    total: number;
+    open: number;
+    inProgress: number;
+    resolved: number;
+    closed: number;
+  };
+  recentIssues: Array<{
+    id: string;
+    code: string;
+    category: string;
+    status: IssueStatus;
+    createdAt: string;
+  }>;
+}
+
+/* ── Notices & News ─────────────────────────────────────────────── */
+
+export const POST_TYPES = ["notice", "news"] as const;
+export type PostType = (typeof POST_TYPES)[number];
+
+export const POST_PRIORITIES = ["NORMAL", "IMPORTANT", "URGENT"] as const;
+export type PostPriority = (typeof POST_PRIORITIES)[number];
+
+export const NOTICE_CATEGORIES = [
+  "Gram Panchayat Announcement",
+  "Water & Sanitation",
+  "Health & Medical Camp",
+  "Electricity & Power",
+  "Roads & Public Works",
+  "Agriculture & Ration",
+  "Emergency Alert",
+] as const;
+export type NoticeCategory = (typeof NOTICE_CATEGORIES)[number];
+
+export const NEWS_CATEGORIES = [
+  "Village News",
+  "Telangana State News",
+  "Agriculture & Weather",
+  "Education & Youth",
+  "Welfare & Schemes",
+  "Sports & Culture",
+  "General",
+] as const;
+export type NewsCategory = (typeof NEWS_CATEGORIES)[number];
+
+export const PostSchema = z.object({
+  id: z.string(),
+  type: z.enum(POST_TYPES),
+  title: z.string(),
+  content: z.string().optional().default(""),
+  category: z.string(),
+  priority: z.enum(POST_PRIORITIES),
+  authorId: z.string(),
+  authorName: z.string(),
+  authorRole: z.string(),
+  jurisdictionId: z.string().nullable(),
+  wardNumber: z.string().nullable(),
+  district: z.string().nullable(),
+  mandal: z.string().nullable(),
+  village: z.string().nullable(),
+  imageUrl: z.string().nullable().optional(),
+  pinned: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type Post = z.infer<typeof PostSchema>;
+
+export const CreatePostSchema = z.object({
+  type: z.enum(POST_TYPES),
+  title: z.string().trim().min(3).max(200),
+  content: z.string().trim().max(5000).optional().default(""),
+  category: z.string().trim().min(1).max(100),
+  priority: z.enum(POST_PRIORITIES).default("NORMAL"),
+  district: z.string().trim().optional(),
+  mandal: z.string().trim().optional(),
+  village: z.string().trim().optional(),
+  wardNumber: z.string().trim().max(20).optional(),
+  imageUrl: z.string().trim().nullable().optional(),
+  pinned: z.boolean().optional(),
+});
+export type CreatePostInput = z.infer<typeof CreatePostSchema>;
+
+export interface ListPostsResponse {
+  posts: Post[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export type RealtimeEventType = "issue" | "notice" | "news" | "post";
+export type RealtimeActionType = "created" | "updated" | "deleted";
+
+export interface RealtimeEvent {
+  type: RealtimeEventType;
+  action: RealtimeActionType;
+  jurisdictionId?: string | null;
+  reporterId?: string | null;
+  district?: string | null;
+  mandal?: string | null;
+  village?: string | null;
+  data: Record<string, any>;
+  timestamp: string;
+}
+

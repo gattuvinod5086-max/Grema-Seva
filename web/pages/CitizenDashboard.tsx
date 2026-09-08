@@ -1,10 +1,14 @@
 import { useState, useMemo } from 'react';
 import {
   Plus,
-  LogOut,
   ClipboardList,
   Building2,
   MapPin,
+  Crown,
+  Bell,
+  Siren,
+  Award,
+  Leaf,
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import IssueList from '@web/components/IssueList';
@@ -12,8 +16,9 @@ import IssueForm from '@web/components/IssueForm';
 import IssueDetailModal from '@web/components/IssueDetailModal';
 import VillageScoreCard from '@web/components/ui/VillageScoreCard';
 import { GsCard } from '@web/components/ui/GsCard';
+import { UserRoleBadge } from '@web/components/ui/UserRoleBadge';
+import { useRealtimeEvent } from '@web/context/RealtimeContext';
 import { UI } from '@web/constants/design';
-import { BRANDING } from '@web/constants/branding';
 import { useApi } from '@web/hooks/useApi';
 import { computeVillageAnalytics } from '@shared/services/analytics';
 import type { IssueDetail, IssueListResponse, User, VillageIssueStats } from '@shared/types';
@@ -72,6 +77,11 @@ export default function CitizenDashboard() {
     useApi<IssueListResponse>('/api/issues');
   const { data: stats } = useApi<VillageIssueStats>('/api/issues/stats');
 
+  // Realtime updates: automatically refresh dashboard whenever an issue, notice, or news is posted/updated
+  useRealtimeEvent('all', () => {
+    void refetchIssues();
+  });
+
   const issues = useMemo(() => issuesData?.issues ?? [], [issuesData]);
   const me = user?.user ?? null;
 
@@ -110,76 +120,17 @@ export default function CitizenDashboard() {
     return 'Good evening';
   };
 
-  const getInitials = (name: string | null) => {
-    if (!name) return '?';
-    return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
-  };
-
-  const logout = async () => {
-    await fetch('/api/auth/logout', { credentials: 'same-origin' });
-    navigate('/login');
-  };
-
   const scrollToIssues = () => {
     document.getElementById('my-issues')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
-    <div className={UI.page}>
-      {/* Header */}
-      <header className="bg-white border-b border-[#E5E7EB] sticky top-0 z-20">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <img
-              src={BRANDING.logoEmblem}
-              alt=""
-              className="w-9 h-9 object-contain shrink-0"
-              onError={(e) => { (e.target as HTMLImageElement).src = BRANDING.logoFallback; }}
-            />
-            <div className="min-w-0">
-              <h1 className="text-lg font-heading text-[#67001A] leading-tight truncate">GramSeva</h1>
-              <p className="text-[10px] font-telugu text-[#64748B] truncate telugu-text">గ్రామ సేవ</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="w-9 h-9 rounded-lg bg-[#67001A] text-white flex items-center justify-center text-xs font-bold">
-              {getInitials(me?.name ?? null)}
-            </div>
-            {me?.role === 'super_admin' && (
-              <button
-                type="button"
-                onClick={() => navigate('/admin/officials')}
-                className="px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs font-bold text-[#67001A] hover:bg-slate-50"
-              >
-                Registrations
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => navigate('/telangana')}
-              className="p-2 rounded-lg border border-[#E5E7EB] text-[#64748B] hover:bg-slate-50"
-              aria-label="Telangana admin map"
-            >
-              <MapPin size={18} />
-            </button>
-            <button
-              type="button"
-              onClick={() => void logout()}
-              className="p-2 rounded-lg border border-[#E5E7EB] text-[#64748B] hover:bg-slate-50"
-              aria-label="Logout"
-            >
-              <LogOut size={18} />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 animate-in">
         {/* Pending official notice */}
-        {me && me.role !== 'citizen' && me.role !== 'super_admin' && me.approvalStatus === 'pending' && (
+        {me && me.role !== 'citizen' && me.role !== 'super_admin' && me.role !== 'admin' && me.approvalStatus === 'pending' && (
           <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 text-sm text-amber-900">
             <strong>Your official registration is awaiting approval.</strong> You currently have
-            citizen-level access. Once the super admin approves you, sarpanch/official controls
+            citizen-level access. Once an administrator approves you, sarpanch/official controls
             will appear here automatically.
           </div>
         )}
@@ -187,10 +138,37 @@ export default function CitizenDashboard() {
         {/* Greeting & village identity */}
         <section className="space-y-2">
           <p className="text-sm text-[#64748B]">{greeting()},</p>
-          <h2 className="text-2xl md:text-3xl font-heading text-[#1F2937]">
-            {me?.name?.split(' ')[0] ?? 'Citizen'}
-          </h2>
-          {me?.village && (
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h2 className="text-2xl md:text-3xl font-heading text-[#1F2937]">
+              {me?.name ?? 'Citizen'}
+            </h2>
+            {me && <UserRoleBadge role={me.role} size="sm" />}
+            {me && me.approvalStatus && me.role !== 'citizen' && me.role !== 'super_admin' && (
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
+                  me.approvalStatus === 'approved'
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : me.approvalStatus === 'pending'
+                    ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                    : 'bg-red-100 text-red-800 border border-red-300'
+                }`}
+              >
+                {me.approvalStatus}
+              </span>
+            )}
+          </div>
+          {(me?.role === 'super_admin' || me?.role === 'admin') ? (
+            <GsCard padding="p-4" className="flex items-start gap-3 bg-amber-50/60 border-amber-200">
+              <MapPin size={18} className="text-[#67001A] shrink-0 mt-0.5" aria-hidden />
+              <div>
+                <p className={UI.label}>Administrative Scope</p>
+                <p className="font-semibold text-[#1F2937] mt-0.5">
+                  All Villages & Mandals
+                </p>
+                <p className="text-sm text-[#64748B]">Telangana State ({me?.role === 'super_admin' ? 'Super Admin' : 'Admin'} Oversight)</p>
+              </div>
+            </GsCard>
+          ) : me?.village ? (
             <GsCard padding="p-4" className="flex items-start gap-3">
               <MapPin size={18} className="text-[#008A3B] shrink-0 mt-0.5" aria-hidden />
               <div>
@@ -201,37 +179,120 @@ export default function CitizenDashboard() {
                 <p className="text-sm text-[#64748B]">{me.district} District</p>
               </div>
             </GsCard>
-          )}
+          ) : null}
         </section>
 
-        {/* Primary action */}
-        <button
-          type="button"
-          onClick={() => setShowForm(true)}
-          className={`w-full flex items-center justify-center gap-3 py-5 text-lg ${UI.btnPrimary}`}
-        >
-          <Plus size={24} strokeWidth={2.5} aria-hidden />
-          Report a Problem
-        </button>
+        {/* Primary action (citizens report issues for their village, sarpanch does NOT report) */}
+        {me?.role !== 'sarpanch' && (
+          me?.village && me?.name && me.name !== 'New User' ? (
+            <button
+              type="button"
+              onClick={() => setShowForm(true)}
+              className={`w-full flex items-center justify-center gap-3 py-5 text-lg ${UI.btnPrimary}`}
+            >
+              <Plus size={24} strokeWidth={2.5} aria-hidden />
+              Report a Problem
+            </button>
+          ) : (
+            <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+              <div>
+                <p className="font-bold text-amber-900 text-sm">Profile Details Required to Report Issues</p>
+                <p className="text-xs text-amber-700 mt-0.5">Please provide your village location and personal details before reporting village grievances.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate('/registration')}
+                className="px-4 py-2 bg-[#67001A] text-white rounded-xl text-xs font-bold whitespace-nowrap hover:opacity-95 shadow-sm transition-all"
+              >
+                Complete Profile Details
+              </button>
+            </div>
+          )
+        )}
 
-        {/* Quick actions */}
-        <section>
-          <p className={UI.label + ' mb-3'}>Quick actions</p>
-          <div className="grid grid-cols-2 gap-3">
-            <QuickAction
-              icon={<ClipboardList size={20} />}
-              label="My Issues"
-              sublabel={`${activeIssues.length} active`}
+        {/* Dedicated Sarpanch governance banner */}
+        {me?.role === 'sarpanch' && (
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-[#67001A]/10 via-amber-500/10 to-[#67001A]/5 border border-[#67001A]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Crown className="w-5 h-5 text-[#CCB252]" />
+                <h3 className="font-bold text-slate-900 text-base">Village Sarpanch Governance Portal</h3>
+              </div>
+              <p className="text-xs text-slate-600">
+                You are registered as the Sarpanch for <strong>{me.village}</strong>. Citizens submit civic complaints to you for review, acknowledgment, assignment, and resolution.
+              </p>
+            </div>
+            <button
+              type="button"
               onClick={scrollToIssues}
-            />
-            <QuickAction
-              icon={<Building2 size={20} />}
-              label="Panchayat"
-              sublabel="Ward & leaders"
-              onClick={() => navigate('/ward-members')}
-            />
+              className="px-4 py-2.5 rounded-xl bg-[#67001A] text-white font-bold text-xs hover:bg-[#520015] shadow-xs flex items-center gap-2 shrink-0 self-start sm:self-center transition-all"
+            >
+              <ClipboardList size={16} />
+              <span>Review Complaints ({activeIssues.length})</span>
+            </button>
           </div>
-        </section>
+        )}
+
+        {/* Quick actions (temporarily hidden; change false to true to revert) */}
+        {false && (
+          <section>
+            <p className={UI.label + ' mb-3'}>Quick actions</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <QuickAction
+                icon={<ClipboardList size={20} />}
+                label="Village Logs"
+                sublabel={`${activeIssues.length} active`}
+                onClick={scrollToIssues}
+              />
+              <QuickAction
+                icon={<Crown size={20} />}
+                label="Panchayat"
+                sublabel="Village directory"
+                onClick={() => navigate('/sarpanches')}
+              />
+              <QuickAction
+                icon={<Bell size={20} className="text-[#CCB252]" />}
+                label="News & Announcements"
+                sublabel="Village board"
+                onClick={() => navigate('/notices')}
+              />
+              {me?.village ? (
+                <QuickAction
+                  icon={<Building2 size={20} />}
+                  label="Ward Directory"
+                  sublabel="Ward & leaders"
+                  onClick={() => navigate('/ward-members')}
+                />
+              ) : (me?.role === 'super_admin' || me?.role === 'admin') ? (
+                <QuickAction
+                  icon={<Building2 size={20} />}
+                  label="Registrations"
+                  sublabel="Official approvals"
+                  onClick={() => navigate('/admin/officials')}
+                />
+              ) : null}
+              <QuickAction
+                icon={<Siren size={20} className="text-red-600" />}
+                label="Emergency & Help"
+                sublabel="24x7 Direct Lines"
+                onClick={() => navigate('/emergency')}
+                accent="emergency"
+              />
+              <QuickAction
+                icon={<Award size={20} className="text-[#CCB252]" />}
+                label="Welfare Hub"
+                sublabel="Telangana Hub"
+                onClick={() => navigate('/schemes')}
+              />
+              <QuickAction
+                icon={<Leaf size={20} className="text-emerald-600" />}
+                label="Krishi AI"
+                sublabel="Soil & Crop AI"
+                onClick={() => navigate('/krishi')}
+              />
+            </div>
+          </section>
+        )}
 
         {/* Village score */}
         {villageScore && (
@@ -244,7 +305,7 @@ export default function CitizenDashboard() {
         <section id="my-issues" className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-[#1F2937]">
-              {me?.village ? `${me.village} issues` : 'Issues'}
+              {me?.village ? `${me.village} Logs` : (me?.role === 'super_admin' || me?.role === 'admin' ? 'Statewide Logs' : 'Village Logs')}
             </h3>
             <span className="text-xs font-semibold text-[#64748B]">{activeIssues.length} open</span>
           </div>
@@ -280,7 +341,7 @@ export default function CitizenDashboard() {
                     tab === t ? 'bg-[#67001A] text-white' : 'bg-white text-[#64748B] hover:bg-slate-50'
                   }`}
                 >
-                  {t === 'village' ? 'Village' : 'My reports'}
+                  {t === 'village' ? (me?.role === 'super_admin' || me?.role === 'admin' ? 'All logs' : 'Village Logs') : 'My reports'}
                 </button>
               ))}
             </div>
@@ -327,7 +388,6 @@ export default function CitizenDashboard() {
             <IssueList issues={filteredIssues} onSelectIssue={(i) => void openIssueDetail(i.id)} />
           )}
         </section>
-      </main>
 
       {showForm && (
         <IssueForm

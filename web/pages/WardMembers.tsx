@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ArrowLeft, Phone, MapPin, User, Crown, Sparkles, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useApi } from '@web/hooks/useApi';
+import { UserProfileCapsule } from '@web/components/ui/UserRoleBadge';
 import type { User as UserType } from '@shared/types';
 import {
   telanganaData,
@@ -111,6 +112,7 @@ export function WardMembers() {
               <ArrowLeft className="w-5 h-5 text-gray-700" />
               <span className="font-semibold text-gray-700">Back to Dashboard</span>
             </button>
+            <UserProfileCapsule user={me} />
           </div>
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-blue-600 bg-clip-text text-transparent">

@@ -28,8 +28,6 @@ export default {
           sidebar: "#67001A",
         },
         gold: "#CCB252",
-        amber: "#F59E0B",
-        emerald: "#008A3B",
       },
       fontFamily: {
         heading: ["Instrument Serif", "Georgia", "serif"],

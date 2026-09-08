@@ -113,6 +113,7 @@ beforeAll(async () => {
   await db.delete(schema.sessions);
   await db.delete(schema.authIdentities);
   await db.delete(schema.otpRequests);
+  await db.delete(schema.auditLog);
   await db.delete(schema.users);
   await db.delete(schema.jurisdictions);
 });
@@ -124,6 +125,7 @@ afterAll(async () => {
   await db.delete(schema.sessions);
   await db.delete(schema.authIdentities);
   await db.delete(schema.otpRequests);
+  await db.delete(schema.auditLog);
   await db.delete(schema.users);
   await db.delete(schema.jurisdictions);
   await db.$client.end();
@@ -196,6 +198,14 @@ describe("isolation contract", () => {
     // citizenY tries to read citizenX's private issue
     const res = await req(citizenY, `/api/issues/${issueX1}`);
     expect(res.status).toBe(404);
+  });
+
+  it("sarpanch cannot file an issue (forbidden)", async () => {
+    const res = await req(sarpanchX, "/api/issues", "POST", {
+      category: "Sanitation",
+      description: "Sarpanch attempting to report an issue",
+    });
+    expect(res.status).toBe(403);
   });
 
   it("newly filed issues are village-public: neighbours see them, without reporter identity", async () => {
@@ -421,3 +431,181 @@ describe("issue lifecycle", () => {
     expect(notes[0].note).toContain("contractor assigned");
   });
 });
+
+describe("admin governance & approvals", () => {
+  it("super admin stats return total across all villages", async () => {
+    const res = await req(superAdmin, "/api/issues/stats");
+    expect(res.status).toBe(200);
+    const stats = await res.json();
+    expect(stats.total).toBeGreaterThanOrEqual(3);
+  });
+
+  it("super admin lists officials and approves / declines with bidirectional transitions", async () => {
+    // pendingSarpanch is currently pending
+    const listPending = await req(superAdmin, "/api/admin/officials?status=pending");
+    expect(listPending.status).toBe(200);
+    const pendingBody = await listPending.json();
+    const foundPending = pendingBody.officials.find((o: { id: string }) => o.id === pendingSarpanch.user.id);
+    expect(foundPending).toBeDefined();
+
+    // 1. Decline the pending official
+    const decRes = await req(superAdmin, `/api/admin/officials/${pendingSarpanch.user.id}/decline`, "POST", {
+      note: "Missing credentials",
+    });
+    expect(decRes.status).toBe(200);
+    expect((await decRes.json()).official.approvalStatus).toBe("declined");
+
+    // 2. Official appears in declined list
+    const listDeclined = await req(superAdmin, "/api/admin/officials?status=declined");
+    const declinedBody = await listDeclined.json();
+    expect(declinedBody.officials.some((o: { id: string }) => o.id === pendingSarpanch.user.id)).toBe(true);
+
+    // 3. Super admin approves the declined official (reversing the decision)
+    const appRes = await req(superAdmin, `/api/admin/officials/${pendingSarpanch.user.id}/approve`, "POST");
+    expect(appRes.status).toBe(200);
+    expect((await appRes.json()).official.approvalStatus).toBe("approved");
+
+    // 4. Official is now approved
+    const listApproved = await req(superAdmin, "/api/admin/officials?status=approved");
+    const approvedBody = await listApproved.json();
+    expect(approvedBody.officials.some((o: { id: string }) => o.id === pendingSarpanch.user.id)).toBe(true);
+
+    // 5. Query without status returns all
+    const listAll = await req(superAdmin, "/api/admin/officials");
+    expect((await listAll.json()).officials.length).toBeGreaterThanOrEqual(pendingBody.officials.length);
+  });
+
+  it("lists all sarpanches village-wise with overview metrics and filters", async () => {
+    // 1. Overall stats and list
+    const res = await req(superAdmin, "/api/sarpanches");
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.overview).toBeDefined();
+    expect(body.overview.totalSarpanches).toBeGreaterThanOrEqual(3);
+    expect(body.overview.approvedSarpanches).toBeGreaterThanOrEqual(2);
+    expect(body.overview.villagesCovered).toBeGreaterThanOrEqual(2);
+    expect(Array.isArray(body.sarpanches)).toBe(true);
+    expect(body.sarpanches.length).toBeGreaterThanOrEqual(3);
+
+    // 2. Filter by district
+    const filterDist = await req(superAdmin, "/api/sarpanches?district=TestDistA");
+    expect(filterDist.status).toBe(200);
+    const distBody = await filterDist.json();
+    expect(distBody.sarpanches.every((s: { district: string }) => s.district === "TestDistA")).toBe(true);
+
+    // 3. Filter by search query
+    const searchRes = await req(superAdmin, "/api/sarpanches?q=Sarpanch X");
+    expect(searchRes.status).toBe(200);
+    const searchBody = await searchRes.json();
+    expect(searchBody.sarpanches.some((s: { name: string }) => s.name === "Sarpanch X")).toBe(true);
+
+    // 4. Village detail lookup
+    const villageRes = await req(superAdmin, `/api/sarpanches/village?jurisdictionId=${villageX.id}`);
+    expect(villageRes.status).toBe(200);
+    const villageDetail = await villageRes.json();
+    expect(villageDetail.jurisdiction.village).toBe("VillageX");
+    expect(villageDetail.sarpanch).toBeDefined();
+    expect(["Sarpanch X", "Pending Sarpanch"]).toContain(villageDetail.sarpanch.name);
+    expect(villageDetail.sarpanch.role).toBe("sarpanch");
+    expect(villageDetail.wardMembers.length).toBeGreaterThanOrEqual(1);
+    expect(villageDetail.issuesSummary.total).toBeGreaterThanOrEqual(2);
+  });
+
+  it("strictly isolates sarpanches directory and village details to citizen's own village", async () => {
+    // 1. CitizenX (VillageX) lists sarpanches: sees only VillageX sarpanches, NEVER VillageY
+    const res = await req(citizenX, "/api/sarpanches");
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.sarpanches.length).toBeGreaterThanOrEqual(1);
+    expect(body.sarpanches.every((s: { jurisdictionId: string }) => s.jurisdictionId === villageX.id)).toBe(true);
+    expect(body.sarpanches.some((s: { jurisdictionId: string }) => s.jurisdictionId === villageY.id)).toBe(false);
+    expect(body.overview.villagesCovered).toBe(1);
+
+    // 2. CitizenX attempts to filter by VillageY: query param ignored, still only VillageX sarpanches
+    const resYAttempt = await req(citizenX, "/api/sarpanches?village=VillageY");
+    expect(resYAttempt.status).toBe(200);
+    const yBody = await resYAttempt.json();
+    expect(yBody.sarpanches.every((s: { jurisdictionId: string }) => s.jurisdictionId === villageX.id)).toBe(true);
+    expect(yBody.sarpanches.some((s: { jurisdictionId: string }) => s.jurisdictionId === villageY.id)).toBe(false);
+
+    // 3. CitizenX queries /village for VillageY: locked to VillageX!
+    const villageAttempt = await req(citizenX, `/api/sarpanches/village?jurisdictionId=${villageY.id}`);
+    expect(villageAttempt.status).toBe(200);
+    const villageBody = await villageAttempt.json();
+    expect(villageBody.jurisdiction.id).toBe(villageX.id);
+    expect(villageBody.jurisdiction.village).toBe("VillageX");
+  });
+
+  it("isolates issues strictly by village/mandal/district location filters", async () => {
+    // 1. Super admin filters by VillageX: returns only VillageX issues, never VillageY
+    const resX = await req(superAdmin, "/api/issues?village=VillageX");
+    expect(resX.status).toBe(200);
+    const bodyX = await resX.json();
+    expect(bodyX.issues.length).toBeGreaterThan(0);
+    expect(bodyX.issues.every((i: { village: string }) => i.village === "VillageX")).toBe(true);
+    expect(bodyX.issues.some((i: { village: string }) => i.village === "VillageY")).toBe(false);
+
+    // 2. Super admin filters by VillageY: returns only VillageY issues, never VillageX
+    const resY = await req(superAdmin, "/api/issues?village=VillageY");
+    expect(resY.status).toBe(200);
+    const bodyY = await resY.json();
+    expect(bodyY.issues.length).toBeGreaterThan(0);
+    expect(bodyY.issues.every((i: { village: string }) => i.village === "VillageY")).toBe(true);
+    expect(bodyY.issues.some((i: { village: string }) => i.village === "VillageX")).toBe(false);
+
+    // 3. Super admin filters by non-existent village: returns 0 issues
+    const resEmpty = await req(superAdmin, "/api/issues?village=NonExistentVillage");
+    expect(resEmpty.status).toBe(200);
+    const emptyBody = await resEmpty.json();
+    expect(emptyBody.issues.length).toBe(0);
+    expect(emptyBody.total).toBe(0);
+
+    // 4. CitizenX (registered in VillageX) attempts to query VillageY: returns 0 issues
+    const resCitizenLeakAttempt = await req(citizenX, "/api/issues?village=VillageY");
+    expect(resCitizenLeakAttempt.status).toBe(200);
+    const leakBody = await resCitizenLeakAttempt.json();
+    expect(leakBody.issues.length).toBe(0);
+
+    // 5. Stats filtered by location
+    const statsX = await req(superAdmin, "/api/issues/stats?village=VillageX");
+    expect(statsX.status).toBe(200);
+    const statsXBody = await statsX.json();
+    expect(statsXBody.total).toBeGreaterThan(0);
+
+    const statsEmpty = await req(superAdmin, "/api/issues/stats?village=NonExistentVillage");
+    expect(statsEmpty.status).toBe(200);
+    const statsEmptyBody = await statsEmpty.json();
+    expect(statsEmptyBody.total).toBe(0);
+  });
+
+  it("blocks citizen from reporting an issue if profile details (name/jurisdiction) are not filled up", async () => {
+    // 1. Citizen with missing jurisdiction
+    const unassignedCitizen = await insertUser({
+      name: "Unassigned Citizen",
+      role: "citizen",
+      jurisdictionId: null,
+    });
+    const resNoJurisdiction = await req(unassignedCitizen, "/api/issues", "POST", {
+      category: "drinking_water",
+      description: "Broken water pump near street 4",
+    });
+    expect(resNoJurisdiction.status).toBe(400);
+    const bodyNoJurisdiction = await resNoJurisdiction.json();
+    expect(bodyNoJurisdiction.error.message).toMatch(/complete your profile details/i);
+
+    // 2. Citizen with default 'New User' name
+    const incompleteCitizen = await insertUser({
+      name: "New User",
+      role: "citizen",
+      jurisdictionId: villageX.id,
+    });
+    const resIncompleteName = await req(incompleteCitizen, "/api/issues", "POST", {
+      category: "drinking_water",
+      description: "Broken water pump near street 4",
+    });
+    expect(resIncompleteName.status).toBe(400);
+    const bodyIncompleteName = await resIncompleteName.json();
+    expect(bodyIncompleteName.error.message).toMatch(/complete your profile details/i);
+  });
+});
+

@@ -101,12 +101,6 @@ export const authRoutes = new Hono()
 
     assertVerificationOk(await verifyOtp(phone, input.code));
 
-    if (await findIdentityUser("phone", phone)) {
-      throw conflict(
-        "This mobile number already has an account. Sign in instead, or use a different number."
-      );
-    }
-
     const jurisdiction = await findJurisdictionByName(
       input.district,
       input.mandal,
@@ -114,6 +108,47 @@ export const authRoutes = new Hono()
     );
     if (!jurisdiction) {
       throw badRequest("Selected village is not registered. Please choose from the list.");
+    }
+
+    const existing = await findIdentityUser("phone", phone);
+    if (existing) {
+      if (existing.role === "citizen" || existing.approvalStatus === "declined") {
+        const [updated] = await db
+          .update(schema.users)
+          .set({
+            name: input.name,
+            role: input.role,
+            approvalStatus: "pending",
+            approvalNote: null,
+            jurisdictionId: jurisdiction.id,
+            wardNumber: input.wardNumber,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.users.id, existing.id))
+          .returning();
+
+        await db.insert(schema.auditLog).values({
+          actorId: updated.id,
+          action: "official.registration.submitted",
+          entity: "user",
+          entityId: updated.id,
+          after: { role: input.role, jurisdictionId: jurisdiction.id },
+          ip: c.req.header("x-forwarded-for") ?? c.req.header("x-real-ip"),
+        });
+
+        await createSession(c, updated.id, {
+          ip: c.req.header("x-forwarded-for") ?? c.req.header("x-real-ip"),
+          device: c.req.header("user-agent"),
+        });
+
+        return c.json({ user: serializeUser(updated, jurisdiction) }, 200);
+      }
+
+      if (existing.approvalStatus === "pending") {
+        throw badRequest("An official registration is already pending review for this mobile number.");
+      }
+
+      throw conflict("This mobile number already has an account. Sign in instead, or use a different number.");
     }
 
     const [user] = await db

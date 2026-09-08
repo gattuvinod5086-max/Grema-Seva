@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, MapPin, Users, Building2, LogOut } from 'lucide-react';
 import { telanganaData, getTotalVillages, getTotalMandals, type District, type Mandal } from '@shared/data/telangana';
 import { useNavigate } from 'react-router';
+import { useApi } from '@web/hooks/useApi';
+import { UserProfileCapsule } from '@web/components/ui/UserRoleBadge';
+import type { User as UserType } from '@shared/types';
 
 type ViewLevel = 'districts' | 'mandals' | 'villages';
 
@@ -21,10 +24,19 @@ function DemoStatsBar({ label }: { label: string }) {
 }
 
 export default function TelanganaAdmin() {
+  const { data: meData } = useApi<{ user: UserType }>('/api/users/me');
+  const me = meData?.user ?? null;
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (me && me.role === 'citizen') {
+      navigate('/board', { replace: true });
+    }
+  }, [me, navigate]);
+
   const [viewLevel, setViewLevel] = useState<ViewLevel>('districts');
   const [selectedDistrict, setSelectedDistrict] = useState<District | null>(null);
   const [selectedMandal, setSelectedMandal] = useState<Mandal | null>(null);
-  const navigate = useNavigate();
 
   const handleDistrictClick = (district: District) => {
     setSelectedDistrict(district);
@@ -49,7 +61,7 @@ export default function TelanganaAdmin() {
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
       <header className="bg-white border-b border-[#E5E7EB] sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
           <button
             type="button"
             onClick={() => navigate('/')}
@@ -62,14 +74,17 @@ export default function TelanganaAdmin() {
             <h1 className="text-lg md:text-xl font-heading text-[#67001A] leading-tight truncate">Telangana Command Center</h1>
             <p className="text-[11px] text-[#64748B] font-telugu telugu-text truncate">తెలంగాణ రాష్ట్ర నిర్వాహక డాష్‌బోర్డ్</p>
           </div>
-          <button
-            type="button"
-            onClick={() => void logout(navigate)}
-            className="p-2 rounded-lg border border-[#E5E7EB] text-[#64748B] hover:bg-slate-50"
-            aria-label="Logout"
-          >
-            <LogOut size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            <UserProfileCapsule user={me} />
+            <button
+              type="button"
+              onClick={() => void logout(navigate)}
+              className="p-2 rounded-lg border border-[#E5E7EB] text-[#64748B] hover:bg-slate-50"
+              aria-label="Logout"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
         </div>
       </header>
 

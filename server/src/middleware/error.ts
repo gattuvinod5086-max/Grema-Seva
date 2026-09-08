@@ -18,6 +18,12 @@ export function errorResponse(
  */
 export async function onError(err: unknown, c: Context) {
   if (err instanceof ZodError) {
+    if (process.env.NODE_ENV !== "test") {
+      console.warn(
+        `[validation:error] ${c.req.method} ${c.req.path}:`,
+        err.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")
+      );
+    }
     return c.json(
       errorResponse(
         "VALIDATION_ERROR",
@@ -29,6 +35,11 @@ export async function onError(err: unknown, c: Context) {
   }
 
   if (err instanceof HttpError) {
+    if (process.env.NODE_ENV !== "test" && err.status >= 400) {
+      console.warn(
+        `[api:error] ${c.req.method} ${c.req.path} -> ${err.status} ${err.code}: ${err.message}`
+      );
+    }
     return c.json(
       errorResponse(err.code, err.message, err.details),
       err.status as ContentfulStatusCode

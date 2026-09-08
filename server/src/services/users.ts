@@ -37,7 +37,9 @@ export function serializeUser(user: User, jurisdiction: Jurisdiction | null): Ap
     village: jurisdiction?.village ?? null,
     jurisdictionId: user.jurisdictionId,
     // Citizens must complete their profile; officials complete it at sign-up.
-    needsRegistration: user.role === "citizen" && !user.jurisdictionId,
+    needsRegistration:
+      user.role === "citizen" &&
+      (!user.jurisdictionId || !jurisdiction?.village || !user.name || user.name === "New User"),
     createdAt: user.createdAt.toISOString(),
   };
 }

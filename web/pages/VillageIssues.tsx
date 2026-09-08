@@ -1,10 +1,13 @@
-import { useMemo, useState } from "react";
-import { ArrowLeft, AlertCircle, RefreshCw } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { ArrowLeft, AlertCircle, RefreshCw, Bell } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useApi } from "@web/hooks/useApi";
 import IssueList from "@web/components/IssueList";
 import IssuesMap from "@web/components/map/IssuesMap";
-import type { IssueListResponse } from "@shared/types";
+import { UserProfileCapsule } from "@web/components/ui/UserRoleBadge";
+import { useRealtimeEvent, LiveIndicator } from "@web/context/RealtimeContext";
+import NotificationBell from "@web/components/NotificationBell";
+import type { IssueListResponse, User } from "@shared/types";
 import { ISSUE_CATEGORIES } from "@shared/constants/governance";
 import { ISSUE_STATUSES } from "@shared/types";
 
@@ -14,21 +17,36 @@ export default function VillageIssues() {
   const [statusFilter, setStatusFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
 
-  const district = searchParams.get("district") ?? "";
-  const mandal = searchParams.get("mandal") ?? "";
-  const village = searchParams.get("village") ?? "";
+  const { data: meData } = useApi<{ user: User }>('/api/users/me');
+  const me = meData?.user ?? null;
 
-  // The API scopes results server-side to the signed-in official's
-  // jurisdiction; location params here are display context only.
+  useEffect(() => {
+    if (me && me.role === 'citizen') {
+      navigate('/board', { replace: true });
+    }
+  }, [me, navigate]);
+
+  const district = searchParams.get("district")?.trim() ?? "";
+  const mandal = searchParams.get("mandal")?.trim() ?? "";
+  const village = searchParams.get("village")?.trim() ?? "";
+
   const apiUrl = useMemo(() => {
     const params = new URLSearchParams({ limit: "50" });
     if (statusFilter) params.set("status", statusFilter);
     if (categoryFilter) params.set("category", categoryFilter);
-    return `/api/issues?${params}`;
-  }, [statusFilter, categoryFilter]);
+    if (district) params.set("district", district);
+    if (mandal) params.set("mandal", mandal);
+    if (village) params.set("village", village);
+    return `/api/issues?${params.toString()}`;
+  }, [statusFilter, categoryFilter, district, mandal, village]);
 
   const { data, isLoading, error, refetch } = useApi<IssueListResponse>(apiUrl);
   const issues = data?.issues ?? [];
+
+  // Automatically refresh issue list on any real-time issue event
+  useRealtimeEvent(['issue'], () => {
+    void refetch();
+  });
 
   const stats = useMemo(() => {
     const byStatus: Record<string, number> = {};
@@ -60,7 +78,28 @@ export default function VillageIssues() {
                 <p className="text-sm text-gray-600 mt-0.5 truncate">{subtitle}</p>
               )}
             </div>
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-2 flex-wrap">
+              <LiveIndicator />
+              <NotificationBell />
+              <UserProfileCapsule user={me} />
+              {village && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = new URLSearchParams();
+                    if (district) p.set("district", district);
+                    if (mandal) p.set("mandal", mandal);
+                    if (village) p.set("village", village);
+                    p.set("type", "notice");
+                    navigate(`/notices?${p.toString()}`);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 shadow-xs transition-all"
+                  title="View official notices for this village"
+                >
+                  <Bell className="w-3.5 h-3.5 text-[#CCB252]" />
+                  <span>Village Notices</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => refetch()}
@@ -146,8 +185,10 @@ export default function VillageIssues() {
         ) : issues.length === 0 ? (
           <div className="bg-gradient-to-br from-white to-pink-50 rounded-2xl shadow-xl p-8 text-center border-2 border-pink-200">
             <div className="text-6xl mb-4">📋</div>
-            <p className="text-gray-700 text-xl font-semibold mb-2">No issues found</p>
-            <p className="text-gray-500 text-sm">There are no issues for this selection.</p>
+            <p className="text-gray-700 text-xl font-semibold mb-2">No issues found for {title}</p>
+            <p className="text-gray-500 text-sm">
+              There are currently no civic complaints reported in {subtitle || title}.
+            </p>
           </div>
         ) : (
           <IssueList issues={issues} />

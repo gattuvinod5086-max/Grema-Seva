@@ -63,13 +63,17 @@ export default function ProtectedRoute({ children, requireLocation = true }: Pro
 
   const user = data.user;
 
-  // Only citizens need a completed location profile. Super admins and
-  // officials (even pending ones) must pass through to their own views.
-  if (requireLocation && user.needsRegistration && location.pathname !== '/registration') {
+  // Citizens must complete their profile details (personal info and village jurisdiction).
+  // Super admins and officials (even pending ones) pass through to their respective views.
+  const isCitizenMissingDetails =
+    user.role === 'citizen' &&
+    (user.needsRegistration || !user.village || !user.district || !user.mandal || !user.name || user.name === 'New User');
+
+  if (requireLocation && isCitizenMissingDetails && location.pathname !== '/registration') {
     return <Navigate to="/registration" replace />;
   }
 
-  if (!requireLocation && user.needsRegistration === false && user.role === 'citizen' && user.village && location.pathname === '/registration') {
+  if (!requireLocation && !isCitizenMissingDetails && user.role === 'citizen' && location.pathname === '/registration') {
     return <Navigate to="/" replace />;
   }
 

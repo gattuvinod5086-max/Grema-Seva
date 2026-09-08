@@ -1,6 +1,7 @@
+import path from "node:path";
 import { Hono } from "hono";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { db, schema } from "../db/client";
 import { requireAuth, getAuth } from "../middleware/auth";
 import { badRequest, notFound, forbidden } from "../middleware/error";
@@ -19,6 +20,7 @@ import { issueVisibilityFilter, canViewIssue, assertCanManageIssue } from "../se
 import { ISSUE_STATUSES, ISSUE_VISIBILITIES } from "../db/schema";
 import { ISSUE_CATEGORIES } from "../../../shared/constants/governance";
 import { getStorage, ALLOWED_MIME, MAX_UPLOAD_BYTES } from "../providers/storage";
+import { realtimeHub } from "../services/realtime";
 
 const createIssueSchema = z.object({
   category: z.enum(ISSUE_CATEGORIES),
@@ -46,8 +48,19 @@ export const issuesRoutes = new Hono()
   /* Village stats: how many issues and their status, scoped to the caller. */
   .get("/stats", async (c) => {
     const { user, jurisdiction } = getAuth(c);
-    if (!jurisdiction) return c.json({ total: 0, byStatus: {}, byCategory: {} });
-    return c.json(await getVillageIssueStats(issueVisibilityFilter(user, jurisdiction)));
+    if (!jurisdiction && user.role !== "super_admin" && user.role !== "admin") {
+      return c.json({ total: 0, byStatus: {}, byCategory: {} });
+    }
+    const district = c.req.query("district")?.trim() || undefined;
+    const mandal = c.req.query("mandal")?.trim() || undefined;
+    const village = c.req.query("village")?.trim() || undefined;
+    return c.json(
+      await getVillageIssueStats(issueVisibilityFilter(user, jurisdiction), {
+        district,
+        mandal,
+        village,
+      })
+    );
   })
   /* Similar open issues in the village — check before filing. */
   .get("/similar", async (c) => {
@@ -74,10 +87,16 @@ export const issuesRoutes = new Hono()
     const { user, jurisdiction } = getAuth(c);
     const page = Math.max(1, Number(c.req.query("page") ?? "1") || 1);
     const limit = Math.min(100, Math.max(1, Number(c.req.query("limit") ?? "20") || 20));
+    const district = c.req.query("district")?.trim() || undefined;
+    const mandal = c.req.query("mandal")?.trim() || undefined;
+    const village = c.req.query("village")?.trim() || undefined;
 
     const result = await listIssuesForUser(user, issueVisibilityFilter(user, jurisdiction), {
       status: c.req.query("status") ?? undefined,
       category: c.req.query("category") ?? undefined,
+      district,
+      mandal,
+      village,
       page,
       limit,
     });
@@ -86,8 +105,11 @@ export const issuesRoutes = new Hono()
   /* Create — jurisdiction comes from the authenticated profile, never the body. */
   .post("/", async (c) => {
     const { user, jurisdiction } = getAuth(c);
-    if (!jurisdiction) {
-      throw badRequest("Complete your registration before reporting issues");
+    if (user.role === "sarpanch") {
+      throw forbidden("Sarpanches review and resolve governance issues, and cannot submit reports");
+    }
+    if (!jurisdiction || !jurisdiction.village || !user.name || user.name === "New User") {
+      throw badRequest("Please complete your profile details and village jurisdiction before reporting an issue.");
     }
 
     const body = await c.req.json().catch(() => null);
@@ -99,6 +121,27 @@ export const issuesRoutes = new Hono()
       ...parsed,
       idempotencyKey,
     });
+
+    if (!duplicate) {
+      realtimeHub.publish({
+        type: "issue",
+        action: "created",
+        jurisdictionId: jurisdiction.id,
+        reporterId: user.id,
+        district: jurisdiction.district,
+        mandal: jurisdiction.mandal,
+        village: jurisdiction.village,
+        data: {
+          id: issue.id,
+          code: issue.code,
+          category: issue.category,
+          status: issue.status,
+          priority: issue.priority,
+          village: jurisdiction.village,
+        },
+      });
+    }
+
     return c.json(
       {
         issue: {
@@ -126,6 +169,20 @@ export const issuesRoutes = new Hono()
     const { status, note } = statusSchema.parse(await c.req.json());
 
     const updated = await updateIssueStatus(user, jurisdiction, id, status, note);
+
+    realtimeHub.publish({
+      type: "issue",
+      action: "updated",
+      jurisdictionId: updated.jurisdictionId,
+      reporterId: updated.reporterId,
+      data: {
+        id: updated.id,
+        code: updated.code,
+        status: updated.status,
+        note,
+      },
+    });
+
     return c.json({ issue: updated });
   })
   /* Official progress report. */
@@ -135,6 +192,29 @@ export const issuesRoutes = new Hono()
     const { note } = progressSchema.parse(await c.req.json());
 
     const update = await addProgressNote(user, jurisdiction, id, note);
+
+    const [issueRow] = await db
+      .select({ jurisdictionId: schema.issues.jurisdictionId, reporterId: schema.issues.reporterId, code: schema.issues.code, status: schema.issues.status })
+      .from(schema.issues)
+      .where(eq(schema.issues.id, id))
+      .limit(1);
+
+    if (issueRow) {
+      realtimeHub.publish({
+        type: "issue",
+        action: "updated",
+        jurisdictionId: issueRow.jurisdictionId,
+        reporterId: issueRow.reporterId,
+        data: {
+          id,
+          code: issueRow.code,
+          status: issueRow.status,
+          action: "progress",
+          note,
+        },
+      });
+    }
+
     return c.json({ update }, 201);
   })
   /* Reporter confirms resolution → Closed. */
@@ -142,6 +222,20 @@ export const issuesRoutes = new Hono()
     const { user } = getAuth(c);
     const id = c.req.param("id") ?? "";
     const issue = await confirmResolution(user, id);
+
+    realtimeHub.publish({
+      type: "issue",
+      action: "updated",
+      jurisdictionId: issue.jurisdictionId,
+      reporterId: issue.reporterId,
+      data: {
+        id: issue.id,
+        code: issue.code,
+        status: issue.status,
+        action: "confirm",
+      },
+    });
+
     return c.json({ issue });
   })
   /* Reporter reopens a resolved issue. */
@@ -152,6 +246,21 @@ export const issuesRoutes = new Hono()
       .object({ reason: z.string().trim().max(1000) })
       .parse(await c.req.json().catch(() => ({ reason: "Not actually resolved" })));
     const issue = await reopenIssue(user, id, reason);
+
+    realtimeHub.publish({
+      type: "issue",
+      action: "updated",
+      jurisdictionId: issue.jurisdictionId,
+      reporterId: issue.reporterId,
+      data: {
+        id: issue.id,
+        code: issue.code,
+        status: issue.status,
+        action: "reopen",
+        reason,
+      },
+    });
+
     return c.json({ issue });
   })
   /* Evidence upload (multipart): photo/voice attached to the issue. */
@@ -218,23 +327,64 @@ export const filesRoutes = new Hono()
       .innerJoin(schema.issues, eq(schema.issueAttachments.issueId, schema.issues.id))
       .where(eq(schema.issueAttachments.storageKey, key))
       .limit(1);
-    if (!row) throw notFound("File not found");
+    if (row) {
+      if (
+        row.issue.reporterId !== user.id &&
+        !(await canViewIssue(user, jurisdiction, row.issue))
+      ) {
+        throw forbidden();
+      }
 
-    if (
-      row.issue.reporterId !== user.id &&
-      !(await canViewIssue(user, jurisdiction, row.issue))
-    ) {
-      throw forbidden();
+      const data = await getStorage().read(key);
+      return c.body(
+        new Uint8Array(data),
+        200,
+        {
+          "Content-Type": row.attachment.mime,
+          "Cache-Control": "private, max-age=3600",
+          "Content-Disposition": "inline",
+        }
+      );
     }
 
-    const data = await getStorage().read(key);
-    return c.body(
-      new Uint8Array(data),
-      200,
-      {
-        "Content-Type": row.attachment.mime,
-        "Cache-Control": "private, max-age=3600",
-        "Content-Disposition": "inline",
+    // Check if it's an image attached to a post or a valid stored media file
+    const [postRow] = await db
+      .select()
+      .from(schema.posts)
+      .where(
+        or(
+          eq(schema.posts.imageUrl, key),
+          eq(schema.posts.imageUrl, `/api/files/${key}`)
+        )
+      )
+      .limit(1);
+
+    if (postRow || /^[a-f0-9-]{36}(\.\w+)?$/.test(key)) {
+      try {
+        const data = await getStorage().read(key);
+        const ext = path.extname(key).toLowerCase();
+        const mimeMap: Record<string, string> = {
+          ".jpg": "image/jpeg",
+          ".jpeg": "image/jpeg",
+          ".png": "image/png",
+          ".webp": "image/webp",
+          ".heic": "image/heic",
+          ".gif": "image/gif",
+        };
+        const mime = mimeMap[ext] ?? "image/jpeg";
+        return c.body(
+          new Uint8Array(data),
+          200,
+          {
+            "Content-Type": mime,
+            "Cache-Control": "public, max-age=3600",
+            "Content-Disposition": "inline",
+          }
+        );
+      } catch {
+        throw notFound("File not found");
       }
-    );
+    }
+
+    throw notFound("File not found");
   });

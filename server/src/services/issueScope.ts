@@ -52,6 +52,12 @@ export function issueVisibilityFilter(
 
   // Everyone else (citizens, pending/declined officials, no jurisdiction).
   if (userJurisdiction) {
+    if (user.role === "citizen") {
+      return and(
+        eq(schema.issues.jurisdictionId, userJurisdiction.id),
+        or(own, eq(schema.issues.visibility, "village"))
+      );
+    }
     return or(
       own,
       and(
@@ -70,7 +76,6 @@ export async function canViewIssue(
 ): Promise<boolean> {
   // Admin manages the whole app.
   if (user.role === "super_admin" || user.role === "admin") return true;
-  if (issue.reporterId === user.id) return true;
 
   if (isApprovedOfficial(user) && userJurisdiction) {
     if (issue.jurisdictionId !== userJurisdiction.id) return false;
@@ -80,10 +85,13 @@ export async function canViewIssue(
     return true;
   }
 
-  // Citizens: village-visible issues of their own village.
-  return (
-    issue.visibility === "village" && issue.jurisdictionId === userJurisdiction?.id
-  );
+  // Citizens and others with jurisdiction: MUST match userJurisdiction
+  if (userJurisdiction) {
+    if (issue.jurisdictionId !== userJurisdiction.id) return false;
+    return issue.reporterId === user.id || issue.visibility === "village";
+  }
+
+  return issue.reporterId === user.id;
 }
 
 export function assertCanManageIssue(

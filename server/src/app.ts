@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { logger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
 import { onError } from "./middleware/error";
 import { healthRoutes } from "./routes/health";
@@ -6,9 +7,16 @@ import { authRoutes } from "./routes/auth";
 import { userRoutes } from "./routes/users";
 import { adminRoutes } from "./routes/admin";
 import { issuesRoutes, filesRoutes } from "./routes/issues";
+import { sarpanchesRoutes } from "./routes/sarpanches";
+import { postsRoutes } from "./routes/posts";
+import { realtimeRoutes } from "./routes/realtime";
 
 export function createApp() {
   const app = new Hono();
+
+  if (process.env.NODE_ENV !== "test") {
+    app.use(logger());
+  }
 
   app.use(secureHeaders());
   app.onError(onError);
@@ -30,6 +38,9 @@ export function createApp() {
   api.route("/admin", adminRoutes);
   api.route("/issues", issuesRoutes);
   api.route("/files", filesRoutes);
+  api.route("/sarpanches", sarpanchesRoutes);
+  api.route("/posts", postsRoutes);
+  api.route("/realtime", realtimeRoutes);
   app.route("/api", api);
 
   return app;

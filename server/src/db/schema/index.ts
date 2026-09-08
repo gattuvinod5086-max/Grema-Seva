@@ -3,3 +3,4 @@ export * from "./users";
 export * from "./auth";
 export * from "./issues";
 export * from "./audit";
+export * from "./notices";

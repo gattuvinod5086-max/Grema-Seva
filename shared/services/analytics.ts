@@ -122,7 +122,8 @@ export function computeVillageAnalytics(
     ? issues
     : issues.filter((i) => (i.village || "").trim().toLowerCase() === normalizedVillage.toLowerCase());
 
-  const isDemoData = options?.isDemoData ?? (villageIssues.length < 3 && !isAll);
+  // isDemoData is true whenever total issues < 3 (never forced false for aggregate!)
+  const isDemoData = options?.isDemoData ?? (villageIssues.length < 3);
   const stats = computeDashboardStats(villageIssues, { isDemoData });
 
   const categoryCounts: Record<string, number> = {};
@@ -143,12 +144,60 @@ export function computeVillageAnalytics(
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
+  // Volume-weighted Civic Health Index for aggregate scopes (Mandal / District / Statewide)
+  let devScore: ReturnType<typeof computeVillageDevelopmentScore>;
+
+  if (isAll) {
+    // Group issues by constituent village
+    const villageGroups = new Map<string, IssueLike[]>();
+    for (const issue of villageIssues) {
+      const vName = (issue.village || "Unknown").trim();
+      const list = villageGroups.get(vName) ?? [];
+      list.push(issue);
+      villageGroups.set(vName, list);
+    }
+
+    if (villageGroups.size > 1) {
+      // Volume-weighted aggregation across constituent villages:
+      // High-volume villages contribute proportionally to the aggregate index
+      let weightedCurrent = 0;
+      let weightedPrev = 0;
+      let totalGrievances = 0;
+
+      for (const [, vIssues] of villageGroups.entries()) {
+        const vScore = computeVillageDevelopmentScore(vIssues, { isDemoData });
+        const weight = vIssues.length;
+        weightedCurrent += vScore.current * weight;
+        weightedPrev += vScore.previous * weight;
+        totalGrievances += weight;
+      }
+
+      const compositeCurrent = totalGrievances > 0 ? Math.round(weightedCurrent / totalGrievances) : 85;
+      const compositePrev = totalGrievances > 0 ? Math.round(weightedPrev / totalGrievances) : 85;
+      const aggregateRaw = computeVillageDevelopmentScore(villageIssues, { isDemoData });
+
+      devScore = {
+        ...aggregateRaw,
+        current: compositeCurrent,
+        previous: compositePrev,
+        trendPercent: compositeCurrent - compositePrev,
+        label: isDemoData
+          ? "DEMO DATA — illustrative aggregate score"
+          : `Aggregated across ${villageGroups.size} villages (${totalGrievances} grievances)`,
+      };
+    } else {
+      devScore = computeVillageDevelopmentScore(villageIssues, { isDemoData });
+    }
+  } else {
+    devScore = computeVillageDevelopmentScore(villageIssues, { isDemoData });
+  }
+
   return {
     ...stats,
     village,
     topCategories,
     citizenSatisfaction: ratingCount ? Math.round((ratingSum / ratingCount) * 10) / 10 : null,
-    developmentScore: computeVillageDevelopmentScore(villageIssues, { isDemoData }),
+    developmentScore: devScore,
   };
 }
 

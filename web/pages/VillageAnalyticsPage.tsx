@@ -243,7 +243,7 @@ export default function VillageAnalyticsPage() {
           </div>
         ) : (
           <VillageAnalytics
-            village={selectedVillage || (isAdmin || isMandal ? "All Villages" : (user?.village || "All Villages"))}
+            village={selectedVillage || (isAdmin || isMandal ? "All Villages" : (user?.village || ""))}
             issues={issues}
             title={cardTitle}
           />

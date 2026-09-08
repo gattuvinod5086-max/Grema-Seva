@@ -39,6 +39,59 @@ function categoryScore(openCount: number, resolvedCount: number): number {
   return Math.max(15, Math.min(100, score));
 }
 
+function computeBucketsFromIssues(
+  issues: Array<{
+    category: string;
+    status: string;
+  }>
+): Record<keyof VillageScoreBreakdown, { open: number; resolved: number }> {
+  const buckets: Record<keyof VillageScoreBreakdown, { open: number; resolved: number }> = {
+    water: { open: 0, resolved: 0 },
+    roads: { open: 0, resolved: 0 },
+    sanitation: { open: 0, resolved: 0 },
+    electricity: { open: 0, resolved: 0 },
+    welfare: { open: 0, resolved: 0 },
+    issueResolution: { open: 0, resolved: 0 },
+  };
+
+  for (const issue of issues) {
+    const key = mapCategory(issue.category);
+    const resolved = issue.status === "Resolved" || issue.status === "Closed";
+    if (resolved) buckets[key].resolved++;
+    else buckets[key].open++;
+  }
+  return buckets;
+}
+
+function computeScoreFromBuckets(
+  buckets: Record<keyof VillageScoreBreakdown, { open: number; resolved: number }>
+): { score: number; breakdown: VillageScoreBreakdown } {
+  const breakdown: VillageScoreBreakdown = {
+    water: categoryScore(buckets.water.open, buckets.water.resolved),
+    roads: categoryScore(buckets.roads.open, buckets.roads.resolved),
+    sanitation: categoryScore(buckets.sanitation.open, buckets.sanitation.resolved),
+    electricity: categoryScore(buckets.electricity.open, buckets.electricity.resolved),
+    welfare: categoryScore(buckets.welfare.open, buckets.welfare.resolved),
+    issueResolution: categoryScore(buckets.issueResolution.open, buckets.issueResolution.resolved),
+  };
+
+  // Weighted average: each category has baseline weight 1, plus active issue volume
+  // This prevents 5 empty 85-buckets from masking a crisis in a single active category
+  let weightedSum = 0;
+  let totalWeight = 0;
+
+  for (const [catKey, bucket] of Object.entries(buckets)) {
+    const key = catKey as keyof VillageScoreBreakdown;
+    const catIssues = bucket.open + bucket.resolved;
+    const weight = 1 + catIssues * 3;
+    weightedSum += breakdown[key] * weight;
+    totalWeight += weight;
+  }
+
+  const score = totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 85;
+  return { score, breakdown };
+}
+
 export function computeVillageDevelopmentScore(
   issues: Array<{
     category: string;
@@ -50,43 +103,21 @@ export function computeVillageDevelopmentScore(
     resolved_at?: string | null;
     resolvedAt?: string | null;
   }>,
-  options?: { isDemoData?: boolean }
+  options?: { isDemoData?: boolean; label?: string }
 ): VillageDevelopmentScore {
   const isDemoData = options?.isDemoData ?? issues.length < 3;
-  const buckets: Record<keyof VillageScoreBreakdown, { open: number; resolved: number }> = {
-    water: { open: 0, resolved: 0 },
-    roads: { open: 0, resolved: 0 },
-    sanitation: { open: 0, resolved: 0 },
-    electricity: { open: 0, resolved: 0 },
-    welfare: { open: 0, resolved: 0 },
-    issueResolution: { open: 0, resolved: 0 },
-  };
-
   const now = Date.now();
   const thirtyDaysAgo = now - 30 * 86_400_000;
 
-  let recentResolved = 0;
-  let recentTotal = 0;
-  let olderResolved = 0;
-  let olderTotal = 0;
+  const olderIssues: typeof issues = [];
   let ratingSum = 0;
   let ratingCount = 0;
 
   for (const issue of issues) {
-    const key = mapCategory(issue.category);
-    const resolved = issue.status === "Resolved" || issue.status === "Closed";
-    if (resolved) buckets[key].resolved++;
-    else buckets[key].open++;
-
     const created = new Date(issue.created_at ?? issue.createdAt ?? now).getTime();
-    if (created >= thirtyDaysAgo) {
-      recentTotal++;
-      if (resolved) recentResolved++;
-    } else {
-      olderTotal++;
-      if (resolved) olderResolved++;
+    if (created < thirtyDaysAgo) {
+      olderIssues.push(issue);
     }
-
     const rating = issue.citizen_rating ?? issue.citizenRating;
     if (rating != null) {
       ratingSum += rating;
@@ -94,34 +125,26 @@ export function computeVillageDevelopmentScore(
     }
   }
 
-  const breakdown: VillageScoreBreakdown = {
-    water: categoryScore(buckets.water.open, buckets.water.resolved),
-    roads: categoryScore(buckets.roads.open, buckets.roads.resolved),
-    sanitation: categoryScore(buckets.sanitation.open, buckets.sanitation.resolved),
-    electricity: categoryScore(buckets.electricity.open, buckets.electricity.resolved),
-    welfare: categoryScore(buckets.welfare.open, buckets.welfare.resolved),
-    issueResolution: categoryScore(buckets.issueResolution.open, buckets.issueResolution.resolved),
-  };
+  // 1. Current score & category breakdown
+  const currentBuckets = computeBucketsFromIssues(issues);
+  const { score: rawCurrent, breakdown } = computeScoreFromBuckets(currentBuckets);
 
-  const values = Object.values(breakdown);
-  let current = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
-
+  let current = rawCurrent;
   if (ratingCount > 0) {
     const avgRating = ratingSum / ratingCount;
     current = Math.round(current * 0.85 + (avgRating / 5) * 100 * 0.15);
   }
 
-  const recentRate = recentTotal ? recentResolved / recentTotal : 0;
-  let trendPercent = 0;
-  if (olderTotal > 0) {
-    const olderRate = olderResolved / olderTotal;
-    trendPercent = Math.round((recentRate - olderRate) * 100);
-  } else if (recentTotal > 0) {
-    // When all complaints are recent, compare resolution velocity vs 50% target benchmark
-    trendPercent = Math.round((recentRate - 0.5) * 100);
+  // 2. Previous score & dimensionally consistent trend
+  // Prior score is computed on issues older than 30 days (or baseline 85 if no prior history)
+  let previous = 85;
+  if (olderIssues.length > 0) {
+    const olderBuckets = computeBucketsFromIssues(olderIssues);
+    previous = computeScoreFromBuckets(olderBuckets).score;
   }
 
-  const previous = Math.max(0, Math.min(100, current - trendPercent));
+  // trendPercent is the point change in the composite 0-100 score
+  const trendPercent = issues.length === 0 ? 0 : current - previous;
 
   return {
     current,
@@ -129,7 +152,7 @@ export function computeVillageDevelopmentScore(
     trendPercent,
     breakdown,
     isDemoData,
-    label: isDemoData ? "DEMO DATA — illustrative score only" : "Calculated from village issue data",
+    label: options?.label ?? (isDemoData ? "DEMO DATA — illustrative score only" : "Calculated from village issue data"),
   };
 }
 

@@ -14,12 +14,6 @@ export default function VillageAnalytics({ village, issues, isDemoData, title }:
 
   return (
     <div className="space-y-6">
-      {analytics.isDemoData && (
-        <div className="px-4 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold text-center">
-          Demo data — illustrative analytics only
-        </div>
-      )}
-
       <VillageScoreCard score={analytics.developmentScore} title={title} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

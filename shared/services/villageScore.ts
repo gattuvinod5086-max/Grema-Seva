@@ -136,15 +136,16 @@ export function computeVillageDevelopmentScore(
   }
 
   // 2. Previous score & dimensionally consistent trend
-  // Prior score is computed on issues older than 30 days (or baseline 85 if no prior history)
-  let previous = 85;
+  // If there are issues older than 30 days, compute the prior score from them.
+  // If there is no >30-day history, previous equals current (0 pts change) to avoid synthetic swings on young datasets.
+  let previous = current;
   if (olderIssues.length > 0) {
     const olderBuckets = computeBucketsFromIssues(olderIssues);
     previous = computeScoreFromBuckets(olderBuckets).score;
   }
 
   // trendPercent is the point change in the composite 0-100 score
-  const trendPercent = issues.length === 0 ? 0 : current - previous;
+  const trendPercent = olderIssues.length > 0 ? current - previous : 0;
 
   return {
     current,

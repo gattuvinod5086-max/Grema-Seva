@@ -29,8 +29,7 @@ export default function VillageScoreCard({
           </p>
           <div className={`flex items-center gap-1 text-sm font-semibold ${trendColor} mb-1`}>
             <TrendIcon size={16} aria-hidden />
-            {score.trendPercent >= 0 ? "+" : ""}
-            {score.trendPercent}%
+            {score.trendPercent > 0 ? `+${score.trendPercent}` : score.trendPercent} pts
           </div>
         </div>
         <div className="mt-4 h-2 rounded-full bg-[#E5E7EB] overflow-hidden">

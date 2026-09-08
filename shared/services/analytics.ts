@@ -1,5 +1,5 @@
 import { computeSlaInfo } from "@shared/services/sla";
-import { computeVillageDevelopmentScore } from "@shared/services/villageScore";
+import { computeVillageDevelopmentScore, type VillageScoreBreakdown } from "@shared/services/villageScore";
 
 export interface DashboardStats {
   total: number;
@@ -148,39 +148,59 @@ export function computeVillageAnalytics(
   let devScore: ReturnType<typeof computeVillageDevelopmentScore>;
 
   if (isAll) {
-    // Group issues by constituent village
-    const villageGroups = new Map<string, IssueLike[]>();
+    // Group issues by normalized village name to prevent case/whitespace fragmentation
+    const villageGroups = new Map<string, { name: string; issues: IssueLike[] }>();
     for (const issue of villageIssues) {
-      const vName = (issue.village || "Unknown").trim();
-      const list = villageGroups.get(vName) ?? [];
-      list.push(issue);
-      villageGroups.set(vName, list);
+      const vRaw = (issue.village || "Unknown").trim();
+      const vKey = vRaw.toLowerCase();
+      const entry = villageGroups.get(vKey) ?? { name: vRaw, issues: [] };
+      entry.issues.push(issue);
+      villageGroups.set(vKey, entry);
     }
 
     if (villageGroups.size > 1) {
       // Volume-weighted aggregation across constituent villages:
-      // High-volume villages contribute proportionally to the aggregate index
+      // High-volume villages contribute proportionally to both headline score and category breakdown
       let weightedCurrent = 0;
       let weightedPrev = 0;
       let totalGrievances = 0;
+      const weightedBreakdown: Record<keyof VillageScoreBreakdown, number> = {
+        water: 0,
+        roads: 0,
+        sanitation: 0,
+        electricity: 0,
+        welfare: 0,
+        issueResolution: 0,
+      };
 
-      for (const [, vIssues] of villageGroups.entries()) {
-        const vScore = computeVillageDevelopmentScore(vIssues, { isDemoData });
-        const weight = vIssues.length;
+      for (const entry of villageGroups.values()) {
+        const vScore = computeVillageDevelopmentScore(entry.issues, { isDemoData });
+        const weight = Math.max(1, entry.issues.length);
         weightedCurrent += vScore.current * weight;
         weightedPrev += vScore.previous * weight;
+        for (const [k, val] of Object.entries(vScore.breakdown)) {
+          weightedBreakdown[k as keyof VillageScoreBreakdown] += val * weight;
+        }
         totalGrievances += weight;
       }
 
       const compositeCurrent = totalGrievances > 0 ? Math.round(weightedCurrent / totalGrievances) : 85;
       const compositePrev = totalGrievances > 0 ? Math.round(weightedPrev / totalGrievances) : 85;
-      const aggregateRaw = computeVillageDevelopmentScore(villageIssues, { isDemoData });
+      const compositeBreakdown: VillageScoreBreakdown = {
+        water: totalGrievances > 0 ? Math.round(weightedBreakdown.water / totalGrievances) : 85,
+        roads: totalGrievances > 0 ? Math.round(weightedBreakdown.roads / totalGrievances) : 85,
+        sanitation: totalGrievances > 0 ? Math.round(weightedBreakdown.sanitation / totalGrievances) : 85,
+        electricity: totalGrievances > 0 ? Math.round(weightedBreakdown.electricity / totalGrievances) : 85,
+        welfare: totalGrievances > 0 ? Math.round(weightedBreakdown.welfare / totalGrievances) : 85,
+        issueResolution: totalGrievances > 0 ? Math.round(weightedBreakdown.issueResolution / totalGrievances) : 85,
+      };
 
       devScore = {
-        ...aggregateRaw,
         current: compositeCurrent,
         previous: compositePrev,
         trendPercent: compositeCurrent - compositePrev,
+        breakdown: compositeBreakdown,
+        isDemoData,
         label: isDemoData
           ? "DEMO DATA — illustrative aggregate score"
           : `Aggregated across ${villageGroups.size} villages (${totalGrievances} grievances)`,

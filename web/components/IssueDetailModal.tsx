@@ -16,7 +16,7 @@ interface IssueDetailModalProps {
   onChanged: () => void;
 }
 
-const ACTIVE_STATUSES: IssueStatus[] = ['Submitted', 'Acknowledged', 'In Progress', 'Reopened'];
+const ACTIVE_STATUSES: IssueStatus[] = ['Submitted', 'Acknowledged', 'In Progress', 'Reopened', 'SLA_BREACHED'];
 
 /** Officials with real powers: approved sarpanch/ward member, admin, super admin. */
 function isEmpoweredOfficial(me: User | null): boolean {

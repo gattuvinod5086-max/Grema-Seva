@@ -17,8 +17,36 @@ import WelfareSchemes from "@web/pages/WelfareSchemes";
 import KrishiTerminal from "@web/pages/KrishiTerminal";
 import VikasSahayak from "@web/pages/VikasSahayak";
 import VillageAnalyticsPage from "@web/pages/VillageAnalyticsPage";
+import TerminalLanding from "@web/pages/TerminalLanding";
 import AppLayout from "@web/components/layout/AppLayout";
 import { RealtimeProvider } from "@web/context/RealtimeContext";
+import { useApi } from "@web/hooks/useApi";
+import type { User } from "@shared/types";
+import { Loader2 } from "lucide-react";
+
+function EntryHome() {
+  const { data, isLoading } = useApi<{ user: User }>("/api/users/me");
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6]">
+        <Loader2 className="w-10 h-10 animate-spin text-[#67001A]" />
+      </div>
+    );
+  }
+
+  if (data?.user) {
+    return (
+      <ProtectedRoute key="app-layout" requireLocation={true}>
+        <AppLayout>
+          <RoleHome />
+        </AppLayout>
+      </ProtectedRoute>
+    );
+  }
+
+  return <TerminalLanding />;
+}
 
 export default function App() {
   return (
@@ -26,6 +54,8 @@ export default function App() {
       <RealtimeProvider>
         <Routes>
           {/* Public & Entry Routes */}
+          <Route path="/" element={<EntryHome />} />
+          <Route path="/app" element={<TerminalLanding />} />
           <Route path="/login" element={<Login />} />
           <Route path="/login/phone" element={<PhoneLogin />} />
           <Route path="/register/official" element={<OfficialRegister />} />
@@ -49,7 +79,6 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/" element={<RoleHome />} />
             <Route path="/board" element={<CitizenDashboard />} />
             <Route path="/issues" element={<CitizenDashboard />} />
             <Route path="/sarpanches" element={<SarpanchDirectory />} />

@@ -13,7 +13,7 @@ import { assertCanManageIssue, canViewIssue, isApprovedOfficial } from "./issueS
 const DEDUP_RADIUS_METERS = 50;
 const DEDUP_WINDOW_DAYS = 7;
 
-const ACTIVE_STATUSES: IssueStatus[] = ["Submitted", "Acknowledged", "In Progress", "Reopened"];
+const ACTIVE_STATUSES: IssueStatus[] = ["Submitted", "Acknowledged", "In Progress", "Reopened", "SLA_BREACHED"];
 
 export interface CreateIssueInput {
   category: string;
@@ -274,6 +274,7 @@ const OFFICIAL_TRANSITIONS: Record<IssueStatus, IssueStatus[]> = {
   Resolved: [],
   Closed: [],
   Reopened: ["In Progress", "Resolved", "Closed"],
+  SLA_BREACHED: ["In Progress", "Resolved", "Closed"],
 };
 
 export async function updateIssueStatus(

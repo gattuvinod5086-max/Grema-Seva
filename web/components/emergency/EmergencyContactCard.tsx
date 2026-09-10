@@ -123,23 +123,33 @@ export function NationalServiceCard({
   urgent?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border-2 border-[#67001A]/20 bg-gradient-to-br from-white to-rose-50/40 p-5 shadow-sm">
-      <h3 className="font-bold text-slate-900 text-base">{name}</h3>
-      <p className="text-sm text-slate-600 mt-1">{description}</p>
-      {availability && (
-        <p className="text-xs text-slate-500 mt-1">Available: {availability}</p>
-      )}
-      {urgent && (
-        <p className="text-[10px] font-black uppercase text-[#67001A] mt-2">
-          Immediate emergency assistance
-        </p>
-      )}
-      <div className="mt-4">
-        <CallButton phone={number} label="Call Now" urgent={urgent} />
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between">
+      <div>
+        <h3 className="font-bold text-slate-900 text-base">{name}</h3>
+        <p className="text-sm text-slate-600 mt-1 leading-snug">{description}</p>
+        {availability && (
+          <p className="text-xs text-slate-500 mt-1 font-medium">Available: {availability}</p>
+        )}
+        {urgent && (
+          <p className="text-[10px] font-black uppercase tracking-wider text-red-700 mt-2">
+            USE FOR IMMEDIATE EMERGENCY
+          </p>
+        )}
       </div>
-      {source && (
-        <p className="text-[10px] text-slate-400 mt-3">Source: {source}</p>
-      )}
+      <div className="mt-4">
+        <CallButton
+          phone={number}
+          label={`Call Now (${number})`}
+          urgent={urgent}
+          showNumberOnDesktop={false}
+          className={`w-full sm:w-auto px-5 py-2.5 rounded-xl ${
+            urgent ? "bg-[#8B0000] hover:bg-[#67001A]" : "bg-[#008A3B] hover:bg-[#059669]"
+          }`}
+        />
+        {source && (
+          <p className="text-[10px] text-slate-400 mt-3">Source: {source}</p>
+        )}
+      </div>
     </div>
   );
 }

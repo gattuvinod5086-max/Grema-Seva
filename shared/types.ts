@@ -66,6 +66,7 @@ export const ISSUE_STATUSES = [
   "Resolved",
   "Closed",
   "Reopened",
+  "SLA_BREACHED",
 ] as const;
 export type IssueStatus = (typeof ISSUE_STATUSES)[number];
 

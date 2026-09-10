@@ -156,23 +156,30 @@ export default function TerminalLanding() {
               </p>
 
               {/* CTA Action Buttons */}
-              <div className="space-y-3.5 max-w-md mx-auto pt-6 sm:pt-8">
+              <div className="space-y-4 max-w-md mx-auto pt-6 sm:pt-8 w-full">
                 <button
                   type="button"
                   onClick={() => navigate("/login?official=1")}
-                  className="w-full py-4 rounded-full font-black text-xs uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 border border-amber-300 text-[#67001A] bg-gradient-to-r from-[#FEF08A] to-[#FDE047] hover:opacity-95 active:scale-[0.99]"
+                  className="w-full py-4 sm:py-5 px-8 rounded-full font-black text-xs sm:text-sm uppercase tracking-[0.18em] shadow-md transition-all flex items-center justify-center gap-2.5 border-2 border-amber-300 text-[#67001A] bg-gradient-to-r from-[#FEF9C3] via-[#FEF08A] to-[#FDE047] hover:brightness-105 active:scale-[0.99] min-h-[56px] sm:min-h-[60px]"
+                  style={{
+                    boxShadow: "0 8px 20px -4px rgba(204, 178, 82, 0.35)",
+                  }}
                 >
-                  <LogIn size={16} />
+                  <LogIn size={18} strokeWidth={2.5} />
                   <span>OFFICIALS LOGIN</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => navigate("/login")}
-                  className="w-full py-4.5 rounded-full font-black text-xs uppercase tracking-wider text-white shadow-lg transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-[#008A3B] to-[#15803D] hover:opacity-95 active:scale-[0.99]"
+                  className="w-full py-4 sm:py-5 px-8 rounded-full font-black text-xs sm:text-sm uppercase tracking-[0.2em] text-white shadow-xl transition-all flex items-center justify-center gap-3 hover:brightness-110 active:scale-[0.99] min-h-[56px] sm:min-h-[60px]"
+                  style={{
+                    background: "linear-gradient(90deg, #00843D 0%, #008A3B 35%, #16a34a 70%, #65a30d 100%)",
+                    boxShadow: "0 12px 28px -4px rgba(0, 138, 59, 0.45), 0 4px 10px rgba(0, 0, 0, 0.08)",
+                  }}
                 >
-                  <span>PROCEED</span>
-                  <ArrowRight size={16} />
+                  <span>CITIZEN LOGIN</span>
+                  <ArrowRight size={18} strokeWidth={2.5} />
                 </button>
               </div>
             </div>

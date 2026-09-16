@@ -53,21 +53,23 @@ function SidebarItem({
       type="button"
       onClick={onClick}
       title={collapsed ? label : ""}
-      className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl transition-all relative group text-left ${
+      className={`w-full flex items-center ${
+        collapsed ? "justify-center px-2 py-3" : "gap-3 px-3 py-2.5"
+      } rounded-xl transition-all relative group text-left ${
         urgent
-          ? "bg-red-700/80 text-white hover:bg-red-700 shadow-md border border-red-400/60"
+          ? "bg-red-700/80 text-white hover:bg-red-700 shadow-sm border border-red-400/60"
           : active
-          ? "bg-[#CCB252]/25 text-white shadow-md border border-[#CCB252]/60"
+          ? "bg-[#CCB252]/20 text-white shadow-xs border border-[#CCB252]/50"
           : "text-white/80 hover:text-white hover:bg-white/10 border border-transparent"
       }`}
     >
       <div
-        className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-xl transition-colors ${
+        className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
           urgent
             ? "bg-white text-red-700 font-bold"
             : active
-            ? "bg-[#CCB252] text-[#67001A]"
-            : "text-[#CCB252] group-hover:bg-[#CCB252]/20"
+            ? "bg-[#CCB252] text-[#67001A] shadow-xs"
+            : "text-[#CCB252] group-hover:bg-[#CCB252]/20 group-hover:scale-105"
         }`}
       >
         {icon}
@@ -75,8 +77,8 @@ function SidebarItem({
 
       {!collapsed && (
         <span
-          className={`flex-1 text-[11px] font-black uppercase tracking-[0.08em] truncate ${
-            active ? "text-white" : "text-white/90"
+          className={`flex-1 text-xs font-bold tracking-wide truncate ${
+            active ? "text-white font-black" : "text-white/90 group-hover:text-white"
           }`}
         >
           {label}
@@ -84,13 +86,13 @@ function SidebarItem({
       )}
 
       {!collapsed && badge && (
-        <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-[#CCB252] text-[#67001A]">
+        <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-[#CCB252] text-[#67001A] shadow-xs">
           {badge}
         </span>
       )}
 
       {active && !urgent && (
-        <div className="absolute left-0 top-2 bottom-2 w-1.5 rounded-r-full bg-[#CCB252]" />
+        <div className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-[#CCB252] shadow-[0_0_8px_rgba(204,178,82,0.8)]" />
       )}
     </button>
   );
@@ -129,7 +131,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
 
   return (
     <div
-      className="flex min-h-screen overflow-x-hidden relative"
+      className="min-h-screen relative"
       style={{ background: "var(--tg-bg)" }}
     >
       {/* Mobile drawer backdrop */}
@@ -143,16 +145,26 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
 
       {/* Main Sidebar (Deep Telangana Maroon + Gold Border) */}
       <aside
-        className={`fixed lg:sticky top-0 h-screen p-4 md:p-6 flex flex-col z-50 transition-all duration-300 ${
+        className={`fixed inset-y-0 left-0 h-screen h-[100dvh] p-4 md:p-5 flex flex-col z-40 transition-all duration-300 ease-in-out ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        } ${isCollapsed ? "lg:w-24" : "w-[280px] md:w-80"} border-r-[3px] border-[#CCB252]`}
+        } ${isCollapsed ? "lg:w-20" : "w-[280px] lg:w-72 xl:w-80"} border-r-[3px] border-[#CCB252] shadow-2xl`}
         style={{
           background: "linear-gradient(180deg, #67001A 0%, #4d0012 100%)",
-          boxShadow: "4px 0 32px rgba(0,0,0,0.2), 0 0 0 1px rgba(204,178,82,0.2)",
         }}
       >
+        {/* Desktop collapse button placed right on the gold border */}
+        <button
+          type="button"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="hidden lg:flex absolute -right-3.5 top-6 w-7 h-7 rounded-full items-center justify-center shadow-md hover:scale-110 transition-transform text-[#67001A] bg-[#CCB252] border-2 border-[#67001A] z-50 cursor-pointer"
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {isCollapsed ? <ChevronRight size={14} strokeWidth={3} /> : <ChevronLeft size={14} strokeWidth={3} />}
+        </button>
+
         {/* Brand Header */}
-        <div className="flex items-center gap-3 mb-6 px-2 relative">
+        <div className={`flex items-center gap-3 mb-5 px-1 relative ${isCollapsed ? "justify-center" : ""}`}>
           <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 ring-2 ring-[#CCB252] bg-white/10 shadow-sm">
             <img
               src={BRANDING.logoEmblem}
@@ -166,7 +178,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
 
           {!isCollapsed && (
             <div className="min-w-0 flex-1">
-              <h1 className="text-lg md:text-xl font-black text-white uppercase tracking-tight truncate">
+              <h1 className="text-lg md:text-xl font-black text-white uppercase tracking-tight truncate font-telugu telugu-text">
                 గ్రామ సేవ
               </h1>
               <p className="text-[9px] font-black text-[#CCB252] uppercase tracking-widest truncate">
@@ -175,28 +187,19 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
             </div>
           )}
 
-          {/* Desktop collapse button */}
-          <button
-            type="button"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden lg:flex absolute -right-7 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full items-center justify-center shadow-lg hover:scale-110 transition-transform text-[#67001A] bg-[#CCB252] border border-white/40"
-            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {isCollapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
-          </button>
-
           {/* Mobile close button */}
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden ml-auto p-1.5 rounded-lg text-white/80 hover:text-white"
+            aria-label="Close menu"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 min-h-0 space-y-1.5 overflow-y-auto no-scrollbar pr-1">
+        <nav className="flex-1 min-h-0 space-y-1 overflow-y-auto sidebar-scrollbar pr-1">
           {isAdmin ? (
             <>
               {/* Primary Administration Console & Oversight */}
@@ -435,40 +438,54 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
         </nav>
 
         {/* Sidebar Footer / User Profile */}
-        <div className="mt-auto pt-4 border-t border-[#CCB252]/30">
+        <div className="mt-auto pt-3 border-t border-[#CCB252]/30">
           <div
-            className={`flex items-center gap-3 p-3 rounded-2xl bg-white/10 group transition-all ${
-              isCollapsed ? "justify-center" : ""
+            className={`flex items-center p-2.5 rounded-2xl bg-white/10 group transition-all ${
+              isCollapsed ? "flex-col justify-center gap-2" : "gap-3"
             }`}
           >
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shadow-md shrink-0 bg-[#CCB252] text-[#67001A]">
+            <div
+              className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center font-black text-sm shadow-md shrink-0 bg-[#CCB252] text-[#67001A]"
+              title={user?.name ?? "User"}
+            >
               {user?.name?.[0] ?? "U"}
             </div>
 
-            {!isCollapsed && (
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <p className="text-xs font-black text-white truncate">{user?.name ?? "Citizen"}</p>
-                <p className="text-[9px] font-bold text-[#CCB252] uppercase tracking-wider truncate">
-                  {isAdmin
-                    ? "Statewide · Administrator"
-                    : isMandal
-                    ? `${user?.mandal || "Mandal"} Official`
-                    : `${user?.village || "Telangana"} • ${user?.mandal || "Citizen"}`}
-                </p>
-                {user?.role && (
-                  <div className="mt-1">
-                    <UserRoleBadge role={user.role} size="sm" />
-                  </div>
-                )}
-              </div>
-            )}
+            {!isCollapsed ? (
+              <>
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <p className="text-xs font-black text-white truncate">{user?.name ?? "Citizen"}</p>
+                  <p className="text-[9px] font-bold text-[#CCB252] uppercase tracking-wider truncate">
+                    {isAdmin
+                      ? "Statewide · Administrator"
+                      : isMandal
+                      ? `${user?.mandal || "Mandal"} Official`
+                      : `${user?.village || "Telangana"} • ${user?.mandal || "Citizen"}`}
+                  </p>
+                  {user?.role && (
+                    <div className="mt-1">
+                      <UserRoleBadge role={user.role} size="sm" />
+                    </div>
+                  )}
+                </div>
 
-            {!isCollapsed && (
+                <button
+                  type="button"
+                  onClick={() => void logout()}
+                  className="text-white/70 hover:text-[#CCB252] p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                  title="Log Out"
+                  aria-label="Log out"
+                >
+                  <LogOut size={16} />
+                </button>
+              </>
+            ) : (
               <button
                 type="button"
                 onClick={() => void logout()}
                 className="text-white/70 hover:text-[#CCB252] p-1.5 rounded-lg hover:bg-white/10 transition-colors"
                 title="Log Out"
+                aria-label="Log out"
               >
                 <LogOut size={16} />
               </button>
@@ -477,10 +494,14 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
         </div>
       </aside>
 
-      {/* Main App Content Body */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main App Content Body with Desktop Left Padding matching Sidebar */}
+      <div
+        className={`flex-1 flex flex-col min-w-0 min-h-screen transition-[padding] duration-300 ease-in-out ${
+          isCollapsed ? "lg:pl-20" : "lg:pl-72 xl:lg:pl-80"
+        }`}
+      >
         {/* Top Header */}
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-[#E5E7EB] px-4 md:px-8 py-3.5 flex items-center justify-between shadow-sm">
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] px-4 md:px-8 py-3.5 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"

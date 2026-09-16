@@ -1,5 +1,6 @@
 import { Link } from "react-router";
-import { Home, LogIn, Siren, Sparkles } from "lucide-react";
+import { Home, LogIn, Siren, Sparkles, PhoneCall } from "lucide-react";
+import { BRANDING } from "@web/constants/branding";
 
 interface PublicNavHeaderProps {
   ribbonTitle?: string;
@@ -7,55 +8,130 @@ interface PublicNavHeaderProps {
 }
 
 export default function PublicNavHeader({
-  ribbonTitle = "తెలంగాణ రాష్ట్రం | Telangana State | Digital Village Development",
-  activePill,
+  ribbonTitle,
+  activePill = "home",
 }: PublicNavHeaderProps) {
   return (
-    <header className="w-full flex-shrink-0">
-      {/* Top Maroon Ribbon with TG Emblem */}
-      <div className="bg-[#67001A] text-white py-2.5 px-4 shadow-md border-b-2 border-[#CCB252]">
-        <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 sm:gap-3">
-          <span className="px-2 py-0.5 rounded-md font-serif text-xs md:text-sm tracking-tight text-[#FEF08A] bg-black/25 font-black uppercase">
-            TG
-          </span>
-          <p className="text-xs sm:text-sm md:text-base font-bold text-center tracking-wide drop-shadow-xs truncate">
-            {ribbonTitle}
-          </p>
-          <Sparkles className="w-4 h-4 text-[#FEF08A] shrink-0" />
+    <header className="w-full flex-shrink-0 z-30">
+      {/* Official Government of Telangana Top Ribbon */}
+      <div
+        className="text-white py-2 px-4 shadow-md border-b-2 border-[#CCB252] relative overflow-hidden"
+        style={{
+          background: "linear-gradient(90deg, #520015 0%, #67001A 40%, #8A1538 70%, #520015 100%)",
+        }}
+      >
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 text-xs">
+          {/* Left: State Branding & Emblem */}
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <div className="w-6 h-6 rounded-full bg-white/10 ring-1 ring-[#CCB252] flex items-center justify-center shrink-0 p-0.5">
+              <img
+                src={BRANDING.logoEmblem}
+                alt="Government of Telangana Emblem"
+                className="w-full h-full object-contain brightness-0 invert"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = "none";
+                }}
+              />
+            </div>
+            <p className="font-bold tracking-wide truncate text-[11px] sm:text-xs">
+              {ribbonTitle ? (
+                <span>{ribbonTitle}</span>
+              ) : (
+                <>
+                  <span className="font-telugu telugu-text font-black text-[#FEF08A] mr-1.5 hidden sm:inline">
+                    తెలంగాణ ప్రభుత్వం
+                  </span>
+                  <span className="hidden md:inline text-white/90 font-medium">|</span>
+                  <span className="ml-1.5 font-semibold text-white/95">
+                    Government of Telangana
+                  </span>
+                  <span className="hidden lg:inline text-white/60 font-light mx-1.5">•</span>
+                  <span className="hidden lg:inline text-[#FEF08A]/90 font-medium">
+                    Panchayat Raj &amp; Rural Development Department
+                  </span>
+                </>
+              )}
+            </p>
+          </div>
+
+          {/* Right: Jai Telangana & Helpline */}
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 text-[11px]">
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/25 border border-[#CCB252]/40 text-[#FEF08A] font-bold font-telugu telugu-text text-[10px] sm:text-xs">
+              <Sparkles size={11} className="text-[#CCB252]" />
+              <span>జై తెలంగాణ</span>
+            </div>
+            <a
+              href="tel:112"
+              className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-700/90 hover:bg-red-700 border border-red-400 text-white font-black tracking-wide text-[10px] sm:text-[11px] transition-colors shadow-xs"
+              title="National Emergency Helpline"
+            >
+              <PhoneCall size={11} className="text-white animate-pulse" />
+              <span>112 ERSS</span>
+            </a>
+          </div>
         </div>
       </div>
 
-      {/* Global Navigation Pills */}
-      <div className="max-w-4xl mx-auto px-4 py-3.5 flex items-center justify-center gap-2.5 sm:gap-3.5 flex-wrap">
-        <Link
-          to="/app"
-          className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-[11px] sm:text-xs font-black tracking-wider uppercase transition-all shadow-xs bg-[#67001A] text-white border border-[#67001A] hover:bg-[#520015]"
-        >
-          <Home size={15} strokeWidth={2.5} />
-          <span>GRAMSEVA HOME</span>
-        </Link>
+      {/* Unified 3-Section Executive Navigation Menu */}
+      <div className="w-full bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
+        <div className="max-w-5xl mx-auto px-4 py-2.5 sm:py-3 flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
+          {/* Section 1: GramaSeva Home */}
+          <Link
+            to="/app"
+            className={`inline-flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs font-black tracking-wider uppercase transition-all ${
+              activePill === "home"
+                ? "bg-[#67001A] text-white border-2 border-[#CCB252] shadow-md shadow-[#67001A]/20 scale-[1.02]"
+                : "bg-white text-slate-700 border-2 border-slate-200 hover:border-[#67001A]/60 hover:text-[#67001A] hover:bg-amber-50/40 shadow-xs"
+            }`}
+          >
+            <div
+              className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
+                activePill === "home" ? "bg-[#CCB252] text-[#67001A]" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              <Home size={12} strokeWidth={2.8} />
+            </div>
+            <span>GRAMSEVA HOME</span>
+          </Link>
 
-        <Link
-          to="/login"
-          className={`inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-[11px] sm:text-xs font-black tracking-wider uppercase transition-all shadow-xs ${
-            activePill === "login"
-              ? "bg-[#FDF2F8] text-[#67001A] border-2 border-[#67001A]"
-              : activePill === "emergency"
-              ? "bg-[#67001A] text-white border border-[#67001A] hover:bg-[#520015]"
-              : "bg-white text-slate-800 border border-slate-300 hover:bg-slate-50"
-          }`}
-        >
-          <LogIn size={15} strokeWidth={2.5} />
-          <span>CITIZEN LOGIN</span>
-        </Link>
+          {/* Section 2: Citizen Login */}
+          <Link
+            to="/login"
+            className={`inline-flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs font-black tracking-wider uppercase transition-all ${
+              activePill === "login"
+                ? "bg-[#67001A] text-white border-2 border-[#CCB252] shadow-md shadow-[#67001A]/20 scale-[1.02]"
+                : "bg-white text-slate-700 border-2 border-slate-200 hover:border-[#008A3B]/60 hover:text-[#008A3B] hover:bg-emerald-50/40 shadow-xs"
+            }`}
+          >
+            <div
+              className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
+                activePill === "login" ? "bg-[#CCB252] text-[#67001A]" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              <LogIn size={12} strokeWidth={2.8} />
+            </div>
+            <span>CITIZEN LOGIN</span>
+          </Link>
 
-        <Link
-          to="/emergency"
-          className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-[11px] sm:text-xs font-black tracking-wider uppercase transition-all shadow-xs bg-white text-red-700 border-2 border-red-300 hover:bg-red-50"
-        >
-          <Siren size={15} strokeWidth={2.5} className="text-red-600" />
-          <span>EMERGENCY & HELP</span>
-        </Link>
+          {/* Section 3: Emergency & Help */}
+          <Link
+            to="/emergency"
+            className={`inline-flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs font-black tracking-wider uppercase transition-all ${
+              activePill === "emergency"
+                ? "bg-red-700 text-white border-2 border-red-400 shadow-md shadow-red-700/25 scale-[1.02]"
+                : "bg-white text-red-700 border-2 border-red-200 hover:bg-red-50 hover:border-red-400 shadow-xs"
+            }`}
+          >
+            <div
+              className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
+                activePill === "emergency" ? "bg-white text-red-700" : "bg-red-100 text-red-700"
+              }`}
+            >
+              <Siren size={12} strokeWidth={2.8} />
+            </div>
+            <span>EMERGENCY &amp; HELP</span>
+          </Link>
+        </div>
       </div>
     </header>
   );

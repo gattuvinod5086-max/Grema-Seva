@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router";
-import { Home, LogIn, Siren } from "lucide-react";
+import { useNavigate } from "react-router";
+import PublicNavHeader from "@web/components/layout/PublicNavHeader";
 import EmergencyHome from "@web/components/emergency/EmergencyHome";
 import { EmergencyMockDB } from "@web/data/emergencyData";
 import { getLocalEmergencyBundle, searchLocalContacts } from "@web/services/localEmergency";
@@ -66,46 +66,24 @@ export default function EmergencyHelp() {
 
   return (
     <div className="min-h-screen relative pb-16 bg-[#FAF9F6]">
-      {/* Top Header & Navigation matching Screenshot */}
-      <header className="max-w-5xl mx-auto px-4 pt-8 pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1
-              className="text-3xl sm:text-4xl font-black text-[#67001A]"
-              style={{ fontFamily: "Instrument Serif, Georgia, serif" }}
-            >
-              Emergency &amp; Help
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-600 font-medium mt-0.5">
-              Verified contacts for your area
-            </p>
-          </div>
+      {/* Top Header Ribbon and Navigation Pills */}
+      <PublicNavHeader
+        ribbonTitle="తెలంగాణ అత్యవసర సేవలు | Telangana State Emergency & Disaster Response | 24/7 Helpline"
+        activePill="emergency"
+      />
 
-          {/* Navigation Pills */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            <Link
-              to="/app"
-              className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-[11px] sm:text-xs font-black tracking-wider uppercase transition-all shadow-xs bg-[#67001A] text-white hover:bg-[#520015]"
-            >
-              <Home size={15} strokeWidth={2.5} />
-              <span>GRAMSEVA HOME</span>
-            </Link>
-
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-[11px] sm:text-xs font-black tracking-wider uppercase transition-all shadow-xs bg-[#67001A] text-white hover:bg-[#520015]"
-            >
-              <LogIn size={15} strokeWidth={2.5} />
-              <span>CITIZEN LOGIN</span>
-            </Link>
-
-            <div className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-[11px] sm:text-xs font-black tracking-wider uppercase shadow-xs bg-white text-red-700 border-2 border-red-300">
-              <Siren size={15} strokeWidth={2.5} className="text-red-600" />
-              <span>EMERGENCY &amp; HELP</span>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Emergency Page Title */}
+      <div className="max-w-5xl mx-auto px-4 pt-6 pb-2">
+        <h1
+          className="text-3xl sm:text-4xl font-black text-[#67001A]"
+          style={{ fontFamily: "Instrument Serif, Georgia, serif" }}
+        >
+          Emergency &amp; Help
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-600 font-medium mt-0.5">
+          Verified emergency contacts and public assistance for your area
+        </p>
+      </div>
 
       {/* Main Emergency Content */}
       <main className="max-w-5xl mx-auto px-4 py-2 relative z-10">

@@ -281,14 +281,17 @@ export default function CitizenDashboard() {
                 </div>
               </div>
             ) : (
-              <GsCard padding="p-4" className="flex items-start gap-3 bg-indigo-50/70 border-indigo-200">
-                <Building2 size={18} className="text-indigo-700 shrink-0 mt-0.5" aria-hidden />
-                <div className="min-w-0">
-                  <p className={UI.label}>Mandal Jurisdiction</p>
-                  <p className="font-semibold text-[#1F2937] mt-0.5">{me.mandal} Mandal</p>
-                  <p className="text-sm text-[#64748B]">{me.district} District (All Villages Governance)</p>
+              <div className="relative rounded-2xl overflow-hidden shadow-sm border border-indigo-200" style={{ minHeight: '120px' }}>
+                <img src="/default-mandal.jpg" alt="Mandal" className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-950/90 via-indigo-900/70 to-transparent" />
+                <div className="relative z-10 flex items-end p-4 min-h-[120px]">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Mandal Jurisdiction</p>
+                    <p className="font-black text-white text-lg leading-tight mt-0.5">{me.mandal} Mandal</p>
+                    <p className="text-xs text-white/70">{me.district} District · All Villages</p>
+                  </div>
                 </div>
-              </GsCard>
+              </div>
             )
           ) : me?.role === 'sarpanch' && me?.village ? (
             placeImage?.imageUrl ? (
@@ -315,14 +318,22 @@ export default function CitizenDashboard() {
                 </div>
               </div>
             ) : (
-              <GsCard padding="p-4" className="flex items-start gap-3 bg-amber-50/60 border-amber-200">
-                <Crown size={18} className="text-[#CCB252] shrink-0 mt-0.5" aria-hidden />
-                <div className="min-w-0">
-                  <p className={UI.label}>Gram Panchayat Jurisdiction</p>
-                  <p className="font-semibold text-[#1F2937] mt-0.5">{me.village} Village (Panchayat Head)</p>
-                  <p className="text-sm text-[#64748B]">{me.mandal} Mandal, {me.district} District</p>
+              <div className="relative rounded-2xl overflow-hidden shadow-sm border border-amber-200" style={{ minHeight: '120px' }}>
+                <img src="/default-village.jpg" alt="Village" className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-transparent" />
+                <div className="relative z-10 flex items-end p-4 min-h-[120px]">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-[#CCB252] uppercase tracking-widest">Gram Panchayat</p>
+                    <p className="font-black text-white text-lg leading-tight mt-0.5">{me.village}</p>
+                    <p className="text-xs text-white/70">{me.mandal} · {me.district} District</p>
+                  </div>
+                  <div className="shrink-0 ml-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#CCB252]/20 backdrop-blur-sm flex items-center justify-center border border-[#CCB252]/40">
+                      <Crown size={18} className="text-[#CCB252]" />
+                    </div>
+                  </div>
                 </div>
-              </GsCard>
+              </div>
             )
           ) : me?.role === 'ward_member' && me?.village ? (
             placeImage?.imageUrl ? (
@@ -344,14 +355,17 @@ export default function CitizenDashboard() {
                 </div>
               </div>
             ) : (
-              <GsCard padding="p-4" className="flex items-start gap-3 bg-purple-50/60 border-purple-200">
-                <Users size={18} className="text-purple-700 shrink-0 mt-0.5" aria-hidden />
-                <div className="min-w-0">
-                  <p className={UI.label}>Ward Jurisdiction</p>
-                  <p className="font-semibold text-[#1F2937] mt-0.5">{me.village} · Ward {me.wardNumber || '1'}</p>
-                  <p className="text-sm text-[#64748B]">{me.mandal} Mandal, {me.district} District</p>
+              <div className="relative rounded-2xl overflow-hidden shadow-sm border border-purple-200" style={{ minHeight: '120px' }}>
+                <img src="/default-village.jpg" alt="Village" className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-950/85 via-purple-900/60 to-transparent" />
+                <div className="relative z-10 flex items-end p-4 min-h-[120px]">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-purple-300 uppercase tracking-widest">Ward Jurisdiction</p>
+                    <p className="font-black text-white text-lg leading-tight mt-0.5">{me.village} · Ward {me.wardNumber || '1'}</p>
+                    <p className="text-xs text-white/70">{me.mandal} · {me.district} District</p>
+                  </div>
                 </div>
-              </GsCard>
+              </div>
             )
           ) : me?.village ? (
             placeImage?.imageUrl ? (
@@ -378,14 +392,22 @@ export default function CitizenDashboard() {
                 </div>
               </div>
             ) : (
-              <GsCard padding="p-4" className="flex items-start gap-3">
-                <MapPin size={18} className="text-[#008A3B] shrink-0 mt-0.5" aria-hidden />
-                <div className="min-w-0">
-                  <p className={UI.label}>Your village</p>
-                  <p className="font-semibold text-[#1F2937] mt-0.5">{me.village}, {me.mandal}</p>
-                  <p className="text-sm text-[#64748B]">{me.district} District</p>
+              <div className="relative rounded-2xl overflow-hidden shadow-sm border border-emerald-200" style={{ minHeight: '120px' }}>
+                <img src="/default-village.jpg" alt="Village" className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/85 via-emerald-900/60 to-transparent" />
+                <div className="relative z-10 flex items-end p-4 min-h-[120px]">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-emerald-300 uppercase tracking-widest">Your Village</p>
+                    <p className="font-black text-white text-lg leading-tight mt-0.5">{me.village}</p>
+                    <p className="text-xs text-white/70">{me.mandal} · {me.district} District</p>
+                  </div>
+                  <div className="shrink-0 ml-3">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/20 backdrop-blur-sm flex items-center justify-center border border-emerald-400/30">
+                      <MapPin size={18} className="text-emerald-300" />
+                    </div>
+                  </div>
                 </div>
-              </GsCard>
+              </div>
             )
           ) : null}
         </section>

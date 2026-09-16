@@ -258,7 +258,11 @@ export default function TelanganaAdmin() {
                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-[#67001A] via-[#8B0022] to-[#3D0010]" />
+                        <img
+                          src="/default-district.jpg"
+                          alt="Telangana District"
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
                       )}
 
                       {/* Gradient overlay always on top of image */}
@@ -349,7 +353,11 @@ export default function TelanganaAdmin() {
                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-[#1e3a5f] via-[#2a5298] to-[#0f1f3d]" />
+                        <img
+                          src="/default-mandal.jpg"
+                          alt="Mandal"
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
                       )}
 
                       {/* Gradient overlay */}
@@ -439,7 +447,11 @@ export default function TelanganaAdmin() {
                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-[#005830] to-[#003520]" />
+                        <img
+                          src="/default-village.jpg"
+                          alt="Village"
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
                       )}
 
                       {/* Gradient overlay */}

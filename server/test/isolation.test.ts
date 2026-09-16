@@ -817,5 +817,106 @@ describe("hierarchy-based data isolation & mandal official scoping", () => {
     expect(mandalBIds).not.toContain(issueX1);
     expect(mandalBIds).not.toContain(issueX3);
   });
+
+  it("official registration adapts to roles: mandal_official, admin, ward_member", async () => {
+    // 1. Request OTP for mandal official
+    const moPhone = "9876543210";
+    const otpRes = await req(null, "/api/auth/otp/request", "POST", { phone: moPhone });
+    expect(otpRes.status).toBe(200);
+    const { devOtp } = await otpRes.json();
+    expect(devOtp).toBeDefined();
+
+    // Register mandal official with district and mandal only
+    const moReg = await req(null, "/api/auth/register/official", "POST", {
+      phone: moPhone,
+      code: devOtp,
+      name: "New Mandal Officer",
+      role: "mandal_official",
+      district: "TestDistA",
+      mandal: "MandalA1",
+    });
+    expect(moReg.status).toBe(201);
+    const moBody = await moReg.json();
+    expect(moBody.user.role).toBe("mandal_official");
+    expect(moBody.user.district).toBe("TestDistA");
+    expect(moBody.user.mandal).toBe("MandalA1");
+
+    // 2. Register admin with no location required
+    const adminPhone = "9876543211";
+    const adminOtp = await req(null, "/api/auth/otp/request", "POST", { phone: adminPhone });
+    const { devOtp: adminCode } = await adminOtp.json();
+
+    const adminReg = await req(null, "/api/auth/register/official", "POST", {
+      phone: adminPhone,
+      code: adminCode,
+      name: "State Admin",
+      role: "admin",
+    });
+    expect(adminReg.status).toBe(201);
+    const adminBody = await adminReg.json();
+    expect(adminBody.user.role).toBe("admin");
+    expect(adminBody.user.jurisdictionId).toBeNull();
+
+    // 3. Register ward member with wardNumber
+    const wmPhone = "9876543212";
+    const wmOtp = await req(null, "/api/auth/otp/request", "POST", { phone: wmPhone });
+    const { devOtp: wmCode } = await wmOtp.json();
+
+    const wmReg = await req(null, "/api/auth/register/official", "POST", {
+      phone: wmPhone,
+      code: wmCode,
+      name: "Ward Rep",
+      role: "ward_member",
+      district: "TestDistA",
+      mandal: "MandalA1",
+      village: "VillageX",
+      wardNumber: "5",
+    });
+    expect(wmReg.status).toBe(201);
+    const wmBody = await wmReg.json();
+    expect(wmBody.user.role).toBe("ward_member");
+    expect(wmBody.user.wardNumber).toBe("5");
+    expect(wmBody.user.village).toBe("VillageX");
+  });
+
+  it("ward member query parameters are strictly locked to their village and ward", async () => {
+    // Ward member tries to query issues by specifying another district or mandal in query params
+    const res = await req(wardMemberX1, "/api/issues?district=TestDistB&mandal=MandalB1");
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    const ids = body.issues.map((i: { id: string }) => i.id);
+    // Even though district=TestDistB was requested, ward member must NOT see VillageY
+    expect(ids).not.toContain(issueY1);
+    // Ward member must strictly see their own ward's issue in VillageX
+    expect(ids).toContain(issueX1);
+    expect(ids).not.toContain(issueX2);
+  });
+
+  it("mandal official profile completion via PATCH /me requires only district and mandal (no village)", async () => {
+    // Create a new user with OTP
+    const phone = "9876543213";
+    const otpRes = await req(null, "/api/auth/otp/request", "POST", { phone });
+    const { devOtp } = await otpRes.json();
+    const verifyRes = await req(null, "/api/auth/otp/verify", "POST", { phone, code: devOtp });
+    expect(verifyRes.status).toBe(200);
+    const cookieHeader = verifyRes.headers.get("set-cookie") ?? "";
+    const token = cookieHeader.match(/grama_session=([^;]+)/)?.[1] ?? "";
+
+    const patchRes = await req({ token } as any, "/api/users/me", "PATCH", {
+      name: "Mandal Officer Test",
+      fatherName: "Father Name",
+      phone,
+      role: "mandal_official",
+      district: "TestDistA",
+      mandal: "MandalA1",
+    });
+
+    expect(patchRes.status).toBe(200);
+    const patchBody = await patchRes.json();
+    expect(patchBody.user.role).toBe("mandal_official");
+    expect(patchBody.user.district).toBe("TestDistA");
+    expect(patchBody.user.mandal).toBe("MandalA1");
+  });
 });
+
 

@@ -13,16 +13,16 @@ import {
   indianMobileSchema,
 } from "../../../shared/validation";
 
-const completeRegistrationSchema = z
-  .object({
-    name: personNameSchema,
-    fatherName: optionalPersonNameSchema,
-    phone: indianMobileSchema,
-    district: z.string().trim().min(1),
-    mandal: z.string().trim().min(1),
-    village: z.string().trim().min(1),
-  })
-  .strict();
+const completeRegistrationSchema = z.object({
+  name: personNameSchema,
+  fatherName: optionalPersonNameSchema,
+  phone: indianMobileSchema.optional(),
+  district: z.string().trim().optional(),
+  mandal: z.string().trim().optional(),
+  village: z.string().trim().optional(),
+  role: z.enum(["citizen", "mandal_official", "sarpanch", "ward_member", "admin"]).optional(),
+  wardNumber: z.string().trim().optional(),
+});
 
 export const userRoutes = new Hono()
   .use("*", requireAuth)
@@ -31,34 +31,78 @@ export const userRoutes = new Hono()
     return c.json({ user: serializeUser(user, jurisdiction) });
   })
   /**
-   * Completes the citizen profile: binds the user to a jurisdiction
+   * Completes user profile: binds the user to a jurisdiction
    * looked up from the reference table (never free-text stored).
    */
   .patch("/me", async (c) => {
     const { user } = getAuth(c);
     const input = completeRegistrationSchema.parse(await c.req.json());
 
-    const [jurisdiction] = await db
-      .select()
-      .from(schema.jurisdictions)
-      .where(
-        and(
-          eq(schema.jurisdictions.district, input.district),
-          eq(schema.jurisdictions.mandal, input.mandal),
-          eq(schema.jurisdictions.village, input.village)
-        )
-      )
-      .limit(1);
+    const targetRole = input.role || user.role;
+    let jurisdiction: typeof schema.jurisdictions.$inferSelect | null = null;
 
-    if (!jurisdiction) {
-      throw badRequest("Selected village is not registered. Please choose from the list.");
+    if (targetRole === "mandal_official" || (!input.village && input.district && input.mandal)) {
+      if (!input.district || !input.mandal) {
+        throw badRequest("District and Mandal are required for Mandal Official");
+      }
+      const [mandalJur] = await db
+        .select()
+        .from(schema.jurisdictions)
+        .where(
+          and(
+            eq(schema.jurisdictions.district, input.district),
+            eq(schema.jurisdictions.mandal, input.mandal)
+          )
+        )
+        .limit(1);
+
+      if (!mandalJur) {
+        throw badRequest("Selected mandal is not registered. Please choose from the list.");
+      }
+      jurisdiction = mandalJur;
+    } else if (targetRole === "admin" && !input.district) {
+      jurisdiction = null;
+    } else {
+      if (!input.district || !input.mandal || !input.village) {
+        throw badRequest("District, mandal, and village are required");
+      }
+      if (targetRole === "ward_member" && !input.wardNumber && !user.wardNumber) {
+        throw badRequest("Ward number is required for Ward Member");
+      }
+      const [villageJur] = await db
+        .select()
+        .from(schema.jurisdictions)
+        .where(
+          and(
+            eq(schema.jurisdictions.district, input.district),
+            eq(schema.jurisdictions.mandal, input.mandal),
+            eq(schema.jurisdictions.village, input.village)
+          )
+        )
+        .limit(1);
+
+      if (!villageJur) {
+        throw badRequest("Selected village is not registered. Please choose from the list.");
+      }
+      jurisdiction = villageJur;
     }
 
     const updates: Partial<typeof schema.users.$inferInsert> = {
       name: input.name,
-      jurisdictionId: jurisdiction.id,
+      jurisdictionId: jurisdiction ? jurisdiction.id : null,
       updatedAt: new Date(),
     };
+
+    if (input.role && input.role !== user.role) {
+      updates.role = input.role;
+      if (input.role !== "citizen") {
+        updates.approvalStatus = "pending";
+      }
+    }
+    if (input.wardNumber !== undefined) {
+      updates.wardNumber = input.wardNumber;
+    }
+
     if (input.fatherName) updates.fatherName = input.fatherName;
     if (input.phone) {
       const phone = normalizePhone(input.phone);
@@ -84,7 +128,7 @@ export const userRoutes = new Hono()
       .returning();
 
     const jurisdictionAfter =
-      updated.jurisdictionId === jurisdiction.id
+      updated.jurisdictionId && updated.jurisdictionId === jurisdiction?.id
         ? jurisdiction
         : await loadJurisdiction(updated.jurisdictionId);
 

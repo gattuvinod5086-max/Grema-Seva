@@ -20,3 +20,21 @@ export async function findJurisdictionByName(
     .limit(1);
   return j ?? null;
 }
+
+export async function findFirstJurisdictionByMandal(
+  district: string,
+  mandal: string
+): Promise<Jurisdiction | null> {
+  const [j] = await db
+    .select()
+    .from(schema.jurisdictions)
+    .where(
+      and(
+        eq(schema.jurisdictions.district, district),
+        eq(schema.jurisdictions.mandal, mandal)
+      )
+    )
+    .limit(1);
+  return j ?? null;
+}
+

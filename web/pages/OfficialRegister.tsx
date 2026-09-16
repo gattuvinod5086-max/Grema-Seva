@@ -39,6 +39,7 @@ export default function OfficialRegister() {
   const [district, setDistrict] = useState('');
   const [mandal, setMandal] = useState('');
   const [village, setVillage] = useState('');
+  const [wardNumber, setWardNumber] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -58,6 +59,15 @@ export default function OfficialRegister() {
     return () => clearTimeout(t);
   }, [resendIn]);
 
+  const isLocationValid = () => {
+    if (!role) return false;
+    if (role === 'admin') return true;
+    if (role === 'mandal_official') return Boolean(district && mandal);
+    if (role === 'sarpanch') return Boolean(district && mandal && village);
+    if (role === 'ward_member') return Boolean(district && mandal && village && wardNumber.trim());
+    return false;
+  };
+
   const requestOtp = async () => {
     setError(null);
     if (!personNameSchema.safeParse(name).success) {
@@ -72,8 +82,14 @@ export default function OfficialRegister() {
       setError('Enter a valid 10-digit Indian mobile number (digits only, starting 6–9).');
       return;
     }
-    if (!district || !mandal || !village) {
-      setError('Select your district, mandal and village.');
+    if (!isLocationValid()) {
+      if (role === 'mandal_official') {
+        setError('Select your district and mandal.');
+      } else if (role === 'ward_member') {
+        setError('Select your district, mandal, village, and specify your ward number.');
+      } else if (role === 'sarpanch') {
+        setError('Select your district, mandal and village.');
+      }
       return;
     }
     setBusy(true);
@@ -105,11 +121,32 @@ export default function OfficialRegister() {
     setError(null);
     setBusy(true);
     try {
+      const payload: Record<string, any> = {
+        phone,
+        code,
+        name,
+        role,
+      };
+
+      if (role === 'mandal_official') {
+        payload.district = district;
+        payload.mandal = mandal;
+      } else if (role === 'sarpanch') {
+        payload.district = district;
+        payload.mandal = mandal;
+        payload.village = village;
+      } else if (role === 'ward_member') {
+        payload.district = district;
+        payload.mandal = mandal;
+        payload.village = village;
+        payload.wardNumber = wardNumber.trim();
+      }
+
       const res = await fetch('/api/auth/register/official', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ phone, code, name, role, district, mandal, village }),
+        body: JSON.stringify(payload),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -164,7 +201,7 @@ export default function OfficialRegister() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                if (name && role && phone && district && mandal && village) requestOtp();
+                if (name && role && phone && isLocationValid()) requestOtp();
               }}
               className="space-y-4"
             >
@@ -175,7 +212,10 @@ export default function OfficialRegister() {
                     <button
                       key={r}
                       type="button"
-                      onClick={() => setRole(r)}
+                      onClick={() => {
+                        setRole(r);
+                        setError(null);
+                      }}
                       className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
                         role === r ? 'border-[#67001A] bg-[#67001A]/5' : 'border-slate-200 hover:border-slate-300'
                       }`}
@@ -202,53 +242,147 @@ export default function OfficialRegister() {
                 required
               />
 
-              <div className="grid gap-2">
-                <select
-                  className={inputCls}
-                  value={district}
-                  onChange={(e) => {
-                    const next = sanitizeGeoSelection(e.target.value, '', '');
-                    setDistrict(next.district);
-                    setMandal(next.mandal);
-                    setVillage(next.village);
-                  }}
-                  required
-                >
-                  <option value="">Select district</option>
-                  {getDistrictNames().map((d) => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-                {district && (
-                  <select
-                    className={inputCls}
-                    value={mandal}
-                    onChange={(e) => {
-                      const next = sanitizeGeoSelection(district, e.target.value, '');
-                      setMandal(next.mandal);
-                      setVillage(next.village);
-                    }}
-                    required
-                  >
-                    <option value="">Select mandal</option>
-                    {getMandalNames(district).map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                )}
-                {mandal && (
-                  <select className={inputCls} value={village} onChange={(e) => setVillage(e.target.value)} required>
-                    <option value="">Select village</option>
-                    {getVillageNames(district, mandal).map((v) => (
-                      <option key={v} value={v}>{v}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
+              {/* Role-adaptive location selection */}
+              {role === 'admin' && (
+                <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900 space-y-1">
+                  <p className="font-bold flex items-center gap-1.5 text-amber-950">
+                    <Building2 size={15} /> Statewide Administrative Jurisdiction
+                  </p>
+                  <p className="text-amber-800">
+                    As an Administrator, your role holds statewide oversight. No specific district or village binding is required during registration.
+                  </p>
+                </div>
+              )}
+
+              {role === 'mandal_official' && (
+                <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-200 space-y-3">
+                  <div>
+                    <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider block mb-1">
+                      Mandal Jurisdiction
+                    </label>
+                    <p className="text-xs text-indigo-700 mb-2">
+                      Select your district and mandal. You will have jurisdiction over all villages within this mandal.
+                    </p>
+                  </div>
+                  <div className="grid gap-2">
+                    <select
+                      className={inputCls}
+                      value={district}
+                      onChange={(e) => {
+                        const next = sanitizeGeoSelection(e.target.value, '', '');
+                        setDistrict(next.district);
+                        setMandal(next.mandal);
+                        setVillage('');
+                      }}
+                      required
+                    >
+                      <option value="">Select district</option>
+                      {getDistrictNames().map((d) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+
+                    {district && (
+                      <select
+                        className={inputCls}
+                        value={mandal}
+                        onChange={(e) => {
+                          const next = sanitizeGeoSelection(district, e.target.value, '');
+                          setMandal(next.mandal);
+                          setVillage('');
+                        }}
+                        required
+                      >
+                        <option value="">Select mandal</option>
+                        {getMandalNames(district).map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {(role === 'sarpanch' || role === 'ward_member') && (
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
+                      {role === 'sarpanch' ? 'Gram Panchayat Jurisdiction' : 'Ward & Village Jurisdiction'}
+                    </label>
+                    <p className="text-xs text-slate-500 mb-2">
+                      {role === 'sarpanch'
+                        ? 'Select your gram panchayat village location.'
+                        : 'Select your village and specify your assigned ward number.'}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <select
+                      className={inputCls}
+                      value={district}
+                      onChange={(e) => {
+                        const next = sanitizeGeoSelection(e.target.value, '', '');
+                        setDistrict(next.district);
+                        setMandal(next.mandal);
+                        setVillage(next.village);
+                      }}
+                      required
+                    >
+                      <option value="">Select district</option>
+                      {getDistrictNames().map((d) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                    {district && (
+                      <select
+                        className={inputCls}
+                        value={mandal}
+                        onChange={(e) => {
+                          const next = sanitizeGeoSelection(district, e.target.value, '');
+                          setMandal(next.mandal);
+                          setVillage(next.village);
+                        }}
+                        required
+                      >
+                        <option value="">Select mandal</option>
+                        {getMandalNames(district).map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    )}
+                    {mandal && (
+                      <select className={inputCls} value={village} onChange={(e) => setVillage(e.target.value)} required>
+                        <option value="">Select village</option>
+                        {getVillageNames(district, mandal).map((v) => (
+                          <option key={v} value={v}>{v}</option>
+                        ))}
+                      </select>
+                    )}
+
+                    {role === 'ward_member' && village && (
+                      <div>
+                        <label className="text-xs font-bold text-purple-900 block mb-1">Ward Number *</label>
+                        <input
+                          className={inputCls}
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="e.g. 1, 2, 3..."
+                          value={wardNumber}
+                          onChange={(e) => setWardNumber(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                          required
+                        />
+                        <p className="text-[11px] text-purple-700 mt-1">
+                          You will strictly manage and view issues reported for Ward {wardNumber || '...'}.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <button
                 type="submit"
-                disabled={busy || !name || !role || !phone || !village}
+                disabled={busy || !name || !role || !phone || !isLocationValid()}
                 className="w-full text-white py-4 rounded-xl font-black text-sm uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 style={{ background: `linear-gradient(90deg, ${maroon}, #8B0026)` }}
               >
@@ -257,6 +391,7 @@ export default function OfficialRegister() {
               </button>
             </form>
           ) : (
+
             <form
               onSubmit={(e) => {
                 e.preventDefault();

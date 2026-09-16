@@ -73,6 +73,7 @@ export default function Login() {
   const [district, setDistrict] = useState("");
   const [mandal, setMandal] = useState("");
   const [village, setVillage] = useState("");
+  const [wardNumber, setWardNumber] = useState("");
 
   const otpInputRef = useRef<HTMLInputElement>(null);
 
@@ -95,6 +96,15 @@ export default function Login() {
       setTimeout(() => otpInputRef.current?.focus(), 60);
     }
   }, [step]);
+
+  const isOfficialLocationValid = () => {
+    if (!officialRole) return false;
+    if (officialRole === "admin") return true;
+    if (officialRole === "mandal_official") return Boolean(district && mandal);
+    if (officialRole === "sarpanch") return Boolean(district && mandal && village);
+    if (officialRole === "ward_member") return Boolean(district && mandal && village && wardNumber.trim());
+    return false;
+  };
 
   const handleOpenCitizen = () => {
     setViewMode("citizen");
@@ -130,8 +140,14 @@ export default function Login() {
         setError("Please select your official role.");
         return;
       }
-      if (!district || !mandal || !village) {
-        setError("Please select your district, mandal, and village jurisdiction.");
+      if (!isOfficialLocationValid()) {
+        if (officialRole === "mandal_official") {
+          setError("Please select your district and mandal.");
+        } else if (officialRole === "ward_member") {
+          setError("Please select your district, mandal, village, and specify your ward number.");
+        } else if (officialRole === "sarpanch") {
+          setError("Please select your district, mandal, and village jurisdiction.");
+        }
         return;
       }
     }
@@ -169,19 +185,32 @@ export default function Login() {
 
     try {
       if (viewMode === "official" && officialSubMode === "register") {
+        const payload: Record<string, any> = {
+          phone,
+          code: otpCode,
+          name,
+          role: officialRole,
+        };
+
+        if (officialRole === "mandal_official") {
+          payload.district = district;
+          payload.mandal = mandal;
+        } else if (officialRole === "sarpanch") {
+          payload.district = district;
+          payload.mandal = mandal;
+          payload.village = village;
+        } else if (officialRole === "ward_member") {
+          payload.district = district;
+          payload.mandal = mandal;
+          payload.village = village;
+          payload.wardNumber = wardNumber.trim();
+        }
+
         const res = await fetch("/api/auth/register/official", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
-          body: JSON.stringify({
-            phone,
-            code: otpCode,
-            name,
-            role: officialRole,
-            district,
-            mandal,
-            village,
-          }),
+          body: JSON.stringify(payload),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -191,6 +220,7 @@ export default function Login() {
         navigate("/", { replace: true });
         return;
       }
+
 
       const res = await fetch("/api/auth/otp/verify", {
         method: "POST",
@@ -623,70 +653,157 @@ export default function Login() {
                           required
                         />
 
-                        {/* Jurisdiction Selector */}
-                        <div className="space-y-2">
-                          <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
-                            Jurisdiction Assignment
-                          </label>
-                          <select
-                            className={inputCls}
-                            value={district}
-                            onChange={(e) => {
-                              const next = sanitizeGeoSelection(e.target.value, "", "");
-                              setDistrict(next.district);
-                              setMandal(next.mandal);
-                              setVillage(next.village);
-                            }}
-                            required
-                          >
-                            <option value="">-- Select Official District --</option>
-                            {getDistrictNames().map((d) => (
-                              <option key={d} value={d}>{d}</option>
-                            ))}
-                          </select>
+                        {/* Role-adaptive Location Selector */}
+                        {officialRole === "admin" && (
+                          <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900 space-y-1">
+                            <p className="font-bold flex items-center gap-1.5 text-amber-950">
+                              <Building2 size={14} /> Statewide Administrative Jurisdiction
+                            </p>
+                            <p className="text-amber-800 text-[11px]">
+                              As an Administrator, you have statewide oversight. No specific district or village selection is required.
+                            </p>
+                          </div>
+                        )}
 
-                          {district && (
+                        {officialRole === "mandal_official" && (
+                          <div className="space-y-2 p-3 rounded-xl bg-indigo-50/60 border border-indigo-200">
+                            <div>
+                              <label className="block text-xs font-bold text-indigo-900 uppercase tracking-wider mb-0.5">
+                                Mandal Jurisdiction
+                              </label>
+                              <p className="text-[11px] text-indigo-700">
+                                Select your district and mandal. You will manage and view all villages in this mandal.
+                              </p>
+                            </div>
                             <select
                               className={inputCls}
-                              value={mandal}
+                              value={district}
                               onChange={(e) => {
-                                const next = sanitizeGeoSelection(district, e.target.value, "");
+                                const next = sanitizeGeoSelection(e.target.value, "", "");
+                                setDistrict(next.district);
+                                setMandal(next.mandal);
+                                setVillage("");
+                              }}
+                              required
+                            >
+                              <option value="">-- Select District --</option>
+                              {getDistrictNames().map((d) => (
+                                <option key={d} value={d}>{d}</option>
+                              ))}
+                            </select>
+
+                            {district && (
+                              <select
+                                className={inputCls}
+                                value={mandal}
+                                onChange={(e) => {
+                                  const next = sanitizeGeoSelection(district, e.target.value, "");
+                                  setMandal(next.mandal);
+                                  setVillage("");
+                                }}
+                                required
+                              >
+                                <option value="">-- Select Mandal --</option>
+                                {getMandalNames(district).map((m) => (
+                                  <option key={m} value={m}>{m}</option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
+                        )}
+
+                        {(officialRole === "sarpanch" || officialRole === "ward_member") && (
+                          <div className="space-y-2 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-0.5">
+                                {officialRole === "sarpanch" ? "Gram Panchayat Jurisdiction" : "Ward & Village Jurisdiction"}
+                              </label>
+                              <p className="text-[11px] text-slate-500">
+                                {officialRole === "sarpanch"
+                                  ? "Select your gram panchayat village location."
+                                  : "Select your village and specify your assigned ward number."}
+                              </p>
+                            </div>
+
+                            <select
+                              className={inputCls}
+                              value={district}
+                              onChange={(e) => {
+                                const next = sanitizeGeoSelection(e.target.value, "", "");
+                                setDistrict(next.district);
                                 setMandal(next.mandal);
                                 setVillage(next.village);
                               }}
                               required
                             >
-                              <option value="">-- Select Mandal --</option>
-                              {getMandalNames(district).map((m) => (
-                                <option key={m} value={m}>{m}</option>
+                              <option value="">-- Select District --</option>
+                              {getDistrictNames().map((d) => (
+                                <option key={d} value={d}>{d}</option>
                               ))}
                             </select>
-                          )}
 
-                          {mandal && (
-                            <select
-                              className={inputCls}
-                              value={village}
-                              onChange={(e) => setVillage(e.target.value)}
-                              required
-                            >
-                              <option value="">-- Select Village --</option>
-                              {getVillageNames(district, mandal).map((v) => (
-                                <option key={v} value={v}>{v}</option>
-                              ))}
-                            </select>
-                          )}
-                        </div>
+                            {district && (
+                              <select
+                                className={inputCls}
+                                value={mandal}
+                                onChange={(e) => {
+                                  const next = sanitizeGeoSelection(district, e.target.value, "");
+                                  setMandal(next.mandal);
+                                  setVillage(next.village);
+                                }}
+                                required
+                              >
+                                <option value="">-- Select Mandal --</option>
+                                {getMandalNames(district).map((m) => (
+                                  <option key={m} value={m}>{m}</option>
+                                ))}
+                              </select>
+                            )}
+
+                            {mandal && (
+                              <select
+                                className={inputCls}
+                                value={village}
+                                onChange={(e) => setVillage(e.target.value)}
+                                required
+                              >
+                                <option value="">-- Select Village --</option>
+                                {getVillageNames(district, mandal).map((v) => (
+                                  <option key={v} value={v}>{v}</option>
+                                ))}
+                              </select>
+                            )}
+
+                            {officialRole === "ward_member" && village && (
+                              <div>
+                                <label className="block text-xs font-bold text-purple-900 mb-1">Ward Number *</label>
+                                <input
+                                  className={inputCls}
+                                  type="text"
+                                  inputMode="numeric"
+                                  placeholder="e.g. 1, 2, 3..."
+                                  value={wardNumber}
+                                  onChange={(e) => setWardNumber(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                                  required
+                                />
+                                <p className="text-[10px] text-purple-700 mt-1">
+                                  You will strictly manage and view issues for Ward {wardNumber || "..."}.
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         <button
                           type="submit"
-                          disabled={busy || !name || !officialRole || !phone || !village}
+                          disabled={busy || !name || !officialRole || !phone || !isOfficialLocationValid()}
                           className="w-full text-white py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider shadow-md flex items-center justify-center gap-2 hover:opacity-95 disabled:opacity-50 transition-all bg-[#67001A]"
                         >
                           {busy ? <Loader2 className="animate-spin" size={18} /> : <ShieldCheck size={18} />}
                           Verify &amp; Submit Registration
                         </button>
                       </form>
+
                     ) : (
                       <form
                         onSubmit={(e) => {

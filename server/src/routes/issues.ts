@@ -59,7 +59,12 @@ export const issuesRoutes = new Hono()
     if (user.role === "mandal_official" && jurisdiction) {
       district = jurisdiction.district;
       mandal = jurisdiction.mandal;
+    } else if ((user.role === "ward_member" || user.role === "sarpanch" || user.role === "citizen") && jurisdiction) {
+      district = jurisdiction.district;
+      mandal = jurisdiction.mandal;
+      village = jurisdiction.village;
     }
+
 
     return c.json(
       await getVillageIssueStats(issueVisibilityFilter(user, jurisdiction), {
@@ -101,10 +106,15 @@ export const issuesRoutes = new Hono()
     // Hierarchy enforcement:
     // admin / super_admin: sees all data, can filter freely by district, mandal, village
     // mandal_official: forced to their district and mandal; can filter by village within that mandal
+    // sarpanch / ward_member / citizen: strictly locked to their assigned district, mandal, village
     if (user.role === "mandal_official" && jurisdiction) {
       district = jurisdiction.district;
       mandal = jurisdiction.mandal;
+    } else if ((user.role === "ward_member" || user.role === "sarpanch" || user.role === "citizen") && jurisdiction) {
+      district = jurisdiction.district;
+      mandal = jurisdiction.mandal;
     }
+
 
     const result = await listIssuesForUser(user, issueVisibilityFilter(user, jurisdiction), {
       status: c.req.query("status") ?? undefined,

@@ -10,7 +10,7 @@ import { requestOtp, verifyOtp, assertVerificationOk } from "../services/otp";
 import { getSmsProvider } from "../providers/sms";
 import { createSession, revokeCurrentSession } from "../services/session";
 import { findIdentityUser, linkIdentity, serializeUser } from "../services/users";
-import { findJurisdictionByName } from "../services/jurisdictions";
+import { findJurisdictionByName, findFirstJurisdictionByMandal } from "../services/jurisdictions";
 import { badRequest, conflict } from "../middleware/error";
 import { requireAuth } from "../middleware/auth";
 import { loadJurisdiction } from "../services/users";
@@ -25,22 +25,52 @@ const otpVerifySchema = z.object({
   code: z.string().regex(/^\d{6}$/, "OTP must be 6 digits"),
 });
 
-const officialRoles = ["sarpanch", "admin", "ward_member"] as const;
+const officialRoles = ["sarpanch", "admin", "ward_member", "mandal_official"] as const;
 
-const registerOfficialSchema = z.object({
-  phone: indianMobileSchema,
-  code: z.string().regex(/^\d{6}$/, "OTP must be 6 digits"),
-  name: personNameSchema,
-  role: z.enum(officialRoles),
-  district: z.string().trim().min(1),
-  mandal: z.string().trim().min(1),
-  village: z.string().trim().min(1),
-  wardNumber: z
-    .string()
-    .trim()
-    .regex(/^\d{1,3}$/, "Ward number must be 1–3 digits")
-    .optional(),
-});
+const registerOfficialSchema = z
+  .object({
+    phone: indianMobileSchema,
+    code: z.string().regex(/^\d{6}$/, "OTP must be 6 digits"),
+    name: personNameSchema,
+    role: z.enum(officialRoles),
+    district: z.string().trim().optional(),
+    mandal: z.string().trim().optional(),
+    village: z.string().trim().optional(),
+    wardNumber: z
+      .string()
+      .trim()
+      .regex(/^\d{1,3}$/, "Ward number must be 1–3 digits")
+      .optional(),
+  })
+  .superRefine((val, ctx) => {
+    if (val.role === "admin") {
+      // Admin requires no location
+      return;
+    }
+    if (val.role === "mandal_official") {
+      if (!val.district) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "District is required for Mandal Official", path: ["district"] });
+      }
+      if (!val.mandal) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Mandal is required for Mandal Official", path: ["mandal"] });
+      }
+      return;
+    }
+    // sarpanch and ward_member
+    if (!val.district) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "District is required", path: ["district"] });
+    }
+    if (!val.mandal) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Mandal is required", path: ["mandal"] });
+    }
+    if (!val.village) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Village is required", path: ["village"] });
+    }
+    if (val.role === "ward_member" && !val.wardNumber) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Ward number is required for Ward Member", path: ["wardNumber"] });
+    }
+  });
+
 
 const GOOGLE_STATE_COOKIE = "grama_oauth_state";
 const GOOGLE_CALLBACK_PATH = "/api/auth/google/callback";
@@ -101,14 +131,28 @@ export const authRoutes = new Hono()
 
     assertVerificationOk(await verifyOtp(phone, input.code));
 
-    const jurisdiction = await findJurisdictionByName(
-      input.district,
-      input.mandal,
-      input.village
-    );
-    if (!jurisdiction) {
-      throw badRequest("Selected village is not registered. Please choose from the list.");
+    let jurisdiction: Awaited<ReturnType<typeof findJurisdictionByName>> = null;
+    if (input.role === "mandal_official") {
+      jurisdiction = await findFirstJurisdictionByMandal(input.district!, input.mandal!);
+      if (!jurisdiction) {
+        throw badRequest("No registered villages found for the selected mandal.");
+      }
+    } else if (input.role === "admin") {
+      jurisdiction = null;
+    } else {
+      // sarpanch or ward_member
+      jurisdiction = await findJurisdictionByName(
+        input.district!,
+        input.mandal!,
+        input.village!
+      );
+      if (!jurisdiction) {
+        throw badRequest("Selected village is not registered. Please choose from the list.");
+      }
     }
+
+    const jurisdictionId = jurisdiction ? jurisdiction.id : null;
+    const wardNumber = input.role === "ward_member" ? input.wardNumber ?? null : null;
 
     const existing = await findIdentityUser("phone", phone);
     if (existing) {
@@ -120,8 +164,8 @@ export const authRoutes = new Hono()
             role: input.role,
             approvalStatus: "pending",
             approvalNote: null,
-            jurisdictionId: jurisdiction.id,
-            wardNumber: input.wardNumber,
+            jurisdictionId,
+            wardNumber,
             updatedAt: new Date(),
           })
           .where(eq(schema.users.id, existing.id))
@@ -132,7 +176,7 @@ export const authRoutes = new Hono()
           action: "official.registration.submitted",
           entity: "user",
           entityId: updated.id,
-          after: { role: input.role, jurisdictionId: jurisdiction.id },
+          after: { role: input.role, jurisdictionId },
           ip: c.req.header("x-forwarded-for") ?? c.req.header("x-real-ip"),
         });
 
@@ -159,8 +203,8 @@ export const authRoutes = new Hono()
         role: input.role,
         // Officials hold no official powers until a super admin approves them.
         approvalStatus: "pending",
-        jurisdictionId: jurisdiction.id,
-        wardNumber: input.wardNumber,
+        jurisdictionId,
+        wardNumber,
       })
       .returning();
     await linkIdentity(user.id, "phone", phone);
@@ -170,7 +214,7 @@ export const authRoutes = new Hono()
       action: "official.registration.submitted",
       entity: "user",
       entityId: user.id,
-      after: { role: input.role, jurisdictionId: jurisdiction.id },
+      after: { role: input.role, jurisdictionId },
       ip: c.req.header("x-forwarded-for") ?? c.req.header("x-real-ip"),
     });
 

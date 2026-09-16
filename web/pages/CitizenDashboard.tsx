@@ -409,12 +409,14 @@ export default function CitizenDashboard() {
         <section id="my-issues" className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-lg text-[#1F2937]">
-              {me?.village
-                ? `${me.village} Logs`
+              {me?.role === 'mandal_official'
+                ? `${me?.mandal} Mandal Logs`
+                : me?.role === 'ward_member' && me?.village
+                ? `${me.village} • Ward ${me.wardNumber || '1'} Logs`
                 : me?.role === 'super_admin' || me?.role === 'admin'
                 ? 'Statewide Logs'
-                : me?.role === 'mandal_official'
-                ? `${me?.mandal} Logs`
+                : me?.village
+                ? `${me.village} Logs`
                 : 'Village Logs'}
             </h3>
             <span className="text-xs font-semibold text-[#64748B]">{activeIssues.length} open</span>
@@ -441,29 +443,31 @@ export default function CitizenDashboard() {
 
           {/* Tabs + category filter + location filter */}
           <div className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              {/* Tabs: Village Logs vs My Reports */}
-              <div className="flex rounded-xl border border-[#E5E7EB] overflow-hidden shrink-0">
-                {(['village', 'mine'] as const)
-                  .filter((t) => t === 'village' || me?.role === 'citizen')
-                  .map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setTab(t)}
-                    className={`px-4 py-2 text-xs md:text-sm font-bold transition-colors ${
-                      tab === t ? 'bg-[#67001A] text-white' : 'bg-white text-[#64748B] hover:bg-slate-50'
-                    }`}
-                  >
-                    {t === 'village'
-                      ? me?.role === 'super_admin' || me?.role === 'admin'
-                        ? 'Statewide Logs'
-                        : me?.role === 'mandal_official'
-                        ? 'Mandal Logs'
-                        : 'Village Logs'
-                      : 'My reports'}
-                  </button>
-                ))}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2 border-t border-[#E5E7EB]/60">
+              <div className="flex items-center gap-3">
+                {/* Tab Selector */}
+                <div className="inline-flex rounded-xl border border-[#E5E7EB] overflow-hidden shadow-2xs">
+                  {(['village', 'mine'] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTab(t)}
+                      className={`px-4 py-2 text-xs md:text-sm font-bold transition-colors ${
+                        tab === t ? 'bg-[#67001A] text-white' : 'bg-white text-[#64748B] hover:bg-slate-50'
+                      }`}
+                    >
+                      {t === 'village'
+                        ? me?.role === 'super_admin' || me?.role === 'admin'
+                          ? 'Statewide Logs'
+                          : me?.role === 'mandal_official'
+                          ? 'Mandal Logs'
+                          : me?.role === 'ward_member'
+                          ? `Ward ${me.wardNumber || '1'} Logs`
+                          : 'Village Logs'
+                        : 'My reports'}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Filters Container */}

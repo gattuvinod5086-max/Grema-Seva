@@ -46,35 +46,31 @@ export function issueVisibilityFilter(
     }
 
     const villageScope = eq(schema.issues.jurisdictionId, userJurisdiction.id);
-    if (user.role === "ward_member" && user.wardNumber) {
-      // Their ward's issues plus unassigned ones (no ward recorded yet).
-      return or(
-        own,
-        and(
-          villageScope,
-          or(eq(schema.issues.wardNumber, user.wardNumber), isNull(schema.issues.wardNumber))
-        )
-      );
+    if (user.role === "ward_member") {
+      if (user.wardNumber) {
+        // Strictly their ward's issues + issues reported by themselves + unassigned
+        return or(
+          own,
+          and(
+            villageScope,
+            or(eq(schema.issues.wardNumber, user.wardNumber), isNull(schema.issues.wardNumber))
+          )
+        );
+      }
+      return and(villageScope, own);
     }
     return villageScope;
   }
 
-  // Everyone else (citizens, pending/declined officials, no jurisdiction).
-  if (userJurisdiction) {
-    if (user.role === "citizen") {
-      return and(
-        eq(schema.issues.jurisdictionId, userJurisdiction.id),
-        or(own, eq(schema.issues.visibility, "village"))
-      );
-    }
-    return or(
-      own,
-      and(
-        eq(schema.issues.visibility, "village"),
-        eq(schema.issues.jurisdictionId, userJurisdiction.id)
-      )
+  // Citizens with registered village jurisdiction: strictly see village-visible issues in their village + own
+  if (userJurisdiction && user.role === "citizen") {
+    return and(
+      eq(schema.issues.jurisdictionId, userJurisdiction.id),
+      or(own, eq(schema.issues.visibility, "village"))
     );
   }
+
+  // Pending / declined officials and unregistered users: hold no official powers, only see own reports
   return own;
 }
 
@@ -100,14 +96,16 @@ export async function canViewIssue(
       );
     }
     if (issue.jurisdictionId !== userJurisdiction.id) return false;
-    if (user.role === "ward_member" && user.wardNumber) {
+    if (user.role === "ward_member") {
+      if (issue.reporterId === user.id) return true;
+      if (!user.wardNumber) return false;
       return issue.wardNumber === user.wardNumber || issue.wardNumber == null;
     }
     return true;
   }
 
-  // Citizens and others with jurisdiction: MUST match userJurisdiction
-  if (userJurisdiction) {
+  // Citizens with jurisdiction: MUST match userJurisdiction
+  if (userJurisdiction && user.role === "citizen") {
     if (issue.jurisdictionId !== userJurisdiction.id) return false;
     return issue.reporterId === user.id || issue.visibility === "village";
   }

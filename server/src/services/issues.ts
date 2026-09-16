@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, ilike, inArray, isNotNull } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, inArray, isNotNull, isNull, or } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { db, schema } from "../db/client";
 import type { Issue, IssueStatus, Jurisdiction, User } from "../db/schema";
@@ -142,6 +142,7 @@ export interface ListIssuesOptions {
   district?: string;
   mandal?: string;
   village?: string;
+  wardNumber?: string;
   page: number;
   limit: number;
 }
@@ -158,6 +159,15 @@ export async function listIssuesForUser(
   if (options.district) conditions.push(ilike(schema.jurisdictions.district, options.district.trim()));
   if (options.mandal) conditions.push(ilike(schema.jurisdictions.mandal, options.mandal.trim()));
   if (options.village) conditions.push(ilike(schema.jurisdictions.village, options.village.trim()));
+  if (options.wardNumber) {
+    conditions.push(
+      or(
+        eq(schema.issues.wardNumber, options.wardNumber),
+        isNull(schema.issues.wardNumber),
+        eq(schema.issues.reporterId, user.id)
+      )
+    );
+  }
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -413,7 +423,7 @@ export async function reopenIssue(user: User, issueId: string, reason: string) {
 /** Status counts for one village/location — "how many issues and their status". */
 export async function getVillageIssueStats(
   visibilityFilter: SQL | undefined,
-  locationFilter?: { district?: string; mandal?: string; village?: string }
+  locationFilter?: { district?: string; mandal?: string; village?: string; wardNumber?: string }
 ) {
   // The caller's own visibility filter already encodes what they may see
   // (citizens never see others' private issues; officials do).
@@ -421,6 +431,13 @@ export async function getVillageIssueStats(
   if (locationFilter?.district) conditions.push(ilike(schema.jurisdictions.district, locationFilter.district.trim()));
   if (locationFilter?.mandal) conditions.push(ilike(schema.jurisdictions.mandal, locationFilter.mandal.trim()));
   if (locationFilter?.village) conditions.push(ilike(schema.jurisdictions.village, locationFilter.village.trim()));
+  if (locationFilter?.wardNumber) {
+    const wardCond = or(
+      eq(schema.issues.wardNumber, locationFilter.wardNumber),
+      isNull(schema.issues.wardNumber)
+    );
+    if (wardCond) conditions.push(wardCond);
+  }
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
   const rows = await db

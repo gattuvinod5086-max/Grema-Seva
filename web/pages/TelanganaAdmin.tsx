@@ -1,16 +1,22 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ArrowLeft, MapPin, Users, Building2, Search, X, ChevronRight, ExternalLink, Camera } from 'lucide-react';
 import { telanganaData, getTotalVillages, getTotalMandals, type District, type Mandal } from '@shared/data/telangana';
 import { useNavigate } from 'react-router';
 import { usePlaceImages } from '@web/hooks/usePlaceImages';
+import { useApi } from '@web/hooks/useApi';
 import ConfigurePlaceImageModal from '@web/components/ConfigurePlaceImageModal';
-import type { PlaceLevel } from '@shared/types';
+import type { PlaceLevel, User } from '@shared/types';
 
 type ViewLevel = 'districts' | 'mandals' | 'villages';
 
 export default function TelanganaAdmin() {
   const navigate = useNavigate();
+  const { data: userData } = useApi<{ user: User }>('/api/users/me');
+  const me = userData?.user;
   const { isAdmin, getPlaceImage, getExactPlaceImage, refetch } = usePlaceImages();
+  const isMandal = me?.role === 'mandal_official';
+  const isVillageScoped = me?.role === 'sarpanch' || me?.role === 'ward_member' || me?.role === 'citizen';
+
   const [editingPlace, setEditingPlace] = useState<{
     level: PlaceLevel;
     district: string;
@@ -23,13 +29,37 @@ export default function TelanganaAdmin() {
   const [selectedMandal, setSelectedMandal] = useState<Mandal | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Automatically lock mandal officials and village-scoped users to their permitted scope
+  useEffect(() => {
+    if (!me) return;
+    if (isMandal && me.district && me.mandal) {
+      const d = telanganaData.find((x) => x.name.toLowerCase() === me.district?.toLowerCase());
+      const m = d?.mandals.find((x) => x.name.toLowerCase() === me.mandal?.toLowerCase());
+      if (d && m) {
+        setSelectedDistrict(d);
+        setSelectedMandal(m);
+        setViewLevel('villages');
+      }
+    } else if (isVillageScoped && me.district && me.mandal && me.village) {
+      const d = telanganaData.find((x) => x.name.toLowerCase() === me.district?.toLowerCase());
+      const m = d?.mandals.find((x) => x.name.toLowerCase() === me.mandal?.toLowerCase());
+      if (d && m) {
+        setSelectedDistrict(d);
+        setSelectedMandal(m);
+        setViewLevel('villages');
+      }
+    }
+  }, [me, isMandal, isVillageScoped]);
+
   const handleDistrictClick = (district: District) => {
+    if (isMandal || isVillageScoped) return;
     setSelectedDistrict(district);
     setViewLevel('mandals');
     setSearchQuery('');
   };
 
   const handleMandalClick = (mandal: Mandal) => {
+    if (isVillageScoped) return;
     setSelectedMandal(mandal);
     setViewLevel('villages');
     setSearchQuery('');
@@ -37,6 +67,9 @@ export default function TelanganaAdmin() {
 
   const handleBack = () => {
     setSearchQuery('');
+    if (isMandal || isVillageScoped) {
+      return; // Locked to assigned jurisdiction
+    }
     if (viewLevel === 'villages') {
       setSelectedMandal(null);
       setViewLevel('mandals');
@@ -47,9 +80,15 @@ export default function TelanganaAdmin() {
   };
 
   const filteredDistricts = useMemo(() => {
-    if (!searchQuery.trim()) return telanganaData;
+    let list = telanganaData;
+    if (isMandal && me?.district) {
+      list = list.filter((d) => d.name.toLowerCase() === me.district?.toLowerCase());
+    } else if (isVillageScoped && me?.district) {
+      list = list.filter((d) => d.name.toLowerCase() === me.district?.toLowerCase());
+    }
+    if (!searchQuery.trim()) return list;
     const q = searchQuery.toLowerCase().trim();
-    return telanganaData.filter(
+    return list.filter(
       (d) =>
         d.name.toLowerCase().includes(q) ||
         d.mandals.some(
@@ -58,25 +97,35 @@ export default function TelanganaAdmin() {
             m.villages.some((v) => v.name.toLowerCase().includes(q))
         )
     );
-  }, [searchQuery]);
+  }, [searchQuery, isMandal, isVillageScoped, me?.district]);
 
   const filteredMandals = useMemo(() => {
     if (!selectedDistrict) return [];
-    if (!searchQuery.trim()) return selectedDistrict.mandals;
+    let list = selectedDistrict.mandals;
+    if (isMandal && me?.mandal) {
+      list = list.filter((m) => m.name.toLowerCase() === me.mandal?.toLowerCase());
+    } else if (isVillageScoped && me?.mandal) {
+      list = list.filter((m) => m.name.toLowerCase() === me.mandal?.toLowerCase());
+    }
+    if (!searchQuery.trim()) return list;
     const q = searchQuery.toLowerCase().trim();
-    return selectedDistrict.mandals.filter(
+    return list.filter(
       (m) =>
         m.name.toLowerCase().includes(q) ||
         m.villages.some((v) => v.name.toLowerCase().includes(q))
     );
-  }, [selectedDistrict, searchQuery]);
+  }, [selectedDistrict, searchQuery, isMandal, isVillageScoped, me?.mandal]);
 
   const filteredVillages = useMemo(() => {
     if (!selectedMandal) return [];
-    if (!searchQuery.trim()) return selectedMandal.villages;
+    let list = selectedMandal.villages;
+    if (isVillageScoped && me?.village) {
+      list = list.filter((v) => v.name.toLowerCase() === me.village?.toLowerCase());
+    }
+    if (!searchQuery.trim()) return list;
     const q = searchQuery.toLowerCase().trim();
-    return selectedMandal.villages.filter((v) => v.name.toLowerCase().includes(q));
-  }, [selectedMandal, searchQuery]);
+    return list.filter((v) => v.name.toLowerCase().includes(q));
+  }, [selectedMandal, searchQuery, isVillageScoped, me?.village]);
 
   return (
     <div className="space-y-6 animate-in">
@@ -86,14 +135,27 @@ export default function TelanganaAdmin() {
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#CCB252]/20 border border-[#CCB252]/50 text-[#CCB252] text-xs font-black uppercase tracking-wider">
               <Building2 size={14} />
-              <span>Telangana State Directory</span>
+              <span>
+                {isMandal
+                  ? `${me?.mandal} Mandal Directory`
+                  : isVillageScoped
+                  ? `${me?.village} Village Jurisdiction`
+                  : 'Telangana State Directory'}
+              </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-heading font-black tracking-tight text-white">
-              Districts & Villages Directory
+              {isMandal
+                ? `${me?.mandal} Mandal Villages`
+                : isVillageScoped
+                ? `${me?.village} Directory & Logs`
+                : 'Districts & Villages Directory'}
             </h1>
             <p className="text-white/80 text-xs md:text-sm leading-relaxed">
-              Explore the administrative hierarchy of Telangana across <strong>33 Districts</strong>,{' '}
-              <strong>594 Mandals</strong>, and <strong>12,769 Gram Panchayats</strong>. Drill down to view local civic issues and Panchayat representatives.
+              {isMandal
+                ? `Explore villages and Gram Panchayats in ${me?.mandal} Mandal (${me?.district} District). Drill down to view local civic issues and Panchayat representatives.`
+                : isVillageScoped
+                ? `View local civic logs and Panchayat leadership for ${me?.village}, ${me?.mandal} Mandal (${me?.district} District).`
+                : 'Explore the administrative hierarchy of Telangana across 33 Districts, 594 Mandals, and 12,769 Gram Panchayats. Drill down to view local civic issues and Panchayat representatives.'}
             </p>
           </div>
 
@@ -102,21 +164,21 @@ export default function TelanganaAdmin() {
             <div className="text-center px-2">
               <div className="flex items-center justify-center gap-1.5 mb-0.5">
                 <Building2 className="w-4 h-4 text-[#CCB252]" />
-                <span className="text-xl sm:text-2xl font-black tabular-nums">{telanganaData.length}</span>
+                <span className="text-xl sm:text-2xl font-black tabular-nums">{isMandal || isVillageScoped ? 1 : telanganaData.length}</span>
               </div>
               <p className="text-[10px] text-white/80 font-bold uppercase tracking-wide">Districts</p>
             </div>
             <div className="text-center px-2 border-x border-white/15">
               <div className="flex items-center justify-center gap-1.5 mb-0.5">
                 <MapPin className="w-4 h-4 text-[#CCB252]" />
-                <span className="text-xl sm:text-2xl font-black tabular-nums">{getTotalMandals()}</span>
+                <span className="text-xl sm:text-2xl font-black tabular-nums">{isMandal || isVillageScoped ? 1 : getTotalMandals()}</span>
               </div>
               <p className="text-[10px] text-white/80 font-bold uppercase tracking-wide">Mandals</p>
             </div>
             <div className="text-center px-2">
               <div className="flex items-center justify-center gap-1.5 mb-0.5">
                 <Users className="w-4 h-4 text-[#CCB252]" />
-                <span className="text-xl sm:text-2xl font-black tabular-nums">{getTotalVillages()}</span>
+                <span className="text-xl sm:text-2xl font-black tabular-nums">{isVillageScoped ? 1 : isMandal ? (selectedMandal?.villages.length ?? 0) : getTotalVillages()}</span>
               </div>
               <p className="text-[10px] text-white/80 font-bold uppercase tracking-wide">Villages</p>
             </div>
@@ -131,7 +193,7 @@ export default function TelanganaAdmin() {
       <div className="bg-white rounded-3xl p-4 md:p-5 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-3 flex-wrap">
-          {viewLevel !== 'districts' && (
+          {!isMandal && !isVillageScoped && viewLevel !== 'districts' && (
             <button
               type="button"
               onClick={handleBack}
@@ -143,20 +205,24 @@ export default function TelanganaAdmin() {
           )}
 
           <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedDistrict(null);
-                setSelectedMandal(null);
-                setViewLevel('districts');
-                setSearchQuery('');
-              }}
-              className={`hover:underline transition-colors ${
-                viewLevel === 'districts' ? 'text-[#67001A]' : 'text-slate-500'
-              }`}
-            >
-              Telangana (33 Districts)
-            </button>
+            {!isMandal && !isVillageScoped ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDistrict(null);
+                  setSelectedMandal(null);
+                  setViewLevel('districts');
+                  setSearchQuery('');
+                }}
+                className={`hover:underline transition-colors ${
+                  viewLevel === 'districts' ? 'text-[#67001A]' : 'text-slate-500'
+                }`}
+              >
+                Telangana (33 Districts)
+              </button>
+            ) : (
+              <span className="text-slate-500">Telangana</span>
+            )}
 
             {selectedDistrict && (
               <>

@@ -15,6 +15,11 @@ export default function VillageAnalyticsPage() {
   const user = userResp?.user;
   const isAdmin = user?.role === "super_admin" || user?.role === "admin";
   const isMandal = user?.role === "mandal_official";
+  const isWardMember = user?.role === "ward_member";
+  const isVillageScoped =
+    user?.role === "citizen" ||
+    user?.role === "sarpanch" ||
+    user?.role === "ward_member";
 
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedMandal, setSelectedMandal] = useState("");
@@ -28,11 +33,18 @@ export default function VillageAnalyticsPage() {
       if (selectedMandal) p.set("mandal", selectedMandal);
       if (selectedVillage) p.set("village", selectedVillage);
     } else if (isMandal) {
+      if (user?.district) p.set("district", user.district);
+      if (user?.mandal) p.set("mandal", user.mandal);
       if (selectedVillage) p.set("village", selectedVillage);
+    } else if (isVillageScoped && user) {
+      if (user.district) p.set("district", user.district);
+      if (user.mandal) p.set("mandal", user.mandal);
+      if (user.village) p.set("village", user.village);
+      if (isWardMember && user.wardNumber) p.set("wardNumber", user.wardNumber);
     }
     const str = p.toString();
     return `/api/issues${str ? `?${str}` : ""}`;
-  }, [isAdmin, isMandal, selectedDistrict, selectedMandal, selectedVillage]);
+  }, [isAdmin, isMandal, isVillageScoped, isWardMember, user, selectedDistrict, selectedMandal, selectedVillage]);
 
   const { data: issuesData, isLoading } = useApi<IssueListResponse>(issuesApiUrl);
   const issues = useMemo(() => issuesData?.issues ?? [], [issuesData]);
@@ -81,13 +93,21 @@ export default function VillageAnalyticsPage() {
       };
     }
     const villageName = user?.village || "Village";
+    if (isWardMember && user?.wardNumber) {
+      return {
+        contextName: `Ward ${user.wardNumber} (${villageName})`,
+        cardTitle: `Ward ${user.wardNumber} (${villageName}) Development Score`,
+        bannerTitle: `Ward ${user.wardNumber} (${villageName}) Development Score & Analytics`,
+        bannerSubtitle: `Real-time grievance redressal velocity, SLA compliance, and ward-level civic infrastructure metrics for Ward ${user.wardNumber} in ${villageName}.`,
+      };
+    }
     return {
       contextName: villageName,
       cardTitle: `${villageName} Development Score`,
       bannerTitle: `${villageName} Village Development Score & Analytics`,
       bannerSubtitle: `Real-time grievance redressal velocity, SLA compliance, and civic infrastructure metrics for ${villageName}.`,
     };
-  }, [selectedVillage, selectedMandal, selectedDistrict, isMandal, isAdmin, user?.mandal, user?.village]);
+  }, [selectedVillage, selectedMandal, selectedDistrict, isMandal, isAdmin, isWardMember, user?.wardNumber, user?.mandal, user?.village]);
 
   return (
     <div className="space-y-8 animate-in pb-12">
@@ -232,7 +252,10 @@ export default function VillageAnalyticsPage() {
         {!isAdmin && !isMandal && (
           <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 w-fit text-xs font-semibold text-slate-700">
             <MapPin size={14} className="text-[#67001A]" />
-            <span>Jurisdiction: <strong>{user?.village || "Registered Village"}</strong>, {user?.mandal} ({user?.district})</span>
+            <span>
+              Jurisdiction: <strong>{user?.village || "Registered Village"}</strong>
+              {isWardMember && user?.wardNumber ? ` (Ward ${user.wardNumber})` : ""}, {user?.mandal} ({user?.district})
+            </span>
           </div>
         )}
 
@@ -243,7 +266,7 @@ export default function VillageAnalyticsPage() {
           </div>
         ) : (
           <VillageAnalytics
-            village={selectedVillage || (isAdmin || isMandal ? "All Villages" : (user?.village || ""))}
+            village={selectedVillage || (isAdmin || isMandal ? "All Villages" : (isWardMember && user?.wardNumber ? `Ward ${user.wardNumber} - ${user?.village}` : (user?.village || "")))}
             issues={issues}
             title={cardTitle}
           />

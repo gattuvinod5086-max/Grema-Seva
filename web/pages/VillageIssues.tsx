@@ -27,11 +27,14 @@ export default function VillageIssues() {
 
   const isAdmin = me?.role === 'super_admin' || me?.role === 'admin';
   const isMandal = me?.role === 'mandal_official';
+  const isVillageScoped = me?.role === 'sarpanch' || me?.role === 'ward_member' || me?.role === 'citizen';
 
-  const effectiveDistrict = isMandal ? me?.district ?? '' : district;
-  const effectiveMandal = isMandal ? me?.mandal ?? '' : mandal;
-  const effectiveVillage = (me?.role === 'sarpanch' || me?.role === 'ward_member' || me?.role === 'citizen')
-    ? me?.village ?? ''
+  const effectiveDistrict = isVillageScoped ? (me?.district ?? '') : isMandal ? (me?.district ?? '') : district;
+  const effectiveMandal = isVillageScoped ? (me?.mandal ?? '') : isMandal ? (me?.mandal ?? '') : mandal;
+  const effectiveVillage = isVillageScoped
+    ? (me?.village ?? '')
+    : isMandal
+    ? (village && me?.district && me?.mandal && getVillageNames(me.district, me.mandal).includes(village) ? village : '')
     : village;
 
   const updateLocation = (newDistrict: string, newMandal = "", newVillage = "") => {
@@ -52,8 +55,11 @@ export default function VillageIssues() {
     if (effectiveDistrict) params.set("district", effectiveDistrict);
     if (effectiveMandal) params.set("mandal", effectiveMandal);
     if (effectiveVillage) params.set("village", effectiveVillage);
+    if (me?.role === 'ward_member' && me.wardNumber) {
+      params.set('wardNumber', me.wardNumber);
+    }
     return `/api/issues?${params.toString()}`;
-  }, [statusFilter, categoryFilter, effectiveDistrict, effectiveMandal, effectiveVillage]);
+  }, [statusFilter, categoryFilter, effectiveDistrict, effectiveMandal, effectiveVillage, me?.role, me?.wardNumber]);
 
   const { data, isLoading, error, refetch } = useApi<IssueListResponse>(apiUrl);
   const issues = data?.issues ?? [];

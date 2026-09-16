@@ -28,11 +28,11 @@ export async function createPost(
     const isOfficial =
       user.role === "super_admin" ||
       user.role === "admin" ||
-      (["sarpanch", "ward_member"].includes(user.role) && user.approvalStatus === "approved");
+      (["sarpanch", "ward_member", "mandal_official"].includes(user.role) && user.approvalStatus === "approved");
 
     if (!isOfficial) {
       throw forbidden(
-        "Only authorized public officials (Sarpanch, Ward Member, Administrator) can publish official public notices"
+        "Only authorized public officials (Sarpanch, Ward Member, Mandal Official, Administrator) can publish official public notices"
       );
     }
 
@@ -42,6 +42,22 @@ export async function createPost(
       }
       targetJurisdictionId = userJurisdiction.id;
       wardNumber = user.role === "ward_member" ? (input.wardNumber || user.wardNumber || null) : null;
+    } else if (user.role === "mandal_official") {
+      if (!userJurisdiction) {
+        throw badRequest("Official must have an assigned mandal jurisdiction to publish notices");
+      }
+      if (input.district && input.mandal && input.village) {
+        if (
+          input.district.toLowerCase() !== userJurisdiction.district.toLowerCase() ||
+          input.mandal.toLowerCase() !== userJurisdiction.mandal.toLowerCase()
+        ) {
+          throw forbidden("Mandal officials can only publish notices within their own mandal");
+        }
+        const j = await findJurisdictionByName(input.district.trim(), input.mandal.trim(), input.village.trim());
+        targetJurisdictionId = j?.id ?? null;
+      } else {
+        targetJurisdictionId = userJurisdiction.id;
+      }
     } else {
       // Super Admin or Admin: can target a specific village or statewide
       if (input.district && input.mandal && input.village) {
@@ -52,10 +68,25 @@ export async function createPost(
       }
     }
   } else {
-    // News rule: anyone can publish news/community updates
-    if (user.role === "citizen") {
-      // Citizen must only publish news for their own registered village
+    // News rule: citizens, ward members, and sarpanches can only publish news for their own village
+    if (user.role === "citizen" || user.role === "sarpanch" || user.role === "ward_member") {
       targetJurisdictionId = userJurisdiction?.id ?? null;
+    } else if (user.role === "mandal_official") {
+      if (!userJurisdiction) {
+        throw badRequest("Official must have an assigned mandal jurisdiction to publish news");
+      }
+      if (input.district && input.mandal && input.village) {
+        if (
+          input.district.toLowerCase() !== userJurisdiction.district.toLowerCase() ||
+          input.mandal.toLowerCase() !== userJurisdiction.mandal.toLowerCase()
+        ) {
+          throw forbidden("Mandal officials can only publish news within their own mandal");
+        }
+        const j = await findJurisdictionByName(input.district.trim(), input.mandal.trim(), input.village.trim());
+        targetJurisdictionId = j?.id ?? null;
+      } else {
+        targetJurisdictionId = userJurisdiction.id;
+      }
     } else if (input.district && input.mandal && input.village) {
       const j = await findJurisdictionByName(input.district.trim(), input.mandal.trim(), input.village.trim());
       targetJurisdictionId = j?.id ?? null;
@@ -101,10 +132,8 @@ export async function listPosts(
   }
 
   // Location scoping:
-  // Citizen rule: A citizen strictly sees posts (both notice and news) belonging
-  // to their registered village, plus statewide announcements (jurisdictionId is null).
-  // Citizens cannot query or view other villages' posts.
-  if (user.role === "citizen") {
+  // 1. Village-scoped roles (citizen, sarpanch, ward_member) strictly see posts for their village + statewide
+  if (user.role === "citizen" || user.role === "sarpanch" || user.role === "ward_member") {
     if (userJurisdiction) {
       conditions.push(
         or(
@@ -114,6 +143,30 @@ export async function listPosts(
       );
     } else {
       conditions.push(isNull(schema.posts.jurisdictionId));
+    }
+  } else if (user.role === "mandal_official" && userJurisdiction) {
+    // 2. Mandal Official strictly sees posts belonging to villages in their mandal + statewide
+    if (options.village) {
+      conditions.push(
+        or(
+          and(
+            ilike(schema.jurisdictions.district, userJurisdiction.district),
+            ilike(schema.jurisdictions.mandal, userJurisdiction.mandal),
+            ilike(schema.jurisdictions.village, options.village.trim())
+          ),
+          isNull(schema.posts.jurisdictionId)
+        )!
+      );
+    } else {
+      conditions.push(
+        or(
+          and(
+            ilike(schema.jurisdictions.district, userJurisdiction.district),
+            ilike(schema.jurisdictions.mandal, userJurisdiction.mandal)
+          ),
+          isNull(schema.posts.jurisdictionId)
+        )!
+      );
     }
   } else if (options.village) {
     // Match that village OR statewide notices (jurisdictionId is null)
@@ -134,14 +187,6 @@ export async function listPosts(
     conditions.push(
       or(
         ilike(schema.jurisdictions.district, options.district.trim()),
-        isNull(schema.posts.jurisdictionId)
-      )!
-    );
-  } else if (userJurisdiction && user.role !== "super_admin" && user.role !== "admin") {
-    // Non-admin officials default to their own village + statewide posts
-    conditions.push(
-      or(
-        eq(schema.posts.jurisdictionId, userJurisdiction.id),
         isNull(schema.posts.jurisdictionId)
       )!
     );

@@ -131,53 +131,87 @@ export function WardMembers() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Village lookup for admins / users without a village */}
+        {/* Village lookup for admins and mandal officials */}
         {needsPick && (
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 max-w-md">
             <h2 className="font-bold text-gray-900 mb-1">Choose a village</h2>
             <p className="text-sm text-gray-500 mb-4">
-              Your profile has no village set. Pick one to view its registered representatives.
+              {me?.role === 'mandal_official'
+                ? `Select a village in ${me.mandal} Mandal to view its registered representatives.`
+                : 'Select a village to view its registered representatives.'}
             </p>
             <div className="space-y-2">
-              <select
-                className="w-full p-3 rounded-xl border-2 border-gray-200 text-sm"
-                value={district}
-                onChange={(e) => {
-                  const next = sanitizeGeoSelection(e.target.value, '', '');
-                  setDistrict(next.district);
-                  setMandal(next.mandal);
-                  setVillage(next.village);
-                }}
-              >
-                <option value="">District</option>
-                {telanganaData.map((d: District) => (
-                  <option key={d.name} value={d.name}>{d.name}</option>
-                ))}
-              </select>
-              {district && (
-                <select className="w-full p-3 rounded-xl border-2 border-gray-200 text-sm" value={mandal} onChange={(e) => { setMandal(e.target.value); setVillage(''); }}>
-                  <option value="">Mandal</option>
-                  {getMandalNames(district).map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
+              {me?.role === 'mandal_official' && me.district && me.mandal ? (
+                <>
+                  <div className="p-3 rounded-xl bg-indigo-50 border border-indigo-200 text-xs font-bold text-indigo-900">
+                    {me.mandal} Mandal · {me.district} District
+                  </div>
+                  <select
+                    className="w-full p-3 rounded-xl border-2 border-gray-200 text-sm"
+                    value={village}
+                    onChange={(e) => setVillage(e.target.value)}
+                  >
+                    <option value="">Select Village</option>
+                    {getVillageNames(me.district, me.mandal).map((v) => (
+                      <option key={v} value={v}>{v}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    disabled={!village}
+                    onClick={() => lookupFor(me.district!, me.mandal!, village)}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-600 to-blue-600 text-white font-semibold disabled:opacity-50"
+                  >
+                    View directory
+                  </button>
+                </>
+              ) : me?.role === 'admin' || me?.role === 'super_admin' ? (
+                <>
+                  <select
+                    className="w-full p-3 rounded-xl border-2 border-gray-200 text-sm"
+                    value={district}
+                    onChange={(e) => {
+                      const next = sanitizeGeoSelection(e.target.value, '', '');
+                      setDistrict(next.district);
+                      setMandal(next.mandal);
+                      setVillage(next.village);
+                    }}
+                  >
+                    <option value="">District</option>
+                    {telanganaData.map((d: District) => (
+                      <option key={d.name} value={d.name}>{d.name}</option>
+                    ))}
+                  </select>
+                  {district && (
+                    <select className="w-full p-3 rounded-xl border-2 border-gray-200 text-sm" value={mandal} onChange={(e) => { setMandal(e.target.value); setVillage(''); }}>
+                      <option value="">Mandal</option>
+                      {getMandalNames(district).map((m) => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  )}
+                  {mandal && (
+                    <select className="w-full p-3 rounded-xl border-2 border-gray-200 text-sm" value={village} onChange={(e) => setVillage(e.target.value)}>
+                      <option value="">Village</option>
+                      {getVillageNames(district, mandal).map((v) => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                    </select>
+                  )}
+                  <button
+                    type="button"
+                    disabled={!village}
+                    onClick={() => lookupFor(district, mandal, village)}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-600 to-blue-600 text-white font-semibold disabled:opacity-50"
+                  >
+                    View directory
+                  </button>
+                </>
+              ) : (
+                <div className="p-4 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 text-xs">
+                  Please complete your profile registration with your village jurisdiction to view representatives.
+                </div>
               )}
-              {mandal && (
-                <select className="w-full p-3 rounded-xl border-2 border-gray-200 text-sm" value={village} onChange={(e) => setVillage(e.target.value)}>
-                  <option value="">Village</option>
-                  {getVillageNames(district, mandal).map((v) => (
-                    <option key={v} value={v}>{v}</option>
-                  ))}
-                </select>
-              )}
-              <button
-                type="button"
-                disabled={!village}
-                onClick={() => lookupFor(district, mandal, village)}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-600 to-blue-600 text-white font-semibold disabled:opacity-50"
-              >
-                View directory
-              </button>
             </div>
           </div>
         )}

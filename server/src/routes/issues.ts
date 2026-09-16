@@ -54,23 +54,37 @@ export const issuesRoutes = new Hono()
     let district = c.req.query("district")?.trim() || undefined;
     let mandal = c.req.query("mandal")?.trim() || undefined;
     let village = c.req.query("village")?.trim() || undefined;
+    let wardNumber = c.req.query("wardNumber")?.trim() || undefined;
 
     // Hierarchy enforcement: mandal officials are always bound to their district and mandal
     if (user.role === "mandal_official" && jurisdiction) {
       district = jurisdiction.district;
       mandal = jurisdiction.mandal;
-    } else if ((user.role === "ward_member" || user.role === "sarpanch" || user.role === "citizen") && jurisdiction) {
+    } else if (user.role === "ward_member" && jurisdiction) {
       district = jurisdiction.district;
       mandal = jurisdiction.mandal;
       village = jurisdiction.village;
+      wardNumber = user.wardNumber || undefined;
+    } else if (user.role === "sarpanch" && jurisdiction) {
+      district = jurisdiction.district;
+      mandal = jurisdiction.mandal;
+      village = jurisdiction.village;
+    } else if (user.role === "citizen" && jurisdiction) {
+      district = jurisdiction.district;
+      mandal = jurisdiction.mandal;
+      if (c.req.query("village") && c.req.query("village")?.trim().toLowerCase() !== jurisdiction.village.toLowerCase()) {
+        village = c.req.query("village")?.trim();
+      } else {
+        village = jurisdiction.village;
+      }
     }
-
 
     return c.json(
       await getVillageIssueStats(issueVisibilityFilter(user, jurisdiction), {
         district,
         mandal,
         village,
+        wardNumber,
       })
     );
   })
@@ -101,20 +115,36 @@ export const issuesRoutes = new Hono()
     const limit = Math.min(100, Math.max(1, Number(c.req.query("limit") ?? "20") || 20));
     let district = c.req.query("district")?.trim() || undefined;
     let mandal = c.req.query("mandal")?.trim() || undefined;
-    const village = c.req.query("village")?.trim() || undefined;
+    let village = c.req.query("village")?.trim() || undefined;
+    let wardNumber = c.req.query("wardNumber")?.trim() || undefined;
 
     // Hierarchy enforcement:
-    // admin / super_admin: sees all data, can filter freely by district, mandal, village
+    // admin / super_admin: sees all data, can filter freely by district, mandal, village, ward
     // mandal_official: forced to their district and mandal; can filter by village within that mandal
-    // sarpanch / ward_member / citizen: strictly locked to their assigned district, mandal, village
+    // sarpanch: strictly locked to their assigned district, mandal, village
+    // ward_member: strictly locked to their assigned district, mandal, village, and wardNumber
+    // citizen: locked to their district and mandal; respects village filter if querying other village (returns 0)
     if (user.role === "mandal_official" && jurisdiction) {
       district = jurisdiction.district;
       mandal = jurisdiction.mandal;
-    } else if ((user.role === "ward_member" || user.role === "sarpanch" || user.role === "citizen") && jurisdiction) {
+    } else if (user.role === "ward_member" && jurisdiction) {
       district = jurisdiction.district;
       mandal = jurisdiction.mandal;
+      village = jurisdiction.village;
+      wardNumber = user.wardNumber || undefined;
+    } else if (user.role === "sarpanch" && jurisdiction) {
+      district = jurisdiction.district;
+      mandal = jurisdiction.mandal;
+      village = jurisdiction.village;
+    } else if (user.role === "citizen" && jurisdiction) {
+      district = jurisdiction.district;
+      mandal = jurisdiction.mandal;
+      if (c.req.query("village") && c.req.query("village")?.trim().toLowerCase() !== jurisdiction.village.toLowerCase()) {
+        village = c.req.query("village")?.trim();
+      } else {
+        village = jurisdiction.village;
+      }
     }
-
 
     const result = await listIssuesForUser(user, issueVisibilityFilter(user, jurisdiction), {
       status: c.req.query("status") ?? undefined,
@@ -122,6 +152,7 @@ export const issuesRoutes = new Hono()
       district,
       mandal,
       village,
+      wardNumber,
       page,
       limit,
     });

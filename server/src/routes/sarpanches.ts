@@ -16,8 +16,8 @@ export const sarpanchesRoutes = new Hono()
   .get("/", async (c) => {
     const { user, jurisdiction } = getAuth(c);
 
-    // Citizen isolation rule: Citizens ONLY see sarpanch for their own registered village
-    if (user.role === "citizen") {
+    // 1. Village-scoped roles: Citizens, Sarpanches, and Ward Members strictly see only their own registered village
+    if (user.role === "citizen" || user.role === "sarpanch" || user.role === "ward_member") {
       if (!jurisdiction) {
         return c.json({
           overview: {
@@ -102,20 +102,43 @@ export const sarpanchesRoutes = new Hono()
       return c.json({ overview, sarpanches });
     }
 
-    const district = c.req.query("district")?.trim();
-    const mandal = c.req.query("mandal")?.trim();
+    // 2. Mandal Official and Admin queries
+    let district = c.req.query("district")?.trim();
+    let mandal = c.req.query("mandal")?.trim();
     const village = c.req.query("village")?.trim();
     const status = c.req.query("status")?.trim();
     const q = c.req.query("q")?.trim();
 
-    // 1. Overall Sarpanch Statistics
+    if (user.role === "mandal_official") {
+      if (!jurisdiction) {
+        return c.json({
+          overview: {
+            totalSarpanches: 0,
+            approvedSarpanches: 0,
+            pendingSarpanches: 0,
+            declinedSarpanches: 0,
+            villagesCovered: 0,
+          },
+          sarpanches: [],
+        });
+      }
+      district = jurisdiction.district;
+      mandal = jurisdiction.mandal;
+    }
+
+    // 1. Statistics (scoped to mandal for mandal_official, or statewide for admin)
+    const statConditions = [eq(schema.users.role, "sarpanch")];
+    if (district) statConditions.push(ilike(schema.jurisdictions.district, `%${district}%`));
+    if (mandal) statConditions.push(ilike(schema.jurisdictions.mandal, `%${mandal}%`));
+
     const allSarpanches = await db
       .select({
         approvalStatus: schema.users.approvalStatus,
         jurisdictionId: schema.users.jurisdictionId,
       })
       .from(schema.users)
-      .where(eq(schema.users.role, "sarpanch"));
+      .leftJoin(schema.jurisdictions, eq(schema.users.jurisdictionId, schema.jurisdictions.id))
+      .where(and(...statConditions));
 
     const overview = {
       totalSarpanches: allSarpanches.length,
@@ -201,43 +224,70 @@ export const sarpanchesRoutes = new Hono()
       }
     }
 
-    const sarpanches = rows.map(({ user, jurisdiction }) => ({
-      id: user.id,
-      name: user.name,
-      phone: user.phone,
-      email: user.email,
-      role: user.role,
-      approvalStatus: user.approvalStatus,
-      approvalNote: user.approvalNote,
-      wardNumber: user.wardNumber,
-      jurisdictionId: user.jurisdictionId,
-      district: jurisdiction?.district ?? null,
-      mandal: jurisdiction?.mandal ?? null,
-      village: jurisdiction?.village ?? null,
-      createdAt: user.createdAt.toISOString(),
-      issuesCount: user.jurisdictionId
-        ? issuesCounts.get(user.jurisdictionId) ?? { total: 0, open: 0, resolved: 0 }
-        : undefined,
+    const sarpanches = rows.map(({ user: u, jurisdiction: j }) => ({
+      id: u.id,
+      name: u.name,
+      phone: u.phone,
+      email: u.email,
+      role: u.role,
+      approvalStatus: u.approvalStatus,
+      approvalNote: u.approvalNote,
+      wardNumber: u.wardNumber,
+      jurisdictionId: u.jurisdictionId,
+      district: j?.district ?? null,
+      mandal: j?.mandal ?? null,
+      village: j?.village ?? null,
+      createdAt: u.createdAt.toISOString(),
+      issuesCount: u.jurisdictionId
+        ? issuesCounts.get(u.jurisdictionId) ?? { total: 0, open: 0, resolved: 0 }
+        : { total: 0, open: 0, resolved: 0 },
     }));
 
     return c.json({ overview, sarpanches });
   })
 
   /**
-   * Detailed village view: returns primary sarpanch, all sarpanch applications,
-   * elected ward members, and village issue status metrics.
+   * Detailed village panchayat view: Sarpanch + all Ward Members + issue summary.
+   * Scoped to user's permitted jurisdiction hierarchy.
    */
   .get("/village", async (c) => {
     const { user, jurisdiction } = getAuth(c);
 
     let targetJurisdiction: typeof schema.jurisdictions.$inferSelect | null = null;
 
-    if (user.role === "citizen") {
+    if (user.role === "citizen" || user.role === "sarpanch" || user.role === "ward_member") {
       if (!jurisdiction) {
         throw notFound("Village jurisdiction not found");
       }
-      // Citizen is strictly locked to their own registered village
+      // Strictly locked to their own registered village
       targetJurisdiction = jurisdiction;
+    } else if (user.role === "mandal_official") {
+      if (!jurisdiction) {
+        throw notFound("Mandal jurisdiction not found");
+      }
+      const jurisdictionId = c.req.query("jurisdictionId");
+      const v = c.req.query("village")?.trim();
+
+      if (jurisdictionId) {
+        const [j] = await db
+          .select()
+          .from(schema.jurisdictions)
+          .where(
+            and(
+              eq(schema.jurisdictions.id, jurisdictionId),
+              ilike(schema.jurisdictions.district, jurisdiction.district),
+              ilike(schema.jurisdictions.mandal, jurisdiction.mandal)
+            )
+          )
+          .limit(1);
+        if (!j) throw notFound("Village jurisdiction not found in your mandal");
+        targetJurisdiction = j;
+      } else if (v) {
+        targetJurisdiction = await findJurisdictionByName(jurisdiction.district, jurisdiction.mandal, v);
+        if (!targetJurisdiction) throw notFound("Village not found in your mandal");
+      } else {
+        targetJurisdiction = jurisdiction;
+      }
     } else {
       const jurisdictionId = c.req.query("jurisdictionId");
       const district = c.req.query("district")?.trim();

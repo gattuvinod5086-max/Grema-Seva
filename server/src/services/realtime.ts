@@ -70,7 +70,23 @@ class RealtimeHub {
     // Village/Jurisdiction-scoped notices and issues:
     // Only reach users matching the jurisdiction
     if (event.jurisdictionId) {
-      return jurisdiction?.id === event.jurisdictionId;
+      if (jurisdiction?.id === event.jurisdictionId) {
+        // If user is ward member, ensure ward matches if issue specifies a wardNumber
+        if (user.role === "ward_member" && user.wardNumber && event.data?.wardNumber) {
+          return user.wardNumber === event.data.wardNumber;
+        }
+        return true;
+      }
+
+      // If user is mandal_official, allow events from villages in their mandal
+      if (user.role === "mandal_official" && jurisdiction && event.district && event.mandal) {
+        return (
+          jurisdiction.district.toLowerCase() === event.district.toLowerCase() &&
+          jurisdiction.mandal.toLowerCase() === event.mandal.toLowerCase()
+        );
+      }
+
+      return false;
     }
 
     return false;

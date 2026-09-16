@@ -143,15 +143,32 @@ export const userRoutes = new Hono()
     const { user, jurisdiction } = getAuth(c);
 
     let target = jurisdiction;
-    const qd = c.req.query("district");
-    const qm = c.req.query("mandal");
-    const qv = c.req.query("village");
-    if (qd && qm && qv) {
-      if (user.role !== "admin" && user.role !== "super_admin") {
-        throw badRequest("Only admins can look up other villages");
+    const qd = c.req.query("district")?.trim();
+    const qm = c.req.query("mandal")?.trim();
+    const qv = c.req.query("village")?.trim();
+
+    if (user.role === "admin" || user.role === "super_admin") {
+      if (qd && qm && qv) {
+        target = await findJurisdictionByName(qd, qm, qv);
+        if (!target) throw notFound("Village not found");
       }
-      target = await findJurisdictionByName(qd, qm, qv);
-      if (!target) throw notFound("Village not found");
+    } else if (user.role === "mandal_official" && jurisdiction) {
+      if (qv) {
+        target = await findJurisdictionByName(jurisdiction.district, jurisdiction.mandal, qv);
+        if (!target) throw notFound("Village not found in your mandal");
+      } else if (qd && qm && qv) {
+        if (
+          qd.toLowerCase() !== jurisdiction.district.toLowerCase() ||
+          qm.toLowerCase() !== jurisdiction.mandal.toLowerCase()
+        ) {
+          throw badRequest("You can only look up villages in your mandal");
+        }
+        target = await findJurisdictionByName(jurisdiction.district, jurisdiction.mandal, qv);
+        if (!target) throw notFound("Village not found in your mandal");
+      }
+    } else {
+      // Citizens, Sarpanches, and Ward Members are strictly locked to their own village
+      target = jurisdiction;
     }
 
     if (!target) {
@@ -177,9 +194,11 @@ export const userRoutes = new Hono()
       wardNumber: u.wardNumber,
     });
 
+    const sarpanchRow = rows.find((r) => r.role === "sarpanch");
+
     return c.json({
       village: { district: target.district, mandal: target.mandal, village: target.village },
-      sarpanch: rows.find((r) => r.role === "sarpanch") ?? null,
+      sarpanch: sarpanchRow ? toCard(sarpanchRow) : null,
       wardMembers: rows
         .filter((r) => r.role === "ward_member")
         .sort((a, b) => (a.wardNumber ?? "").localeCompare(b.wardNumber ?? "", undefined, { numeric: true }))

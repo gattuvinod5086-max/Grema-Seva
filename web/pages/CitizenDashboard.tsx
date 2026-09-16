@@ -112,9 +112,16 @@ export default function CitizenDashboard() {
       if (locationDistrict) p.set('district', locationDistrict);
       if (locationMandal) p.set('mandal', locationMandal);
       if (locationVillage) p.set('village', locationVillage);
+    } else if (me?.village) {
+      if (me?.district) p.set('district', me.district);
+      if (me?.mandal) p.set('mandal', me.mandal);
+      p.set('village', me.village);
+      if (me?.role === 'ward_member' && me.wardNumber) {
+        p.set('wardNumber', me.wardNumber);
+      }
     }
     return `/api/issues?${p.toString()}`;
-  }, [categoryFilter, locationDistrict, locationMandal, locationVillage, isMandal, isAdmin, me?.district, me?.mandal]);
+  }, [categoryFilter, locationDistrict, locationMandal, locationVillage, isMandal, isAdmin, me?.district, me?.mandal, me?.village, me?.role, me?.wardNumber]);
 
   const statsApiUrl = useMemo(() => {
     const p = new URLSearchParams();
@@ -126,10 +133,17 @@ export default function CitizenDashboard() {
       if (locationDistrict) p.set('district', locationDistrict);
       if (locationMandal) p.set('mandal', locationMandal);
       if (locationVillage) p.set('village', locationVillage);
+    } else if (me?.village) {
+      if (me?.district) p.set('district', me.district);
+      if (me?.mandal) p.set('mandal', me.mandal);
+      p.set('village', me.village);
+      if (me?.role === 'ward_member' && me.wardNumber) {
+        p.set('wardNumber', me.wardNumber);
+      }
     }
     const str = p.toString();
     return `/api/issues/stats${str ? `?${str}` : ''}`;
-  }, [locationDistrict, locationMandal, locationVillage, isMandal, isAdmin, me?.district, me?.mandal]);
+  }, [locationDistrict, locationMandal, locationVillage, isMandal, isAdmin, me?.district, me?.mandal, me?.village, me?.role, me?.wardNumber]);
 
   const { data: issuesData, error: issuesError, isLoading: issuesLoading, refetch: refetchIssues } =
     useApi<IssueListResponse>(issuesApiUrl);
@@ -153,10 +167,15 @@ export default function CitizenDashboard() {
       if (locationDistrict) list = list.filter((i) => i.district?.toLowerCase() === locationDistrict.toLowerCase());
       if (locationMandal) list = list.filter((i) => i.mandal?.toLowerCase() === locationMandal.toLowerCase());
       if (locationVillage) list = list.filter((i) => i.village?.toLowerCase() === locationVillage.toLowerCase());
+    } else if (me?.village) {
+      list = list.filter((i) => i.village?.toLowerCase() === me.village?.toLowerCase());
+      if (me?.role === 'ward_member' && me.wardNumber) {
+        list = list.filter((i) => i.wardNumber === me.wardNumber || i.wardNumber == null || i.reporterId === me.id);
+      }
     }
     if (tab === 'mine') list = list.filter((i) => i.reporterId != null && i.reporterId === me?.id);
     return list;
-  }, [issues, categoryFilter, locationDistrict, locationMandal, locationVillage, tab, me?.id, isMandal, isAdmin, me?.district, me?.mandal]);
+  }, [issues, categoryFilter, locationDistrict, locationMandal, locationVillage, tab, me?.id, isMandal, isAdmin, me?.district, me?.mandal, me?.village, me?.role, me?.wardNumber]);
 
   const openIssueDetail = async (issueId: string) => {
     setDetailLoading(true);

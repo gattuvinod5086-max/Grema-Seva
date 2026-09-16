@@ -18,10 +18,21 @@ export default function NoticesAndNews() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
 
-  const isCitizen = me?.role === 'citizen';
-  const district = isCitizen ? (me?.district ?? '') : (searchParams.get('district') ?? me?.district ?? '');
-  const mandal = isCitizen ? (me?.mandal ?? '') : (searchParams.get('mandal') ?? me?.mandal ?? '');
-  const village = isCitizen ? (me?.village ?? '') : (searchParams.get('village') ?? me?.village ?? '');
+  const isAdmin = me?.role === 'super_admin' || me?.role === 'admin';
+  const isMandal = me?.role === 'mandal_official';
+  const isVillageScoped = me?.role === 'citizen' || me?.role === 'sarpanch' || me?.role === 'ward_member';
+
+  const district = isAdmin
+    ? (searchParams.get('district') ?? me?.district ?? '')
+    : (me?.district ?? '');
+  const mandal = isAdmin
+    ? (searchParams.get('mandal') ?? me?.mandal ?? '')
+    : (me?.mandal ?? '');
+  const village = isVillageScoped
+    ? (me?.village ?? '')
+    : isMandal
+    ? (searchParams.get('village') ?? '')
+    : (searchParams.get('village') ?? '');
 
   const apiUrl = useMemo(() => {
     const params = new URLSearchParams({ limit: '50' });
@@ -41,7 +52,7 @@ export default function NoticesAndNews() {
   });
 
   const canPostNotice =
-    Boolean(me && (me.role === 'super_admin' || me.role === 'admin' || (['sarpanch', 'ward_member'].includes(me.role) && me.approvalStatus === 'approved')));
+    Boolean(me && (isAdmin || (['sarpanch', 'ward_member', 'mandal_official'].includes(me.role) && me.approvalStatus === 'approved')));
 
   const handleDelete = async (postId: string) => {
     if (!confirm('Are you sure you want to remove this post?')) return;
@@ -102,7 +113,13 @@ export default function NoticesAndNews() {
             <MapPin className="w-4 h-4 text-[#008A3B] shrink-0" />
             <span>
               <strong>Associated Location: </strong>
-              {village ? `${village}, ${mandal}, ${district}` : 'All Telangana Locations (Statewide)'}
+              {village
+                ? `${village}, ${mandal}, ${district}`
+                : mandal
+                ? `${mandal} Mandal (${district})`
+                : district
+                ? `${district} District`
+                : 'All Telangana Locations (Statewide)'}
             </span>
           </div>
 

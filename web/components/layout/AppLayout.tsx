@@ -360,7 +360,11 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
 
               <SidebarItem
                 icon={<Building2 size={18} strokeWidth={2.5} />}
-                label={t.nav.districtsAndVillages ?? "Districts & Villages"}
+                label={
+                  isMandal
+                    ? `${user?.mandal || "Mandal"} Villages`
+                    : `${user?.village || "My Village"}`
+                }
                 active={pathname === "/telangana"}
                 onClick={() => navigate("/telangana")}
                 collapsed={isCollapsed}

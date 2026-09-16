@@ -35,6 +35,9 @@ export default function SarpanchDirectory() {
   const { data: meData } = useApi<{ user: User }>('/api/users/me');
   const me = meData?.user;
   const canManage = me?.role === 'super_admin' || me?.role === 'admin';
+  const isVillageScoped = me?.role === 'citizen' || me?.role === 'sarpanch' || me?.role === 'ward_member';
+  const isMandal = me?.role === 'mandal_official';
+  const isAdmin = me?.role === 'super_admin' || me?.role === 'admin';
 
   // Filters
   const [district, setDistrict] = useState('');
@@ -52,25 +55,36 @@ export default function SarpanchDirectory() {
   // Cascading Telangana dropdown data
   const districtList = useMemo(() => getDistrictNames(), []);
   const mandalList = useMemo(() => (district ? getMandalNames(district) : []), [district]);
-  const villageList = useMemo(() => (district && mandal ? getVillageNames(district, mandal) : []), [district, mandal]);
+  const villageList = useMemo(() => {
+    if (isMandal && me?.district && me?.mandal) {
+      return getVillageNames(me.district, me.mandal);
+    }
+    return district && mandal ? getVillageNames(district, mandal) : [];
+  }, [isMandal, me?.district, me?.mandal, district, mandal]);
 
   // Query URL
   const queryUrl = useMemo(() => {
     const params = new URLSearchParams();
-    if (district) params.set('district', district);
-    if (mandal) params.set('mandal', mandal);
-    if (village) params.set('village', village);
+    if (isMandal && me?.district && me?.mandal) {
+      params.set('district', me.district);
+      params.set('mandal', me.mandal);
+      if (village) params.set('village', village);
+    } else if (isAdmin) {
+      if (district) params.set('district', district);
+      if (mandal) params.set('mandal', mandal);
+      if (village) params.set('village', village);
+    }
     if (statusFilter !== 'all') params.set('status', statusFilter);
     if (searchQuery.trim()) params.set('q', searchQuery.trim());
     const str = params.toString();
     return `/api/sarpanches${str ? `?${str}` : ''}`;
-  }, [district, mandal, village, statusFilter, searchQuery]);
+  }, [isMandal, isAdmin, me?.district, me?.mandal, district, mandal, village, statusFilter, searchQuery]);
 
   const { data, isLoading, refetch } = useApi<SarpanchListResponse>(queryUrl);
 
   // Village detail query
   const villageDetailUrl = useMemo(() => {
-    if (me?.role === 'citizen') {
+    if (isVillageScoped) {
       return '/api/sarpanches/village';
     }
     if (selectedVillageJurisdictionId) {
@@ -81,7 +95,7 @@ export default function SarpanchDirectory() {
       return `/api/sarpanches/village?${p.toString()}`;
     }
     return null;
-  }, [me?.role, selectedVillageJurisdictionId, selectedVillageGeo]);
+  }, [isVillageScoped, selectedVillageJurisdictionId, selectedVillageGeo]);
 
   const { data: villageDetail, isLoading: villageDetailLoading, refetch: refetchVillageDetail } =
     useApi<VillageDetailResponse>(villageDetailUrl ?? '/api/sarpanches/village', {
@@ -209,7 +223,7 @@ export default function SarpanchDirectory() {
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
-        {me?.role === 'citizen' ? (
+        {isVillageScoped ? (
           <div className="space-y-6">
             {/* Village Identity Banner */}
             <div
@@ -218,10 +232,10 @@ export default function SarpanchDirectory() {
             >
               <div className="relative z-10 max-w-2xl">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-bold text-[#CCB252] uppercase tracking-wider mb-3">
-                  <MapPin size={14} /> Your Village Gram Panchayat
+                  <MapPin size={14} /> {me?.role === 'sarpanch' ? 'Your Gram Panchayat' : me?.role === 'ward_member' ? `Your Ward (Ward ${me?.wardNumber || '1'}) & Panchayat` : 'Your Village Gram Panchayat'}
                 </div>
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-black leading-tight">
-                  {me.village || 'Your Village'}, {me.mandal} Mandal
+                  {me?.village || 'Your Village'}, {me?.mandal} Mandal
                 </h2>
                 <p className="text-xs sm:text-sm text-[#CCB252] font-telugu telugu-text mt-1 font-bold">
                   గ్రామ స్వపరిపాలన ప్రజాప్రతినిధులు · {me.district} District
@@ -478,64 +492,99 @@ export default function SarpanchDirectory() {
           </div>
 
           {/* Cascading dropdown selectors */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">District</label>
-              <select
-                value={district}
-                onChange={(e) => {
-                  setDistrict(e.target.value);
-                  setMandal('');
-                  setVillage('');
-                }}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 bg-white focus:border-[#67001A] outline-none"
-              >
-                <option value="">All Districts ({districtList.length})</option>
-                {districtList.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
+          {isMandal ? (
+            <div className="flex flex-wrap items-center gap-3 p-3 rounded-xl bg-indigo-50/70 border border-indigo-100">
+              <div className="flex items-center gap-2">
+                <Building2 size={16} className="text-indigo-700" />
+                <span className="text-xs font-bold text-indigo-900">
+                  {me?.mandal} Mandal ({me?.district} District)
+                </span>
+              </div>
+              <div className="flex items-center gap-2 ml-auto">
+                <label className="text-xs font-semibold text-slate-600">Filter Village:</label>
+                <select
+                  value={village}
+                  onChange={(e) => setVillage(e.target.value)}
+                  className="px-3 py-2 rounded-xl border border-indigo-200 text-sm text-slate-800 bg-white focus:border-[#67001A] outline-none"
+                >
+                  <option value="">All Villages in {me?.mandal}</option>
+                  {villageList.map((v) => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+                {village && (
+                  <button
+                    type="button"
+                    onClick={() => setVillage('')}
+                    className="px-2 py-1.5 rounded-lg border border-indigo-200 bg-white text-indigo-700 text-xs font-bold hover:bg-indigo-50"
+                  >
+                    All Villages
+                  </button>
+                )}
+              </div>
             </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">District</label>
+                <select
+                  value={district}
+                  onChange={(e) => {
+                    setDistrict(e.target.value);
+                    setMandal('');
+                    setVillage('');
+                  }}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 bg-white focus:border-[#67001A] outline-none"
+                >
+                  <option value="">All Districts ({districtList.length})</option>
+                  {districtList.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Mandal</label>
-              <select
-                value={mandal}
-                disabled={!district}
-                onChange={(e) => {
-                  setMandal(e.target.value);
-                  setVillage('');
-                }}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 bg-white focus:border-[#67001A] outline-none disabled:bg-slate-50 disabled:opacity-60"
-              >
-                <option value="">{district ? `All Mandals in ${district}` : 'Select District first'}</option>
-                {mandalList.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Mandal</label>
+                <select
+                  value={mandal}
+                  disabled={!district}
+                  onChange={(e) => {
+                    setMandal(e.target.value);
+                    setVillage('');
+                  }}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 bg-white focus:border-[#67001A] outline-none disabled:bg-slate-50 disabled:opacity-60"
+                >
+                  <option value="">{district ? `All Mandals in ${district}` : 'Select District first'}</option>
+                  {mandalList.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Village</label>
-              <select
-                value={village}
-                disabled={!mandal}
-                onChange={(e) => setVillage(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 bg-white focus:border-[#67001A] outline-none disabled:bg-slate-50 disabled:opacity-60"
-              >
-                <option value="">{mandal ? `All Villages in ${mandal}` : 'Select Mandal first'}</option>
-                {villageList.map((v) => (
-                  <option key={v} value={v}>
-                    {v}
-                  </option>
-                ))}
-              </select>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Village</label>
+                <select
+                  value={village}
+                  disabled={!mandal}
+                  onChange={(e) => setVillage(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 bg-white focus:border-[#67001A] outline-none disabled:bg-slate-50 disabled:opacity-60"
+                >
+                  <option value="">{mandal ? `All Villages in ${mandal}` : 'Select Mandal first'}</option>
+                  {villageList.map((v) => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Quick search input + Status Filter Pills */}
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-2">

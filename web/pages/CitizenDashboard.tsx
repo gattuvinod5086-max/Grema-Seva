@@ -11,8 +11,10 @@ import {
   Leaf,
   Users,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { usePlaceImages } from '@web/hooks/usePlaceImages';
 import IssueList from '@web/components/IssueList';
 import IssueForm from '@web/components/IssueForm';
 import IssueDetailModal from '@web/components/IssueDetailModal';
@@ -81,8 +83,23 @@ export default function CitizenDashboard() {
     useApi<{ user: User }>('/api/users/me');
   const me = user?.user ?? null;
 
+  const { getPlaceImage } = usePlaceImages();
   const isAdmin = me?.role === 'super_admin' || me?.role === 'admin';
   const isMandal = me?.role === 'mandal_official';
+
+  const placeImage = useMemo(() => {
+    if (!me) return undefined;
+    if (isMandal && me.district && me.mandal) {
+      return getPlaceImage('mandal', me.district, me.mandal);
+    }
+    if (me.district && me.mandal && me.village) {
+      return getPlaceImage('village', me.district, me.mandal, me.village);
+    }
+    if (me.district) {
+      return getPlaceImage('district', me.district);
+    }
+    return undefined;
+  }, [me, isMandal, getPlaceImage]);
 
   const issuesApiUrl = useMemo(() => {
     const p = new URLSearchParams({ limit: '100' });
@@ -240,48 +257,100 @@ export default function CitizenDashboard() {
               </div>
             </GsCard>
           ) : me?.role === 'mandal_official' && me?.mandal ? (
-            <GsCard padding="p-4" className="flex items-start gap-3 bg-indigo-50/70 border-indigo-200">
-              <Building2 size={18} className="text-indigo-700 shrink-0 mt-0.5" aria-hidden />
-              <div>
-                <p className={UI.label}>Mandal Jurisdiction</p>
-                <p className="font-semibold text-[#1F2937] mt-0.5">
-                  {me.mandal} Mandal
-                </p>
-                <p className="text-sm text-[#64748B]">{me.district} District (All Villages Governance)</p>
+            <GsCard padding="p-4" className="flex items-center justify-between gap-3 bg-indigo-50/70 border-indigo-200">
+              <div className="flex items-start gap-3 min-w-0">
+                <Building2 size={18} className="text-indigo-700 shrink-0 mt-0.5" aria-hidden />
+                <div className="min-w-0">
+                  <p className={UI.label}>Mandal Jurisdiction</p>
+                  <p className="font-semibold text-[#1F2937] mt-0.5">
+                    {me.mandal} Mandal
+                  </p>
+                  <p className="text-sm text-[#64748B]">{me.district} District (All Villages Governance)</p>
+                  {placeImage?.caption && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-900 bg-indigo-100 px-2 py-0.5 rounded-full mt-1.5">
+                      <Sparkles size={11} className="text-indigo-600" />
+                      {placeImage.caption}
+                    </span>
+                  )}
+                </div>
               </div>
+              {placeImage?.imageUrl && (
+                <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border border-slate-200 shadow-2xs">
+                  <img src={placeImage.imageUrl} alt={placeImage.caption || me.mandal} className="w-full h-full object-cover" />
+                </div>
+              )}
             </GsCard>
           ) : me?.role === 'sarpanch' && me?.village ? (
-            <GsCard padding="p-4" className="flex items-start gap-3 bg-amber-50/60 border-amber-200">
-              <Crown size={18} className="text-[#CCB252] shrink-0 mt-0.5" aria-hidden />
-              <div>
-                <p className={UI.label}>Gram Panchayat Jurisdiction</p>
-                <p className="font-semibold text-[#1F2937] mt-0.5">
-                  {me.village} Village (Panchayat Head)
-                </p>
-                <p className="text-sm text-[#64748B]">{me.mandal} Mandal, {me.district} District</p>
+            <GsCard padding="p-4" className="flex items-center justify-between gap-3 bg-amber-50/60 border-amber-200">
+              <div className="flex items-start gap-3 min-w-0">
+                <Crown size={18} className="text-[#CCB252] shrink-0 mt-0.5" aria-hidden />
+                <div className="min-w-0">
+                  <p className={UI.label}>Gram Panchayat Jurisdiction</p>
+                  <p className="font-semibold text-[#1F2937] mt-0.5">
+                    {me.village} Village (Panchayat Head)
+                  </p>
+                  <p className="text-sm text-[#64748B]">{me.mandal} Mandal, {me.district} District</p>
+                  {placeImage?.caption && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full mt-1.5">
+                      <Sparkles size={11} className="text-amber-600" />
+                      {placeImage.caption}
+                    </span>
+                  )}
+                </div>
               </div>
+              {placeImage?.imageUrl && (
+                <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border border-slate-200 shadow-2xs">
+                  <img src={placeImage.imageUrl} alt={placeImage.caption || me.village} className="w-full h-full object-cover" />
+                </div>
+              )}
             </GsCard>
           ) : me?.role === 'ward_member' && me?.village ? (
-            <GsCard padding="p-4" className="flex items-start gap-3 bg-purple-50/60 border-purple-200">
-              <Users size={18} className="text-purple-700 shrink-0 mt-0.5" aria-hidden />
-              <div>
-                <p className={UI.label}>Ward Jurisdiction</p>
-                <p className="font-semibold text-[#1F2937] mt-0.5">
-                  {me.village} • Ward {me.wardNumber || '1'}
-                </p>
-                <p className="text-sm text-[#64748B]">{me.mandal} Mandal, {me.district} District</p>
+            <GsCard padding="p-4" className="flex items-center justify-between gap-3 bg-purple-50/60 border-purple-200">
+              <div className="flex items-start gap-3 min-w-0">
+                <Users size={18} className="text-purple-700 shrink-0 mt-0.5" aria-hidden />
+                <div className="min-w-0">
+                  <p className={UI.label}>Ward Jurisdiction</p>
+                  <p className="font-semibold text-[#1F2937] mt-0.5">
+                    {me.village} • Ward {me.wardNumber || '1'}
+                  </p>
+                  <p className="text-sm text-[#64748B]">{me.mandal} Mandal, {me.district} District</p>
+                  {placeImage?.caption && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-900 bg-purple-100 px-2 py-0.5 rounded-full mt-1.5">
+                      <Sparkles size={11} className="text-purple-600" />
+                      {placeImage.caption}
+                    </span>
+                  )}
+                </div>
               </div>
+              {placeImage?.imageUrl && (
+                <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border border-slate-200 shadow-2xs">
+                  <img src={placeImage.imageUrl} alt={placeImage.caption || me.village} className="w-full h-full object-cover" />
+                </div>
+              )}
             </GsCard>
           ) : me?.village ? (
-            <GsCard padding="p-4" className="flex items-start gap-3">
-              <MapPin size={18} className="text-[#008A3B] shrink-0 mt-0.5" aria-hidden />
-              <div>
-                <p className={UI.label}>Your village</p>
-                <p className="font-semibold text-[#1F2937] mt-0.5">
-                  {me.village}, {me.mandal}
-                </p>
-                <p className="text-sm text-[#64748B]">{me.district} District</p>
+            <GsCard padding="p-4" className="flex items-center justify-between gap-3">
+              <div className="flex items-start gap-3 min-w-0">
+                <MapPin size={18} className="text-[#008A3B] shrink-0 mt-0.5" aria-hidden />
+                <div className="min-w-0">
+                  <p className={UI.label}>Your village</p>
+                  <p className="font-semibold text-[#1F2937] mt-0.5">
+                    {me.village}, {me.mandal}
+                  </p>
+                  <p className="text-sm text-[#64748B]">{me.district} District</p>
+                  {placeImage?.caption && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-full mt-1.5">
+                      <Sparkles size={11} className="text-emerald-600" />
+                      {placeImage.caption}
+                    </span>
+                  )}
+                </div>
               </div>
+              {placeImage?.imageUrl && (
+                <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border border-slate-200 shadow-2xs">
+                  <img src={placeImage.imageUrl} alt={placeImage.caption || me.village} className="w-full h-full object-cover" />
+                </div>
+              )}
             </GsCard>
           ) : null}
         </section>

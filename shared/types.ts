@@ -335,3 +335,29 @@ export interface RealtimeEvent {
   timestamp: string;
 }
 
+/* ── Place Media / Cover Images ────────────────────────── */
+
+export type PlaceLevel = "district" | "mandal" | "village";
+
+export interface PlaceImageRecord {
+  id: string;
+  level: PlaceLevel;
+  district: string;
+  mandal?: string | null;
+  village?: string | null;
+  imageUrl: string;
+  caption?: string | null;
+  updatedAt: string;
+}
+
+export const SetPlaceImageSchema = z.object({
+  level: z.enum(["district", "mandal", "village"]),
+  district: z.string().trim().min(1),
+  mandal: z.string().trim().optional(),
+  village: z.string().trim().optional(),
+  imageUrl: z.string().trim(),
+  caption: z.string().trim().max(200).optional(),
+});
+export type SetPlaceImageInput = z.infer<typeof SetPlaceImageSchema>;
+
+

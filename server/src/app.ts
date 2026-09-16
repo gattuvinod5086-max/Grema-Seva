@@ -10,6 +10,7 @@ import { issuesRoutes, filesRoutes } from "./routes/issues";
 import { sarpanchesRoutes } from "./routes/sarpanches";
 import { postsRoutes } from "./routes/posts";
 import { realtimeRoutes } from "./routes/realtime";
+import { placesRoutes } from "./routes/places";
 
 export function createApp() {
   const app = new Hono();
@@ -41,6 +42,7 @@ export function createApp() {
   api.route("/sarpanches", sarpanchesRoutes);
   api.route("/posts", postsRoutes);
   api.route("/realtime", realtimeRoutes);
+  api.route("/places", placesRoutes);
   app.route("/api", api);
 
   return app;

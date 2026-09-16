@@ -36,6 +36,13 @@
       "when": 1788790790258,
       "tag": "0004_dusty_hellcat",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789562193966,
+      "tag": "0005_salty_justin_hammer",
+      "breakpoints": true
     }
   ]
 }

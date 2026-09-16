@@ -248,71 +248,57 @@ export default function TelanganaAdmin() {
                     <div
                       key={district.name}
                       onClick={() => handleDistrictClick(district)}
-                      className="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-xs hover:shadow-md hover:border-[#67001A]/40 transition-all text-left group flex flex-col justify-between cursor-pointer"
+                      className="group relative rounded-3xl overflow-hidden cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 aspect-[4/3] flex flex-col justify-end"
                     >
-                      <div>
-                        {placeImg?.imageUrl ? (
-                          <div className="w-full h-32 rounded-2xl overflow-hidden relative mb-3 bg-slate-100 group">
-                            <img
-                              src={placeImg.imageUrl}
-                              alt={placeImg.caption || district.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                            {placeImg.caption && (
-                              <span className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-md truncate max-w-[80%]">
-                                {placeImg.caption}
-                              </span>
-                            )}
-                            {isAdmin && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingPlace({ level: 'district', district: district.name });
-                                }}
-                                className="absolute top-2 right-2 px-2 py-1 bg-white/90 hover:bg-white text-slate-800 rounded-lg text-[10px] font-bold shadow-xs flex items-center gap-1 transition-all z-10"
-                              >
-                                <Camera size={12} /> Edit Photo
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="w-10 h-10 rounded-2xl bg-[#67001A]/10 text-[#67001A] flex items-center justify-center group-hover:scale-105 transition-transform">
-                              <Building2 size={20} />
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              {isAdmin && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingPlace({ level: 'district', district: district.name });
-                                  }}
-                                  className="p-1.5 rounded-lg text-slate-400 hover:text-[#67001A] hover:bg-slate-100 text-[10px] font-bold flex items-center gap-1 transition-all"
-                                  title="Configure district landmark photo"
-                                >
-                                  <Camera size={14} />
-                                </button>
-                              )}
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-200">
-                                {district.mandals.length} Mandals
-                              </span>
-                            </div>
-                          </div>
-                        )}
+                      {/* Background: image or gradient placeholder */}
+                      {placeImg?.imageUrl ? (
+                        <img
+                          src={placeImg.imageUrl}
+                          alt={placeImg.caption || district.name}
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#67001A] via-[#8B0022] to-[#3D0010]" />
+                      )}
 
-                        <h3 className="text-base font-black text-slate-900 group-hover:text-[#67001A] transition-colors">
+                      {/* Gradient overlay always on top of image */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                      {/* Top-right: admin edit button */}
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingPlace({ level: 'district', district: district.name });
+                          }}
+                          className="absolute top-2.5 right-2.5 px-2.5 py-1 bg-black/50 hover:bg-black/70 text-white/90 rounded-xl text-[10px] font-bold shadow flex items-center gap-1 backdrop-blur-sm transition-all z-10 opacity-0 group-hover:opacity-100"
+                        >
+                          <Camera size={11} /> {placeImg?.imageUrl ? 'Edit Photo' : '+ Add Photo'}
+                        </button>
+                      )}
+
+                      {/* Bottom content overlay */}
+                      <div className="relative z-10 p-4">
+                        {placeImg?.caption && (
+                          <span className="inline-block text-[10px] font-bold text-[#CCB252] uppercase tracking-widest mb-1">
+                            {placeImg.caption}
+                          </span>
+                        )}
+                        <h3 className="text-lg font-black text-white leading-tight tracking-tight">
                           {district.name}
                         </h3>
-                        <p className="text-xs text-slate-500 mt-1">
-                          {totalVillages} Gram Panchayats
-                        </p>
-                      </div>
-
-                      <div className="pt-4 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-[#67001A]">
-                        <span>Explore Mandals</span>
-                        <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold">
+                            <Building2 size={9} /> {district.mandals.length} Mandals
+                          </span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold">
+                            <MapPin size={9} /> {totalVillages} Villages
+                          </span>
+                          <span className="ml-auto inline-flex items-center gap-0.5 text-white/70 text-[10px] font-bold group-hover:text-white transition-colors">
+                            Explore <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                          </span>
+                        </div>
                       </div>
                     </div>
                   );
@@ -353,71 +339,57 @@ export default function TelanganaAdmin() {
                     <div
                       key={mandal.name}
                       onClick={() => handleMandalClick(mandal)}
-                      className="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-xs hover:shadow-md hover:border-[#67001A]/40 transition-all text-left group flex flex-col justify-between cursor-pointer"
+                      className="group relative rounded-3xl overflow-hidden cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 aspect-[4/3] flex flex-col justify-end"
                     >
-                      <div>
-                        {placeImg?.imageUrl ? (
-                          <div className="w-full h-32 rounded-2xl overflow-hidden relative mb-3 bg-slate-100 group">
-                            <img
-                              src={placeImg.imageUrl}
-                              alt={placeImg.caption || mandal.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                            {placeImg.caption && (
-                              <span className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-md truncate max-w-[80%]">
-                                {placeImg.caption}
-                              </span>
-                            )}
-                            {isAdmin && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingPlace({ level: 'mandal', district: selectedDistrict.name, mandal: mandal.name });
-                                }}
-                                className="absolute top-2 right-2 px-2 py-1 bg-white/90 hover:bg-white text-slate-800 rounded-lg text-[10px] font-bold shadow-xs flex items-center gap-1 transition-all z-10"
-                              >
-                                <Camera size={12} /> Edit Photo
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center group-hover:scale-105 transition-transform">
-                              <MapPin size={20} />
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              {isAdmin && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingPlace({ level: 'mandal', district: selectedDistrict.name, mandal: mandal.name });
-                                  }}
-                                  className="p-1.5 rounded-lg text-slate-400 hover:text-blue-700 hover:bg-slate-100 text-[10px] font-bold flex items-center gap-1 transition-all"
-                                  title="Configure mandal landmark photo"
-                                >
-                                  <Camera size={14} />
-                                </button>
-                              )}
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200">
-                                {mandal.villages.length} Villages
-                              </span>
-                            </div>
-                          </div>
-                        )}
+                      {/* Background */}
+                      {placeImg?.imageUrl ? (
+                        <img
+                          src={placeImg.imageUrl}
+                          alt={placeImg.caption || mandal.name}
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#1e3a5f] via-[#2a5298] to-[#0f1f3d]" />
+                      )}
 
-                        <h3 className="text-base font-black text-slate-900 group-hover:text-[#67001A] transition-colors">
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                      {/* Admin edit button */}
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingPlace({ level: 'mandal', district: selectedDistrict.name, mandal: mandal.name });
+                          }}
+                          className="absolute top-2.5 right-2.5 px-2.5 py-1 bg-black/50 hover:bg-black/70 text-white/90 rounded-xl text-[10px] font-bold shadow flex items-center gap-1 backdrop-blur-sm transition-all z-10 opacity-0 group-hover:opacity-100"
+                        >
+                          <Camera size={11} /> {placeImg?.imageUrl ? 'Edit Photo' : '+ Add Photo'}
+                        </button>
+                      )}
+
+                      {/* Bottom text */}
+                      <div className="relative z-10 p-4">
+                        {placeImg?.caption && (
+                          <span className="inline-block text-[10px] font-bold text-blue-300 uppercase tracking-widest mb-1">
+                            {placeImg.caption}
+                          </span>
+                        )}
+                        <h3 className="text-lg font-black text-white leading-tight tracking-tight">
                           {mandal.name} Mandal
                         </h3>
-                        <p className="text-xs text-slate-500 mt-1">
-                          District: {selectedDistrict.name}
-                        </p>
-                      </div>
-
-                      <div className="pt-4 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-[#67001A]">
-                        <span>Explore Villages</span>
-                        <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold">
+                            <MapPin size={9} /> {mandal.villages.length} Villages
+                          </span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white/80 text-[10px] font-semibold">
+                            {selectedDistrict.name}
+                          </span>
+                          <span className="ml-auto inline-flex items-center gap-0.5 text-white/70 text-[10px] font-bold group-hover:text-white transition-colors">
+                            Explore <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                          </span>
+                        </div>
                       </div>
                     </div>
                   );
@@ -457,107 +429,77 @@ export default function TelanganaAdmin() {
                   return (
                     <div
                       key={village.name}
-                      className="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+                      className="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 aspect-[4/5] flex flex-col justify-end"
                     >
-                      <div>
-                        {placeImg?.imageUrl ? (
-                          <div className="w-full h-32 rounded-2xl overflow-hidden relative mb-3 bg-slate-100 group">
-                            <img
-                              src={placeImg.imageUrl}
-                              alt={placeImg.caption || village.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                            {placeImg.caption && (
-                              <span className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-md truncate max-w-[80%]">
-                                {placeImg.caption}
-                              </span>
-                            )}
-                            {isAdmin && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setEditingPlace({
-                                    level: 'village',
-                                    district: selectedDistrict.name,
-                                    mandal: selectedMandal.name,
-                                    village: village.name,
-                                  })
-                                }
-                                className="absolute top-2 right-2 px-2 py-1 bg-white/90 hover:bg-white text-slate-800 rounded-lg text-[10px] font-bold shadow-xs flex items-center gap-1 transition-all z-10"
-                              >
-                                <Camera size={12} /> Edit Photo
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="flex items-start justify-between gap-3 mb-3">
-                            <div className="flex items-start gap-3 min-w-0">
-                              <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
-                                <Users size={20} />
-                              </div>
-                              <div className="min-w-0">
-                                <h3 className="text-base font-black text-slate-900 truncate">
-                                  {village.name}
-                                </h3>
-                                {village.population ? (
-                                  <p className="text-xs text-slate-500 mt-0.5">
-                                    Pop: {village.population.toLocaleString('en-IN')}
-                                  </p>
-                                ) : (
-                                  <p className="text-xs text-slate-400 mt-0.5">Gram Panchayat</p>
-                                )}
-                              </div>
-                            </div>
-                            {isAdmin && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setEditingPlace({
-                                    level: 'village',
-                                    district: selectedDistrict.name,
-                                    mandal: selectedMandal.name,
-                                    village: village.name,
-                                  })
-                                }
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-700 hover:bg-slate-100 text-[10px] font-bold flex items-center gap-1 transition-all"
-                                title="Configure village landmark photo"
-                              >
-                                <Camera size={14} />
-                              </button>
-                            )}
-                          </div>
+                      {/* Background */}
+                      {placeImg?.imageUrl ? (
+                        <img
+                          src={placeImg.imageUrl}
+                          alt={placeImg.caption || village.name}
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-[#005830] to-[#003520]" />
+                      )}
+
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+
+                      {/* Admin edit button */}
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingPlace({ level: 'village', district: selectedDistrict.name, mandal: selectedMandal.name, village: village.name })}
+                          className="absolute top-2.5 right-2.5 px-2.5 py-1 bg-black/50 hover:bg-black/70 text-white/90 rounded-xl text-[10px] font-bold shadow flex items-center gap-1 backdrop-blur-sm transition-all z-10 opacity-0 group-hover:opacity-100"
+                        >
+                          <Camera size={11} /> {placeImg?.imageUrl ? 'Edit' : '+ Photo'}
+                        </button>
+                      )}
+
+                      {/* Bottom info + actions */}
+                      <div className="relative z-10 p-3">
+                        {placeImg?.caption && (
+                          <span className="inline-block text-[10px] font-bold text-emerald-300 uppercase tracking-widest mb-0.5">
+                            {placeImg.caption}
+                          </span>
                         )}
-                      </div>
-
-                      <div className="pt-3 border-t border-slate-100 space-y-2 mt-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const p = new URLSearchParams();
-                            p.set('district', selectedDistrict.name);
-                            p.set('mandal', selectedMandal.name);
-                            p.set('village', village.name);
-                            navigate(`/telangana/issues?${p.toString()}`);
-                          }}
-                          className="w-full py-2 px-3 rounded-xl bg-[#67001A] hover:bg-[#520015] text-white text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-all"
-                        >
-                          <span>View Village Logs</span>
-                          <ExternalLink size={12} />
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const p = new URLSearchParams();
-                            p.set('district', selectedDistrict.name);
-                            p.set('mandal', selectedMandal.name);
-                            p.set('village', village.name);
-                            navigate(`/sarpanches?${p.toString()}`);
-                          }}
-                          className="w-full py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
-                        >
-                          <span>Panchayat Directory</span>
-                        </button>
+                        <h3 className="text-base font-black text-white leading-tight tracking-tight truncate">
+                          {village.name}
+                        </h3>
+                        {village.population ? (
+                          <p className="text-[11px] text-white/70 mb-2">Pop: {village.population.toLocaleString('en-IN')}</p>
+                        ) : (
+                          <p className="text-[11px] text-white/60 mb-2">Gram Panchayat</p>
+                        )}
+                        <div className="space-y-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const p = new URLSearchParams();
+                              p.set('district', selectedDistrict.name);
+                              p.set('mandal', selectedMandal.name);
+                              p.set('village', village.name);
+                              navigate(`/telangana/issues?${p.toString()}`);
+                            }}
+                            className="w-full py-1.5 px-3 rounded-xl bg-[#67001A] hover:bg-[#520015] text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all"
+                          >
+                            <span>View Village Logs</span>
+                            <ExternalLink size={11} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const p = new URLSearchParams();
+                              p.set('district', selectedDistrict.name);
+                              p.set('mandal', selectedMandal.name);
+                              p.set('village', village.name);
+                              navigate(`/sarpanches?${p.toString()}`);
+                            }}
+                            className="w-full py-1.5 px-3 rounded-xl bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-all"
+                          >
+                            Panchayat Directory
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );

@@ -19,6 +19,7 @@ import {
   Building2,
   Crown,
   Users,
+  Phone,
 } from "lucide-react";
 import { BRANDING } from "@web/constants/branding";
 import { LanguageToggle, useLanguage } from "@web/context/LanguageContext";
@@ -96,6 +97,17 @@ function SidebarItem({
       )}
     </button>
   );
+}
+
+function formatPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) {
+    return `+91 ${digits.slice(2, 7)} ${digits.slice(7)}`;
+  }
+  if (digits.length === 10) {
+    return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
+  }
+  return phone;
 }
 
 export default function AppLayout({ children }: { children?: React.ReactNode }) {
@@ -446,7 +458,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
           >
             <div
               className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center font-black text-sm shadow-md shrink-0 bg-[#CCB252] text-[#67001A]"
-              title={user?.name ?? "User"}
+              title={`${user?.name ?? "User"}${user?.phone ? ` • ${formatPhone(user.phone)}` : ""}`}
             >
               {user?.name?.[0] ?? "U"}
             </div>
@@ -462,6 +474,12 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
                       ? `${user?.mandal || "Mandal"} Official`
                       : `${user?.village || "Telangana"} • ${user?.mandal || "Citizen"}`}
                   </p>
+                  {user?.phone && (
+                    <p className="text-[10px] font-medium text-white/75 truncate flex items-center gap-1 mt-0.5 tracking-tight">
+                      <Phone size={10} className="text-[#CCB252] shrink-0" />
+                      <span>{formatPhone(user.phone)}</span>
+                    </p>
+                  )}
                   {user?.role && (
                     <div className="mt-1">
                       <UserRoleBadge role={user.role} size="sm" />

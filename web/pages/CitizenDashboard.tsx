@@ -255,160 +255,116 @@ export default function CitizenDashboard() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Administrative Scope</p>
-                    <p className="font-bold text-white mt-0.5">All Villages &amp; Mandals</p>
+                    <p className="font-bold text-white mt-0.5" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>All Villages &amp; Mandals</p>
                     <p className="text-xs text-white/70">Telangana State · {me?.role === 'super_admin' ? 'Super Admin' : 'Admin'} Oversight</p>
                   </div>
                 </div>
               </div>
             </GsCard>
           ) : me?.role === 'mandal_official' && me?.mandal ? (
-            placeImage?.imageUrl ? (
-              <div className="relative rounded-2xl overflow-hidden shadow-sm border border-indigo-200" style={{ minHeight: '120px' }}>
-                <img src={placeImage.imageUrl} alt={placeImage.caption || me.mandal} className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-950/90 via-indigo-900/70 to-transparent" />
-                <div className="relative z-10 flex items-end p-4 min-h-[120px]">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Mandal Jurisdiction</p>
-                    <p className="font-black text-white text-lg leading-tight mt-0.5">{me.mandal} Mandal</p>
-                    <p className="text-xs text-white/70">{me.district} District · All Villages</p>
-                    {placeImage.caption && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full mt-1.5">
-                        <Sparkles size={10} className="text-indigo-300" />
-                        {placeImage.caption}
-                      </span>
-                    )}
-                  </div>
+            <div className="relative rounded-2xl overflow-hidden shadow-sm border border-indigo-200" style={{ minHeight: '120px' }}>
+              <img
+                src={placeImage?.imageUrl || '/default-mandal.jpg'}
+                alt={placeImage?.caption || me.mandal}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              {/* Layer 1: permanent tint */}
+              <div className="absolute inset-0 bg-black/25" />
+              {/* Layer 2: directional gradient for text zone */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
+              <div className="relative z-10 flex items-end p-4 min-h-[120px]">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest drop-shadow-sm">Mandal Jurisdiction</p>
+                  <p className="font-black text-white text-lg leading-tight mt-0.5" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.9)' }}>{me.mandal} Mandal</p>
+                  <p className="text-xs text-white/80" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>{me.district} District · All Villages</p>
+                  {placeImage?.caption && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full mt-1.5 border border-white/10">
+                      <Sparkles size={10} className="text-indigo-300" />
+                      {placeImage.caption}
+                    </span>
+                  )}
                 </div>
               </div>
-            ) : (
-              <div className="relative rounded-2xl overflow-hidden shadow-sm border border-indigo-200" style={{ minHeight: '120px' }}>
-                <img src="/default-mandal.jpg" alt="Mandal" className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-950/90 via-indigo-900/70 to-transparent" />
-                <div className="relative z-10 flex items-end p-4 min-h-[120px]">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Mandal Jurisdiction</p>
-                    <p className="font-black text-white text-lg leading-tight mt-0.5">{me.mandal} Mandal</p>
-                    <p className="text-xs text-white/70">{me.district} District · All Villages</p>
-                  </div>
-                </div>
-              </div>
-            )
+            </div>
           ) : me?.role === 'sarpanch' && me?.village ? (
-            placeImage?.imageUrl ? (
-              <div className="relative rounded-2xl overflow-hidden shadow-sm border border-amber-200" style={{ minHeight: '120px' }}>
-                <img src={placeImage.imageUrl} alt={placeImage.caption || me.village} className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-transparent" />
-                <div className="relative z-10 flex items-end p-4 min-h-[120px]">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold text-[#CCB252] uppercase tracking-widest">Gram Panchayat</p>
-                    <p className="font-black text-white text-lg leading-tight mt-0.5">{me.village}</p>
-                    <p className="text-xs text-white/70">{me.mandal} · {me.district} District</p>
-                    {placeImage.caption && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full mt-1.5">
-                        <Sparkles size={10} className="text-amber-300" />
-                        {placeImage.caption}
-                      </span>
-                    )}
-                  </div>
-                  <div className="shrink-0 ml-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#CCB252]/20 backdrop-blur-sm flex items-center justify-center border border-[#CCB252]/40">
-                      <Crown size={18} className="text-[#CCB252]" />
-                    </div>
+            <div className="relative rounded-2xl overflow-hidden shadow-sm border border-amber-200" style={{ minHeight: '120px' }}>
+              <img
+                src={placeImage?.imageUrl || '/default-village.jpg'}
+                alt={placeImage?.caption || me.village}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/25" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
+              <div className="relative z-10 flex items-end p-4 min-h-[120px]">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-[#CCB252] uppercase tracking-widest drop-shadow-sm">Gram Panchayat</p>
+                  <p className="font-black text-white text-lg leading-tight mt-0.5" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.9)' }}>{me.village}</p>
+                  <p className="text-xs text-white/80" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>{me.mandal} · {me.district} District</p>
+                  {placeImage?.caption && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full mt-1.5 border border-white/10">
+                      <Sparkles size={10} className="text-amber-300" />
+                      {placeImage.caption}
+                    </span>
+                  )}
+                </div>
+                <div className="shrink-0 ml-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#CCB252]/20 backdrop-blur-sm flex items-center justify-center border border-[#CCB252]/40">
+                    <Crown size={18} className="text-[#CCB252]" />
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="relative rounded-2xl overflow-hidden shadow-sm border border-amber-200" style={{ minHeight: '120px' }}>
-                <img src="/default-village.jpg" alt="Village" className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-transparent" />
-                <div className="relative z-10 flex items-end p-4 min-h-[120px]">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold text-[#CCB252] uppercase tracking-widest">Gram Panchayat</p>
-                    <p className="font-black text-white text-lg leading-tight mt-0.5">{me.village}</p>
-                    <p className="text-xs text-white/70">{me.mandal} · {me.district} District</p>
-                  </div>
-                  <div className="shrink-0 ml-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#CCB252]/20 backdrop-blur-sm flex items-center justify-center border border-[#CCB252]/40">
-                      <Crown size={18} className="text-[#CCB252]" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
+            </div>
           ) : me?.role === 'ward_member' && me?.village ? (
-            placeImage?.imageUrl ? (
-              <div className="relative rounded-2xl overflow-hidden shadow-sm border border-purple-200" style={{ minHeight: '120px' }}>
-                <img src={placeImage.imageUrl} alt={placeImage.caption || me.village} className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-950/85 via-purple-900/60 to-transparent" />
-                <div className="relative z-10 flex items-end p-4 min-h-[120px]">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold text-purple-300 uppercase tracking-widest">Ward Jurisdiction</p>
-                    <p className="font-black text-white text-lg leading-tight mt-0.5">{me.village} · Ward {me.wardNumber || '1'}</p>
-                    <p className="text-xs text-white/70">{me.mandal} · {me.district} District</p>
-                    {placeImage.caption && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full mt-1.5">
-                        <Sparkles size={10} className="text-purple-300" />
-                        {placeImage.caption}
-                      </span>
-                    )}
-                  </div>
+            <div className="relative rounded-2xl overflow-hidden shadow-sm border border-purple-200" style={{ minHeight: '120px' }}>
+              <img
+                src={placeImage?.imageUrl || '/default-village.jpg'}
+                alt={placeImage?.caption || me.village}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/25" />
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-950/85 via-black/50 to-transparent" />
+              <div className="relative z-10 flex items-end p-4 min-h-[120px]">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-purple-300 uppercase tracking-widest drop-shadow-sm">Ward Jurisdiction</p>
+                  <p className="font-black text-white text-lg leading-tight mt-0.5" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.9)' }}>{me.village} · Ward {me.wardNumber || '1'}</p>
+                  <p className="text-xs text-white/80" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>{me.mandal} · {me.district} District</p>
+                  {placeImage?.caption && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full mt-1.5 border border-white/10">
+                      <Sparkles size={10} className="text-purple-300" />
+                      {placeImage.caption}
+                    </span>
+                  )}
                 </div>
               </div>
-            ) : (
-              <div className="relative rounded-2xl overflow-hidden shadow-sm border border-purple-200" style={{ minHeight: '120px' }}>
-                <img src="/default-village.jpg" alt="Village" className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-950/85 via-purple-900/60 to-transparent" />
-                <div className="relative z-10 flex items-end p-4 min-h-[120px]">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold text-purple-300 uppercase tracking-widest">Ward Jurisdiction</p>
-                    <p className="font-black text-white text-lg leading-tight mt-0.5">{me.village} · Ward {me.wardNumber || '1'}</p>
-                    <p className="text-xs text-white/70">{me.mandal} · {me.district} District</p>
-                  </div>
-                </div>
-              </div>
-            )
+            </div>
           ) : me?.village ? (
-            placeImage?.imageUrl ? (
-              <div className="relative rounded-2xl overflow-hidden shadow-sm border border-emerald-200" style={{ minHeight: '120px' }}>
-                <img src={placeImage.imageUrl} alt={placeImage.caption || me.village} className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/85 via-emerald-900/60 to-transparent" />
-                <div className="relative z-10 flex items-end p-4 min-h-[120px]">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold text-emerald-300 uppercase tracking-widest">Your Village</p>
-                    <p className="font-black text-white text-lg leading-tight mt-0.5">{me.village}</p>
-                    <p className="text-xs text-white/70">{me.mandal} · {me.district} District</p>
-                    {placeImage.caption && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full mt-1.5">
-                        <Sparkles size={10} className="text-emerald-300" />
-                        {placeImage.caption}
-                      </span>
-                    )}
-                  </div>
-                  <div className="shrink-0 ml-3">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-500/20 backdrop-blur-sm flex items-center justify-center border border-emerald-400/30">
-                      <MapPin size={18} className="text-emerald-300" />
-                    </div>
+            <div className="relative rounded-2xl overflow-hidden shadow-sm border border-emerald-200" style={{ minHeight: '120px' }}>
+              <img
+                src={placeImage?.imageUrl || '/default-village.jpg'}
+                alt={placeImage?.caption || me.village}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/25" />
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/85 via-black/50 to-transparent" />
+              <div className="relative z-10 flex items-end p-4 min-h-[120px]">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-emerald-300 uppercase tracking-widest drop-shadow-sm">Your Village</p>
+                  <p className="font-black text-white text-lg leading-tight mt-0.5" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.9)' }}>{me.village}</p>
+                  <p className="text-xs text-white/80" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>{me.mandal} · {me.district} District</p>
+                  {placeImage?.caption && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full mt-1.5 border border-white/10">
+                      <Sparkles size={10} className="text-emerald-300" />
+                      {placeImage.caption}
+                    </span>
+                  )}
+                </div>
+                <div className="shrink-0 ml-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 backdrop-blur-sm flex items-center justify-center border border-emerald-400/30">
+                    <MapPin size={18} className="text-emerald-300" />
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="relative rounded-2xl overflow-hidden shadow-sm border border-emerald-200" style={{ minHeight: '120px' }}>
-                <img src="/default-village.jpg" alt="Village" className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/85 via-emerald-900/60 to-transparent" />
-                <div className="relative z-10 flex items-end p-4 min-h-[120px]">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold text-emerald-300 uppercase tracking-widest">Your Village</p>
-                    <p className="font-black text-white text-lg leading-tight mt-0.5">{me.village}</p>
-                    <p className="text-xs text-white/70">{me.mandal} · {me.district} District</p>
-                  </div>
-                  <div className="shrink-0 ml-3">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-500/20 backdrop-blur-sm flex items-center justify-center border border-emerald-400/30">
-                      <MapPin size={18} className="text-emerald-300" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
+            </div>
           ) : null}
         </section>
 

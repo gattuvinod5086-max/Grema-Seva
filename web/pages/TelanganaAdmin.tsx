@@ -250,23 +250,18 @@ export default function TelanganaAdmin() {
                       onClick={() => handleDistrictClick(district)}
                       className="group relative rounded-3xl overflow-hidden cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 aspect-[4/3] flex flex-col justify-end"
                     >
-                      {/* Background: image or gradient placeholder */}
-                      {placeImg?.imageUrl ? (
-                        <img
-                          src={placeImg.imageUrl}
-                          alt={placeImg.caption || district.name}
-                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      ) : (
-                        <img
-                          src="/default-district.jpg"
-                          alt="Telangana District"
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                      )}
+                      {/* Background image — both custom and default get hover zoom */}
+                      <img
+                        src={placeImg?.imageUrl || '/default-district.jpg'}
+                        alt={placeImg?.caption || district.name}
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
 
-                      {/* Gradient overlay always on top of image */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      {/* Layer 1: permanent dark tint — guarantees text is ALWAYS readable */}
+                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300" />
+
+                      {/* Layer 2: strong bottom gradient for the text zone */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent group-hover:from-black/80 transition-all duration-300" />
 
                       {/* Top-right: admin edit button */}
                       {isAdmin && (
@@ -282,25 +277,28 @@ export default function TelanganaAdmin() {
                         </button>
                       )}
 
-                      {/* Bottom content overlay */}
+                      {/* Bottom content — backdrop-blur panel for extra legibility */}
                       <div className="relative z-10 p-4">
                         {placeImg?.caption && (
-                          <span className="inline-block text-[10px] font-bold text-[#CCB252] uppercase tracking-widest mb-1">
+                          <span className="inline-block text-[10px] font-bold text-[#CCB252] uppercase tracking-widest mb-1 drop-shadow-sm">
                             {placeImg.caption}
                           </span>
                         )}
-                        <h3 className="text-lg font-black text-white leading-tight tracking-tight">
+                        <h3
+                          className="text-lg font-black text-white leading-tight tracking-tight"
+                          style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}
+                        >
                           {district.name}
                         </h3>
                         <div className="flex items-center gap-2 mt-2 flex-wrap">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm text-white text-[10px] font-bold border border-white/10">
                             <Building2 size={9} /> {district.mandals.length} Mandals
                           </span>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm text-white text-[10px] font-bold border border-white/10">
                             <MapPin size={9} /> {totalVillages} Villages
                           </span>
-                          <span className="ml-auto inline-flex items-center gap-0.5 text-white/70 text-[10px] font-bold group-hover:text-white transition-colors">
-                            Explore <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                          <span className="ml-auto inline-flex items-center gap-0.5 text-white/60 text-[10px] font-bold group-hover:text-white transition-colors duration-200">
+                            Explore <ChevronRight size={11} className="group-hover:translate-x-1 transition-transform duration-200" />
                           </span>
                         </div>
                       </div>
@@ -345,23 +343,18 @@ export default function TelanganaAdmin() {
                       onClick={() => handleMandalClick(mandal)}
                       className="group relative rounded-3xl overflow-hidden cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 aspect-[4/3] flex flex-col justify-end"
                     >
-                      {/* Background */}
-                      {placeImg?.imageUrl ? (
-                        <img
-                          src={placeImg.imageUrl}
-                          alt={placeImg.caption || mandal.name}
-                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      ) : (
-                        <img
-                          src="/default-mandal.jpg"
-                          alt="Mandal"
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                      )}
+                      {/* Background — both custom and default get hover zoom */}
+                      <img
+                        src={placeImg?.imageUrl || '/default-mandal.jpg'}
+                        alt={placeImg?.caption || mandal.name}
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
 
-                      {/* Gradient overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      {/* Layer 1: permanent dark tint */}
+                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300" />
+
+                      {/* Layer 2: strong bottom gradient */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent group-hover:from-black/80 transition-all duration-300" />
 
                       {/* Admin edit button */}
                       {isAdmin && (
@@ -380,22 +373,25 @@ export default function TelanganaAdmin() {
                       {/* Bottom text */}
                       <div className="relative z-10 p-4">
                         {placeImg?.caption && (
-                          <span className="inline-block text-[10px] font-bold text-blue-300 uppercase tracking-widest mb-1">
+                          <span className="inline-block text-[10px] font-bold text-blue-300 uppercase tracking-widest mb-1 drop-shadow-sm">
                             {placeImg.caption}
                           </span>
                         )}
-                        <h3 className="text-lg font-black text-white leading-tight tracking-tight">
+                        <h3
+                          className="text-lg font-black text-white leading-tight tracking-tight"
+                          style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}
+                        >
                           {mandal.name} Mandal
                         </h3>
                         <div className="flex items-center gap-2 mt-2 flex-wrap">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm text-white text-[10px] font-bold border border-white/10">
                             <MapPin size={9} /> {mandal.villages.length} Villages
                           </span>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white/80 text-[10px] font-semibold">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm text-white/80 text-[10px] font-semibold border border-white/10">
                             {selectedDistrict.name}
                           </span>
-                          <span className="ml-auto inline-flex items-center gap-0.5 text-white/70 text-[10px] font-bold group-hover:text-white transition-colors">
-                            Explore <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                          <span className="ml-auto inline-flex items-center gap-0.5 text-white/60 text-[10px] font-bold group-hover:text-white transition-colors duration-200">
+                            Explore <ChevronRight size={11} className="group-hover:translate-x-1 transition-transform duration-200" />
                           </span>
                         </div>
                       </div>
@@ -439,23 +435,18 @@ export default function TelanganaAdmin() {
                       key={village.name}
                       className="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 aspect-[4/5] flex flex-col justify-end"
                     >
-                      {/* Background */}
-                      {placeImg?.imageUrl ? (
-                        <img
-                          src={placeImg.imageUrl}
-                          alt={placeImg.caption || village.name}
-                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      ) : (
-                        <img
-                          src="/default-village.jpg"
-                          alt="Village"
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                      )}
+                      {/* Background — both custom and default get hover zoom */}
+                      <img
+                        src={placeImg?.imageUrl || '/default-village.jpg'}
+                        alt={placeImg?.caption || village.name}
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
 
-                      {/* Gradient overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                      {/* Layer 1: permanent dark tint */}
+                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300" />
+
+                      {/* Layer 2: strong bottom gradient */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent group-hover:from-black/85 transition-all duration-300" />
 
                       {/* Admin edit button */}
                       {isAdmin && (
@@ -471,17 +462,20 @@ export default function TelanganaAdmin() {
                       {/* Bottom info + actions */}
                       <div className="relative z-10 p-3">
                         {placeImg?.caption && (
-                          <span className="inline-block text-[10px] font-bold text-emerald-300 uppercase tracking-widest mb-0.5">
+                          <span className="inline-block text-[10px] font-bold text-emerald-300 uppercase tracking-widest mb-0.5 drop-shadow-sm">
                             {placeImg.caption}
                           </span>
                         )}
-                        <h3 className="text-base font-black text-white leading-tight tracking-tight truncate">
+                        <h3
+                          className="text-base font-black text-white leading-tight tracking-tight truncate"
+                          style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}
+                        >
                           {village.name}
                         </h3>
                         {village.population ? (
-                          <p className="text-[11px] text-white/70 mb-2">Pop: {village.population.toLocaleString('en-IN')}</p>
+                          <p className="text-[11px] text-white/80 mb-2" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>Pop: {village.population.toLocaleString('en-IN')}</p>
                         ) : (
-                          <p className="text-[11px] text-white/60 mb-2">Gram Panchayat</p>
+                          <p className="text-[11px] text-white/70 mb-2" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>Gram Panchayat</p>
                         )}
                         <div className="space-y-1.5">
                           <button
@@ -493,7 +487,7 @@ export default function TelanganaAdmin() {
                               p.set('village', village.name);
                               navigate(`/telangana/issues?${p.toString()}`);
                             }}
-                            className="w-full py-1.5 px-3 rounded-xl bg-[#67001A] hover:bg-[#520015] text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all"
+                            className="w-full py-1.5 px-3 rounded-xl bg-[#67001A] hover:bg-[#520015] text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
                           >
                             <span>View Village Logs</span>
                             <ExternalLink size={11} />
@@ -507,7 +501,7 @@ export default function TelanganaAdmin() {
                               p.set('village', village.name);
                               navigate(`/sarpanches?${p.toString()}`);
                             }}
-                            className="w-full py-1.5 px-3 rounded-xl bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-all"
+                            className="w-full py-1.5 px-3 rounded-xl bg-black/40 hover:bg-black/60 backdrop-blur-sm border border-white/15 text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-all"
                           >
                             Panchayat Directory
                           </button>

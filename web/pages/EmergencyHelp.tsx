@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import PublicNavHeader from "@web/components/layout/PublicNavHeader";
+import PublicFooter from "@web/components/layout/PublicFooter";
 import EmergencyHome from "@web/components/emergency/EmergencyHome";
 import { EmergencyMockDB } from "@web/data/emergencyData";
 import { getLocalEmergencyBundle, searchLocalContacts } from "@web/services/localEmergency";
@@ -65,38 +66,42 @@ export default function EmergencyHelp() {
   };
 
   return (
-    <div className="min-h-screen relative pb-16 bg-[#FAF9F6]">
-      {/* Top Header Ribbon and Navigation Pills */}
-      <PublicNavHeader activePill="emergency" />
+    <div className="min-h-screen flex flex-col justify-between relative bg-[#FAF9F6]">
+      <div className="flex-1">
+        {/* Top Header Ribbon and Navigation Pills */}
+        <PublicNavHeader activePill="emergency" />
 
-      {/* Emergency Page Title */}
-      <div className="max-w-5xl mx-auto px-4 pt-6 pb-2">
-        <h1
-          className="text-3xl sm:text-4xl font-black text-[#67001A]"
-          style={{ fontFamily: "Instrument Serif, Georgia, serif" }}
-        >
-          Emergency &amp; Help
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-600 font-medium mt-0.5">
-          Verified emergency contacts and public assistance for your area
-        </p>
+        {/* Emergency Page Title */}
+        <div className="max-w-5xl mx-auto px-4 pt-6 pb-2">
+          <h1
+            className="text-3xl sm:text-4xl font-black text-[#67001A]"
+            style={{ fontFamily: "Instrument Serif, Georgia, serif" }}
+          >
+            Emergency &amp; Help
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-600 font-medium mt-0.5">
+            Verified emergency contacts and public assistance for your area
+          </p>
+        </div>
+
+        {/* Main Emergency Content */}
+        <main className="max-w-5xl mx-auto px-4 py-2 relative z-10 pb-12">
+          <EmergencyHome
+            location={loc}
+            bundle={bundle}
+            isDemoMode={bundle.isDemoData}
+            onUseGps={handleGps}
+            gpsLoading={gpsLoading}
+            onReportIssue={!user ? () => navigate("/login") : user.role === "citizen" ? (category, priority) => {
+              navigate(`/board?category=${encodeURIComponent(category)}&priority=${encodeURIComponent(priority)}`);
+            } : undefined}
+            onSearch={(q, type) => setSearchResults(searchLocalContacts(loc, q, type))}
+            searchResults={searchResults}
+          />
+        </main>
       </div>
 
-      {/* Main Emergency Content */}
-      <main className="max-w-5xl mx-auto px-4 py-2 relative z-10">
-        <EmergencyHome
-          location={loc}
-          bundle={bundle}
-          isDemoMode={bundle.isDemoData}
-          onUseGps={handleGps}
-          gpsLoading={gpsLoading}
-          onReportIssue={!user ? () => navigate("/login") : user.role === "citizen" ? (category, priority) => {
-            navigate(`/board?category=${encodeURIComponent(category)}&priority=${encodeURIComponent(priority)}`);
-          } : undefined}
-          onSearch={(q, type) => setSearchResults(searchLocalContacts(loc, q, type))}
-          searchResults={searchResults}
-        />
-      </main>
+      <PublicFooter />
     </div>
   );
 }

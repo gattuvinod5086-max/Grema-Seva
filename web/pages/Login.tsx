@@ -10,14 +10,10 @@ import {
   UserCog,
   ArrowLeft,
   Crown,
-  Smartphone,
-  Check,
-  Users,
-  TrendingUp,
-  Bookmark,
 } from "lucide-react";
 import { BRANDING } from "@web/constants/branding";
 import PublicNavHeader from "@web/components/layout/PublicNavHeader";
+import PublicFooter from "@web/components/layout/PublicFooter";
 import {
   getDistrictNames,
   getMandalNames,
@@ -49,8 +45,6 @@ export default function Login() {
   const [viewMode, setViewMode] = useState<"citizen" | "official">(
     isOfficialInitial ? "official" : "citizen"
   );
-  // Whether citizen is viewing the hero overview or the mobile number / OTP form
-  const [isPhoneExpanded, setIsPhoneExpanded] = useState(false);
 
   // Official sub-mode: 'signin' or 'register'
   const [officialSubMode, setOfficialSubMode] = useState<"signin" | "register">("signin");
@@ -64,8 +58,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fallbacks
-  const [emblemFallback, setEmblemFallback] = useState(false);
+  // Form busy and error states
 
   // Official Registration fields
   const [name, setName] = useState("");
@@ -97,6 +90,14 @@ export default function Login() {
     }
   }, [step]);
 
+  // Keep viewMode synchronized whenever the URL or active nav pill changes
+  useEffect(() => {
+    const isOfficial = searchParams.get("official") === "1";
+    setViewMode(isOfficial ? "official" : "citizen");
+    setError(null);
+    setStep("form");
+  }, [searchParams]);
+
   const isOfficialLocationValid = () => {
     if (!officialRole) return false;
     if (officialRole === "admin") return true;
@@ -108,7 +109,6 @@ export default function Login() {
 
   const handleOpenCitizen = () => {
     setViewMode("citizen");
-    setIsPhoneExpanded(false);
     setStep("form");
     setError(null);
     setSearchParams({});
@@ -280,166 +280,230 @@ export default function Login() {
   return (
     <div
       data-page="login"
-      className="min-h-screen w-full flex flex-col relative"
+      className="min-h-screen w-full flex flex-col justify-between relative"
       style={{
         background: "linear-gradient(180deg, #FAF9F6 0%, #F5F4EE 100%)",
         minHeight: "100vh",
       }}
     >
       {/* Top Header Ribbon & Centered Navigation Pills */}
-      <PublicNavHeader activePill="login" />
+      <PublicNavHeader activePill={viewMode === "official" ? "official" : "citizen"} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-        <div className="w-full max-w-5xl mx-auto flex flex-col lg:flex-row items-stretch lg:items-start justify-center gap-6 lg:gap-8 py-2">
+        <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch py-2">
           
-          {/* LEFT COLUMN: 2 Cards (Telangana State Emblem + Schemes) */}
-          <div className="w-full lg:w-[380px] xl:w-[420px] flex flex-col gap-6 flex-shrink-0 order-2 lg:order-1">
-            
-            {/* Left Card 1: Telangana State Emblem Card */}
+          {/* ================= LEFT COLUMN: Telangana State Authority & Purpose Showcase ================= */}
+          <div className="lg:col-span-5 flex flex-col h-full">
             <div
-              className="rounded-[2.5rem] bg-white p-8 text-center shadow-md relative"
+              className="bg-white rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-7 text-center shadow-xl border-2 border-[#CCB252]/60 flex-1 flex flex-col justify-between h-full"
               style={{
-                border: "2px solid transparent",
                 backgroundImage:
-                  "linear-gradient(white, white), linear-gradient(135deg, #059669 0%, #CCB252 50%, #EA580C 100%)",
-                backgroundOrigin: "border-box",
-                backgroundClip: "padding-box, border-box",
+                  "linear-gradient(180deg, #FFFFFF 0%, #FAF8F2 60%, #FFFDF8 100%)",
               }}
             >
-              <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-3xl border-2 border-[#CCB252] flex items-center justify-center bg-white p-3 shadow-xs">
-                {!emblemFallback ? (
-                  <img
-                    src={BRANDING.logoEmblem}
-                    alt="Telangana State Emblem"
-                    className="w-full h-full object-contain"
-                    onError={() => setEmblemFallback(true)}
-                  />
-                ) : (
-                  <div className="w-full h-full rounded-2xl bg-[#008A3B] text-white flex items-center justify-center font-bold text-xl">
-                    TG
-                  </div>
-                )}
-              </div>
-
-              <h2
-                className="text-2xl sm:text-3xl font-black text-[#67001A] mt-5"
-                style={{ fontFamily: "Instrument Serif, Georgia, serif" }}
-              >
-                తెలంగాణ రాష్ట్రం
-              </h2>
-              <p className="text-xl font-bold text-slate-900 mt-1">
-                Telangana State
-              </p>
-              <p className="text-sm font-semibold text-slate-500 mt-2 flex items-center justify-center gap-2">
-                <span>33 Districts</span>
-                <span className="text-slate-300">•</span>
-                <span>589 Mandals</span>
-              </p>
-            </div>
-
-            {/* Left Card 2: Telangana Government Schemes Card */}
-            <div
-              className="rounded-[2.5rem] p-7 shadow-xl text-white"
-              style={{
-                background: "linear-gradient(180deg, #67001A 0%, #520015 100%)",
-                boxShadow: "0 20px 30px -10px rgba(103, 0, 26, 0.35)",
-              }}
-            >
-              <div className="flex items-center gap-2.5 mb-5">
-                <Bookmark className="w-5 h-5 text-[#CCB252] fill-[#CCB252]" />
-                <h3 className="text-lg sm:text-xl font-bold tracking-wide text-white">
-                  Telangana Government Schemes
-                </h3>
-              </div>
-
-              <div className="space-y-3.5">
-                {/* Scheme 1: Maha Lakshmi (Orange) */}
-                <div className="rounded-2xl p-4 bg-[#D97706] border border-amber-300/40 shadow-xs">
-                  <p className="font-bold text-white text-base">Maha Lakshmi</p>
-                  <p className="text-xs sm:text-sm text-amber-50 mt-1 leading-snug font-normal">
-                    ₹2,500 assistance, ₹500 LPG cylinders &amp; free TSRTC bus travel for eligible women.
-                  </p>
+              {/* Top: Telangana State Identity & Authority */}
+              <div className="flex flex-col items-center pt-2">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-100/90 border border-amber-300 text-[#67001A] text-[11px] font-black uppercase tracking-wider mb-2.5 shadow-2xs">
+                  <Sparkles size={12} className="text-[#CCB252]" />
+                  <span>తెలంగాణ ప్రభుత్వం</span>
                 </div>
 
-                {/* Scheme 2: Cheyutha (Blue) */}
-                <div className="rounded-2xl p-4 bg-[#0284C7] border border-sky-300/40 shadow-xs">
-                  <p className="font-bold text-white text-base">Cheyutha / Rajiv Aarogyasri</p>
-                  <p className="text-xs sm:text-sm text-sky-50 mt-1 leading-snug font-normal">
-                    Health coverage up to ₹10 lakh for eligible families.
-                  </p>
-                </div>
-
-                {/* Scheme 3: Aasara Pensions (Green) */}
-                <div className="rounded-2xl p-4 bg-[#059669] border border-emerald-300/40 shadow-xs">
-                  <p className="font-bold text-white text-base">Aasara Pensions</p>
-                  <p className="text-xs sm:text-sm text-emerald-50 mt-1 leading-snug font-normal">
-                    Social-security pensions for elderly, widows, PwD &amp; other vulnerable groups.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* RIGHT COLUMN: Main Grama Seva Card */}
-          <div
-            className="w-full lg:w-[480px] xl:w-[520px] rounded-[2.5rem] bg-white p-7 sm:p-10 shadow-xl relative order-1 lg:order-2"
-            style={{
-              border: "3px solid transparent",
-              backgroundImage:
-                "linear-gradient(white, white), linear-gradient(135deg, #10B981 0%, #CCB252 35%, #EC4899 70%, #8B5CF6 100%)",
-              backgroundOrigin: "border-box",
-              backgroundClip: "padding-box, border-box",
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.08)",
-            }}
-          >
-            {/* Top Emblem Box */}
-            <div className="text-center">
-              <div className="w-20 h-20 mx-auto rounded-2xl border-2 border-[#CCB252] flex items-center justify-center bg-white p-2.5 shadow-xs mb-4">
-                {!emblemFallback ? (
-                  <img
-                    src={BRANDING.logoEmblem}
-                    alt="Telangana Emblem"
-                    className="w-full h-full object-contain"
-                    onError={() => setEmblemFallback(true)}
-                  />
-                ) : (
-                  <div className="w-full h-full rounded-xl bg-[#008A3B] text-white flex items-center justify-center font-bold text-lg">
-                    TG
-                  </div>
-                )}
-              </div>
-
-              {/* Burgundy Capsule Outline with Cursive Grama Seva */}
-              <div className="border-2 border-[#67001A] px-7 py-1.5 rounded-2xl inline-block">
-                <span
-                  className="font-black italic text-3xl sm:text-4xl text-[#67001A]"
+                <h2
+                  className="text-2xl sm:text-3xl font-black text-[#520015] tracking-tight uppercase"
                   style={{ fontFamily: "Instrument Serif, Georgia, serif" }}
                 >
-                  Grama Seva
-                </span>
+                  GOVERNMENT OF TELANGANA
+                </h2>
+                <p className="text-xs sm:text-sm font-bold text-slate-700 font-telugu mt-1">
+                  పంచాయతీ రాజ్ &amp; గ్రామీణాభివృద్ధి శాఖ
+                </p>
+                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[10px] text-slate-600 font-semibold">
+                  <span>33 జిల్లాలు</span>
+                  <span>•</span>
+                  <span>589 మండలాలు</span>
+                  <span>•</span>
+                  <span>12,769+ పంచాయతీలు</span>
+                </div>
               </div>
 
-              {/* Sub-labels */}
-              <h2 className="text-base sm:text-lg font-bold text-[#67001A] mt-2.5">
-                గ్రామ సేవ | Village Service
-              </h2>
-              <p className="text-sm font-semibold text-slate-800">
-                Digital Governance Portal
-              </p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Telangana State Government Initiative
-              </p>
+              {/* Center: Dynamic Highlights */}
+              <div className="my-5 w-full space-y-2.5 text-left">
+                {viewMode === "citizen" ? (
+                  <>
+                    <div className="flex items-center justify-between pb-1.5 border-b border-amber-200/60">
+                      <span className="text-xs font-black uppercase tracking-wider text-slate-800">
+                        పౌర సంక్షేమ సేవలు
+                      </span>
+                      <span className="text-[10px] font-bold text-[#008A3B]">
+                        CITIZEN WELFARE
+                      </span>
+                    </div>
+
+                    <div className="rounded-2xl p-3 bg-gradient-to-br from-amber-50 to-orange-50/60 border border-amber-200 shadow-2xs">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-6 h-6 rounded-lg bg-[#D97706] text-white flex items-center justify-center text-xs font-black shrink-0">
+                          1
+                        </span>
+                        <div>
+                          <p className="text-xs font-black text-amber-950">మహాలక్ష్మి &amp; గృహజ్యోతి</p>
+                          <p className="text-[10px] text-amber-800 leading-snug">₹2,500 సాయం, ₹500 గ్యాస్ సిలిండర్, ఉచిత ఆర్టీసీ ప్రయాణం</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl p-3 bg-gradient-to-br from-blue-50 to-sky-50/60 border border-sky-200 shadow-2xs">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-6 h-6 rounded-lg bg-[#0284C7] text-white flex items-center justify-center text-xs font-black shrink-0">
+                          2
+                        </span>
+                        <div>
+                          <p className="text-xs font-black text-sky-950">రైతు భరోసా &amp; రాజీవ్ ఆరోగ్యశ్రీ</p>
+                          <p className="text-[10px] text-sky-800 leading-snug">రైతులకు పెట్టుబడి సాయం, ₹10 లక్షల ఉచిత ఆరోగ్య రక్షణ</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl p-3 bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-emerald-200 shadow-2xs">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-6 h-6 rounded-lg bg-[#059669] text-white flex items-center justify-center text-xs font-black shrink-0">
+                          3
+                        </span>
+                        <div>
+                          <p className="text-xs font-black text-emerald-950">72 గంటల SLA సమస్య పరిష్కారం</p>
+                          <p className="text-[10px] text-emerald-800 leading-snug">మంచినీరు, రోడ్లు, విద్యుత్, డ్రైనేజీ సమస్యల తక్షణ పరిష్కారం</p>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between pb-1.5 border-b border-amber-200/60">
+                      <span className="text-xs font-black uppercase tracking-wider text-slate-800">
+                        అధికారిక పాలనా నియమావళి
+                      </span>
+                      <span className="text-[10px] font-bold text-[#67001A]">
+                        GOVERNANCE PROTOCOL
+                      </span>
+                    </div>
+
+                    <div className="rounded-2xl p-3 bg-gradient-to-br from-purple-50 to-pink-50/60 border border-purple-200 shadow-2xs">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-6 h-6 rounded-lg bg-[#67001A] text-white flex items-center justify-center text-xs font-black shrink-0">
+                          <Crown size={13} />
+                        </span>
+                        <div>
+                          <p className="text-xs font-black text-purple-950">గ్రామ పంచాయతీ కన్సోల్</p>
+                          <p className="text-[10px] text-purple-800 leading-snug">సర్పంచ్ &amp; వార్డు సభ్యుల అధికారిక డ్యాష్‌బోర్డ్</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl p-3 bg-gradient-to-br from-indigo-50 to-blue-50/60 border border-indigo-200 shadow-2xs">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-6 h-6 rounded-lg bg-indigo-700 text-white flex items-center justify-center text-xs font-black shrink-0">
+                          <Building2 size={13} />
+                        </span>
+                        <div>
+                          <p className="text-xs font-black text-indigo-950">మండల &amp; జిల్లా స్థాయి పర్యవేక్షణ</p>
+                          <p className="text-[10px] text-indigo-800 leading-snug">MPDOలు, జిల్లా కలెక్టర్లకు నివేదికల వ్యవస్థ</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl p-3 bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-emerald-200 shadow-2xs">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-6 h-6 rounded-lg bg-[#008A3B] text-white flex items-center justify-center text-xs font-black shrink-0">
+                          <ShieldCheck size={13} />
+                        </span>
+                        <div>
+                          <p className="text-xs font-black text-emerald-950">100% డిజిటల్ ఆడిట్ ట్రయల్</p>
+                          <p className="text-[10px] text-emerald-800 leading-snug">ప్రతి పరిష్కారం జియో-ట్యాగింగ్ ద్వారా ప్రభుత్వ ధృవీకరణ</p>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Bottom Support & Security Compliance */}
+              <div className="w-full pt-3 border-t border-slate-200/80">
+                <div className="flex items-center justify-between text-[11px] text-slate-600 mb-1.5 flex-wrap gap-1">
+                  <span className="font-semibold">24/7 హెల్ప్‌లైన్:</span>
+                  <div className="flex items-center gap-2 font-black text-[#67001A]">
+                    <span>112</span>
+                    <span>•</span>
+                    <span>108</span>
+                    <span>•</span>
+                    <span>1905</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
+                  <span>NIC Secure Infrastructure</span>
+                  <span className="font-bold text-[#67001A] font-telugu">జై తెలంగాణ</span>
+                </div>
+              </div>
+
             </div>
+          </div>
 
-            {/* Error banner */}
-            {error && (
-              <div className="mt-4 bg-amber-50 border border-amber-300 rounded-2xl p-3.5 flex items-start gap-2.5 text-left animate-in">
-                <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                <p className="text-amber-900 text-xs font-semibold">{error}</p>
+          {/* ================= RIGHT COLUMN: Interactive Authentication Terminal ================= */}
+          <div className="lg:col-span-7 flex flex-col h-full">
+            <div
+              className="bg-white rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-8 text-center relative overflow-hidden shadow-xl border-2 border-[#CCB252]/60 flex-1 flex flex-col justify-between h-full"
+              style={{
+                backgroundImage:
+                  "linear-gradient(180deg, #FFFFFF 0%, #FAF8F2 60%, #FFFDF8 100%)",
+              }}
+            >
+              {/* Top: Terminal Title & Active Mode Badge */}
+              <div className="flex flex-col items-center">
+                <div
+                  className="w-14 h-14 rounded-full bg-white p-1.5 shadow-md border-2 border-[#CCB252] flex items-center justify-center ring-4 ring-[#CCB252]/20 overflow-hidden mb-2"
+                  style={{ width: "56px", height: "56px" }}
+                >
+                  <img
+                    src={BRANDING.logoEmblem}
+                    alt="Grama Seva Logo"
+                    className="object-contain"
+                    style={{ width: "42px", height: "42px", maxWidth: "42px", maxHeight: "42px" }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = BRANDING.logoFallback;
+                    }}
+                  />
+                </div>
+
+                <h1
+                  className="font-black text-2xl sm:text-3xl uppercase tracking-tight text-[#520015]"
+                  style={{ fontFamily: "Instrument Serif, Georgia, serif" }}
+                >
+                  GRAMA SEVA
+                </h1>
+                <p className="text-xs sm:text-sm font-black text-[#008A3B] font-telugu telugu-text mt-0.5">
+                  గ్రామ సేవ - తెలంగాణ డిజిటల్ ప్రజా పాలన వేదిక
+                </p>
+
+                <div className="mt-2 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-50 border border-amber-300/80 shadow-2xs">
+                  <span className={`w-2 h-2 rounded-full ${viewMode === "official" ? "bg-[#67001A]" : "bg-emerald-600"} animate-pulse`} />
+                  <span
+                    className="text-xs font-black uppercase tracking-wider text-slate-800"
+                    style={{ fontFamily: "Instrument Serif, Georgia, serif" }}
+                  >
+                    {viewMode === "official" ? "OFFICIALS GOVERNANCE CONSOLE" : "CITIZEN ACCESS TERMINAL"}
+                  </span>
+                  <span className="text-[9px] font-bold text-[#67001A] uppercase tracking-wider font-telugu">
+                    {viewMode === "official" ? "· అధికారిక ప్రవేశం" : "· పౌర సేవలు"}
+                  </span>
+                </div>
               </div>
-            )}
+
+              {/* Error banner */}
+              {error && (
+                <div className="mt-4 bg-amber-50 border border-amber-300 rounded-2xl p-3.5 flex items-start gap-2.5 text-left animate-in">
+                  <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-amber-900 text-xs font-semibold">{error}</p>
+                </div>
+              )}
 
             {/* MODE 1: OFFICIALS PORTAL (when ?official=1 is selected) */}
             {viewMode === "official" ? (
@@ -856,45 +920,27 @@ export default function Login() {
                   </div>
                 )}
               </div>
-            ) : isPhoneExpanded ? (
-              /* MODE 2: EXPANDED CITIZEN MOBILE OTP FLOW */
-              <div className="mt-6 space-y-4 animate-in">
-                <div className="flex items-center justify-between pb-2 border-b border-emerald-100">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsPhoneExpanded(false);
-                      setStep("form");
-                      setError(null);
-                    }}
-                    className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
-                  >
-                    <ArrowLeft size={16} /> Back to Overview
-                  </button>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-full border border-emerald-300 flex items-center gap-1">
-                    <Smartphone size={12} />
-                    Mobile Verification
-                  </span>
-                </div>
-
+            ) : (
+              /* CITIZEN FLOW */
+              <div className="my-auto py-3 space-y-4 w-full animate-in">
                 {step === "form" ? (
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
                       handleRequestOtp();
                     }}
-                    className="space-y-4 pt-1"
+                    className="space-y-3.5"
                   >
                     <div className="text-center">
-                      <h3 className="text-base font-bold text-slate-800">
+                      <h3 className="text-sm sm:text-base font-bold text-slate-800">
                         Citizen Mobile Access
                       </h3>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        We will send a 6-digit verification code by SMS
+                        Enter your 10-digit mobile number to receive a secure SMS OTP
                       </p>
                     </div>
 
-                    <div className="relative">
+                    <div className="relative max-w-sm mx-auto">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-slate-400">
                         +91
                       </span>
@@ -911,31 +957,52 @@ export default function Login() {
                       />
                     </div>
 
-                    <button
-                      type="submit"
-                      disabled={busy || phone.trim().length < 10}
-                      className="w-full py-4 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-md flex items-center justify-center gap-2 hover:opacity-95 disabled:opacity-50 transition-all bg-[#67001A]"
-                    >
-                      {busy ? <Loader2 className="animate-spin" size={18} /> : <ShieldCheck size={18} />}
-                      Request OTP Code
-                    </button>
+                    <div className="max-w-sm mx-auto space-y-2.5">
+                      <button
+                        type="submit"
+                        disabled={busy || phone.trim().length < 10}
+                        className="w-full py-3.5 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-md flex items-center justify-center gap-2 hover:opacity-95 disabled:opacity-50 transition-all bg-[#008A3B]"
+                        style={{
+                          boxShadow: "0 8px 20px -4px rgba(0, 138, 59, 0.35)",
+                        }}
+                      >
+                        {busy ? <Loader2 className="animate-spin" size={18} /> : <ShieldCheck size={18} />}
+                        <span>Request OTP Code</span>
+                      </button>
 
-                    <div className="relative my-2 text-center">
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-slate-200" />
+                      <div className="relative my-2 text-center">
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t border-slate-200" />
+                        </div>
+                        <span className="relative bg-white px-3 text-[10px] text-slate-400 font-bold uppercase">or</span>
                       </div>
-                      <span className="relative bg-white px-3 text-[10px] text-slate-400 font-bold uppercase">or</span>
+
+                      <button
+                        type="button"
+                        onClick={handleSignInWithGoogle}
+                        disabled={busy}
+                        className="w-full py-2.5 px-6 rounded-xl font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center justify-center gap-2 border border-amber-300 transition-all hover:bg-amber-100 bg-[#FEF3C7] shadow-xs"
+                      >
+                        <LogIn className="w-4 h-4 text-[#67001A]" />
+                        <span>Sign in with Google</span>
+                      </button>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={handleSignInWithGoogle}
-                      disabled={busy}
-                      className="w-full py-3 px-6 rounded-xl font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center justify-center gap-2 border border-amber-300 transition-all hover:bg-amber-100 bg-[#FEF3C7] shadow-xs"
-                    >
-                      <LogIn className="w-4 h-4 text-[#67001A]" />
-                      Sign in with Google
-                    </button>
+                    {/* Quick Citizen Services Pill Bar */}
+                    <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-emerald-900 bg-emerald-100 border border-emerald-300">
+                        💧 తాగునీరు
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-blue-900 bg-blue-100 border border-blue-300">
+                        🛣️ రోడ్లు
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-amber-900 bg-amber-100 border border-amber-300">
+                        💡 విద్యుత్
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-purple-900 bg-purple-100 border border-purple-300">
+                        👵 పింఛన్లు
+                      </span>
+                    </div>
                   </form>
                 ) : (
                   /* OTP Entry Screen */
@@ -944,7 +1011,7 @@ export default function Login() {
                       e.preventDefault();
                       if (otpCode.length === 6) handleVerifyOtp();
                     }}
-                    className="space-y-4 pt-1 text-center"
+                    className="space-y-4 text-center max-w-sm mx-auto"
                   >
                     <div className="flex items-center justify-start">
                       <button
@@ -988,10 +1055,13 @@ export default function Login() {
                     <button
                       type="submit"
                       disabled={busy || otpCode.length !== 6}
-                      className="w-full py-4 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-md flex items-center justify-center gap-2 hover:opacity-95 disabled:opacity-50 transition-all bg-[#67001A]"
+                      className="w-full py-3.5 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-md flex items-center justify-center gap-2 hover:opacity-95 disabled:opacity-50 transition-all bg-[#008A3B]"
+                      style={{
+                        boxShadow: "0 8px 20px -4px rgba(0, 138, 59, 0.35)",
+                      }}
                     >
                       {busy ? <Loader2 className="animate-spin" size={18} /> : <ShieldCheck size={18} />}
-                      Verify &amp; Enter
+                      <span>Verify &amp; Enter</span>
                     </button>
 
                     <p className="text-center text-xs text-slate-500 pt-1">
@@ -1012,135 +1082,40 @@ export default function Login() {
                   </form>
                 )}
               </div>
-            ) : (
-              /* MODE 3: DEFAULT HERO OVERVIEW MATCHING SCREENSHOT */
-              <div className="mt-5 space-y-4 animate-in">
-                {/* Welcome Box (Pink/Purple) */}
-                <div className="rounded-2xl p-4 bg-[#FAF5FF] border border-pink-100 text-left">
-                  <div className="flex items-center gap-1.5 text-slate-900 font-bold">
-                    <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-                    <span
-                      className="text-base font-black"
-                      style={{ fontFamily: "Instrument Serif, Georgia, serif" }}
-                    >
-                      Welcome to Digital Village Development!
-                    </span>
-                  </div>
-                  <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
-                    Empowering citizens to report issues, track progress, and participate in village development initiatives.
-                  </p>
-                </div>
-
-                {/* 3 Value Prop Cards */}
-                <div className="space-y-2.5">
-                  {/* Card 1: Citizens Report Issues */}
-                  <div className="rounded-2xl p-3.5 bg-[#FAF5F7] border border-slate-100 flex items-center gap-3.5 text-left">
-                    <div className="w-8 h-8 rounded-full bg-[#008A3B] text-white flex items-center justify-center shrink-0 shadow-xs">
-                      <Check size={16} strokeWidth={3} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-xs sm:text-sm text-slate-900">
-                        Citizens Report Issues
-                      </p>
-                      <p className="text-[11px] sm:text-xs text-slate-500">
-                        Water, Roads, Electricity, Sanitation &amp; More
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Card 2: Ward Members & Sarpanch */}
-                  <div className="rounded-2xl p-3.5 bg-[#FAF5F7] border border-slate-100 flex items-center gap-3.5 text-left">
-                    <div className="w-8 h-8 rounded-full bg-[#67001A] text-white flex items-center justify-center shrink-0 shadow-xs">
-                      <Users size={16} strokeWidth={2.5} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-xs sm:text-sm text-slate-900">
-                        Ward Members &amp; Sarpanch
-                      </p>
-                      <p className="text-[11px] sm:text-xs text-slate-500">
-                        Manage and resolve community issues
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Card 3: Track Progress */}
-                  <div className="rounded-2xl p-3.5 bg-[#FEF9C3]/50 border border-amber-200 flex items-center gap-3.5 text-left">
-                    <div className="w-8 h-8 rounded-full bg-[#CCB252] text-white flex items-center justify-center shrink-0 shadow-xs">
-                      <TrendingUp size={16} strokeWidth={2.5} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-xs sm:text-sm text-slate-900">
-                        Track Progress
-                      </p>
-                      <p className="text-[11px] sm:text-xs text-slate-500">
-                        Real-time updates and transparency
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sign-in Section */}
-                <div className="pt-2">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">
-                    SIGN IN WITH MOBILE OR GOOGLE
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsPhoneExpanded(true);
-                      setStep("form");
-                    }}
-                    className="w-full mt-3 py-3.5 px-6 rounded-xl font-black text-xs uppercase tracking-wider text-white bg-[#67001A] hover:bg-[#520015] shadow-md flex items-center justify-center gap-2.5 transition-all active:scale-[0.99]"
-                  >
-                    <Smartphone size={16} />
-                    <span>CONTINUE WITH MOBILE</span>
-                  </button>
-
-                  <p className="text-xs text-slate-400 font-medium text-center my-2">or</p>
-
-                  <button
-                    type="button"
-                    onClick={handleSignInWithGoogle}
-                    disabled={busy}
-                    className="w-full py-3 px-6 rounded-xl font-bold text-xs uppercase tracking-wider text-slate-900 bg-[#FEF3C7] hover:bg-[#FDE68A] border border-amber-300 shadow-xs flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
-                  >
-                    <LogIn size={15} className="text-[#67001A]" />
-                    <span>Sign in with Google</span>
-                  </button>
-
-                  <p className="text-[11px] text-slate-500 text-center max-w-sm mx-auto mt-3 leading-relaxed">
-                    Google needs npm run dev and .dev.vars . Use Mobile and enter OTP 1234 on the next screen.
-                  </p>
-
-                  {/* Jai Telangana Pills */}
-                  <div className="flex items-center justify-center gap-2 mt-4">
-                    <span className="px-3.5 py-1 rounded-full text-xs font-bold bg-[#FEF9C3] text-[#67001A] border border-amber-200">
-                      జై తెలంగాణ
-                    </span>
-                    <span className="px-3.5 py-1 rounded-full text-xs font-bold bg-[#FDF2F8] text-[#67001A] border border-pink-200">
-                      Jai Telangana
-                    </span>
-                  </div>
-
-                  {/* Discrete Official Portal Toggle Link */}
-                  <div className="text-center mt-3">
-                    <button
-                      type="button"
-                      onClick={handleOpenOfficial}
-                      className="text-[11px] font-bold text-[#67001A] hover:underline"
-                    >
-                      Officials Login &amp; Registration →
-                    </button>
-                  </div>
-                </div>
-              </div>
             )}
 
-          </div>
+            {/* Bottom Footer Action & Jai Telangana */}
+            <div className="w-full pt-3 mt-3 border-t border-slate-200/80 flex items-center justify-between text-xs flex-wrap gap-2">
+              {viewMode === "citizen" ? (
+                <button
+                  type="button"
+                  onClick={handleOpenOfficial}
+                  className="font-bold text-[#67001A] hover:underline flex items-center gap-1 text-[11px]"
+                >
+                  <span>Panchayat Official / Representative?</span>
+                  <span className="font-black">Officials Login →</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleOpenCitizen}
+                  className="font-bold text-[#008A3B] hover:underline flex items-center gap-1 text-[11px]"
+                >
+                  <span>← Back to Citizen Login</span>
+                </button>
+              )}
 
+              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[#67001A] text-[10px] font-bold font-telugu">
+                <Sparkles size={11} className="text-[#CCB252]" />
+                <span>జై తెలంగాణ</span>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
     </div>
+    <PublicFooter />
+  </div>
   );
 }

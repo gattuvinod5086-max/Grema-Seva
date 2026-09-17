@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { BRANDING } from "@web/constants/branding";
 import PublicNavHeader from "@web/components/layout/PublicNavHeader";
+import PublicFooter from "@web/components/layout/PublicFooter";
 
 export default function TerminalLanding() {
   const navigate = useNavigate();
@@ -132,61 +133,43 @@ export default function TerminalLanding() {
             </div>
 
             {/* Telangana Thalli Card */}
-            <div className="bg-white rounded-3xl border-2 border-[#CCB252]/50 shadow-md p-4 text-center flex flex-col items-center justify-between relative overflow-hidden group hover:shadow-xl hover:border-[#CCB252] transition-all flex-1">
+            <div className="bg-white rounded-3xl border-2 border-[#CCB252]/50 shadow-md p-3.5 sm:p-4 text-center flex flex-col justify-between relative overflow-hidden group hover:shadow-xl hover:border-[#CCB252] transition-all flex-1">
               <div className="w-full flex items-center justify-between text-[11px] font-bold border-b border-amber-100 pb-2 mb-1.5">
-                <span className="text-[#67001A] font-telugu telugu-text">రాష్ట్ర వైభవం</span>
-                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[10px]">
+                <span className="text-[#67001A] font-telugu telugu-text font-bold">రాష్ట్ర వైభవం</span>
+                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-semibold">
                   పల్లె ప్రగతి
                 </span>
               </div>
 
-              <div className="w-full flex-1 flex items-center justify-center py-1">
+              <div className="w-full flex-1 flex items-center justify-center relative rounded-2xl overflow-hidden shadow-inner my-1 bg-[#4a2215] ring-1 ring-[#CCB252]/30">
                 {!thalliFallback ? (
                   <img
                     src={BRANDING.telanganaThalli}
                     alt="తెలంగాణ తల్లి"
-                    className="max-h-52 w-full object-contain filter drop-shadow-md group-hover:scale-102 transition-transform"
+                    className="w-full h-80 sm:h-[350px] lg:h-[370px] object-cover object-top filter drop-shadow-md group-hover:scale-102 transition-transform duration-300"
                     onError={() => setThalliFallback(true)}
                   />
                 ) : (
-                  <div className="flex flex-col items-center justify-center p-3">
+                  <div className="flex flex-col items-center justify-center p-4">
                     <span className="text-5xl mb-1">🌾</span>
                     <span className="text-xs font-bold text-amber-900 font-telugu">తెలంగాణ తల్లి</span>
                   </div>
                 )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute bottom-2.5 left-0 right-0 text-center pointer-events-none">
+                  <span className="px-3 py-1 rounded-full bg-black/40 backdrop-blur-xs text-[#FEF08A] text-xs font-black font-telugu telugu-text border border-[#CCB252]/40 shadow-xs">
+                    తెలంగాణ తల్లి
+                  </span>
+                </div>
               </div>
 
-              <div className="w-full pt-2 border-t border-amber-100">
+              <div className="w-full pt-2 border-t border-amber-100 mt-1">
                 <p className="text-xs font-black text-[#67001A] font-telugu telugu-text">
                   తెలంగాణ తల్లి ఆశీస్సులతో పల్లె ప్రగతి
                 </p>
                 <p className="text-[10px] font-bold text-amber-800 tracking-wider uppercase mt-0.5">
                   రైతు సంక్షేమం · గ్రామ సాధికారత
                 </p>
-              </div>
-            </div>
-
-            {/* Political Vision & Leadership Assurance Card */}
-            <div className="bg-gradient-to-br from-[#FFFBEB] via-white to-amber-50 rounded-3xl border-2 border-[#CCB252]/50 shadow-xs p-4 text-left">
-              <div className="flex items-center gap-2 mb-1.5 border-b border-amber-200/60 pb-1.5">
-                <div className="w-6 h-6 rounded-lg bg-[#67001A] text-[#FEF08A] flex items-center justify-center">
-                  <Crown size={14} />
-                </div>
-                <div>
-                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
-                    ప్రజా ప్రతినిధుల విజన్
-                  </h3>
-                  <p className="text-[9px] text-[#67001A] font-bold uppercase tracking-wider">
-                    LEADERSHIP DIRECTIVE
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                సర్పంచులు, వార్డు సభ్యులు, ఎంపీడీవోలు, కలెక్టర్లకు నేరుగా ప్రజల సమస్యలు చేరుస్తూ, మధ్యవర్తులు లేని డిజిటల్ పాలన.
-              </p>
-              <div className="mt-2.5 pt-2 border-t border-amber-200/80 flex items-center justify-between text-[10px] font-bold text-amber-900">
-                <span>100% పారదర్శకత</span>
-                <span className="text-emerald-800 font-black">✓ నిజ సమయ పర్యవేక్షణ</span>
               </div>
             </div>
 
@@ -578,103 +561,7 @@ export default function TerminalLanding() {
       </main>
 
       {/* 4. Official Government of Telangana Footer */}
-      <footer
-        className="w-full text-white mt-10 relative z-20 border-t-2 border-[#CCB252] shadow-xl"
-        style={{
-          background: "linear-gradient(180deg, #520015 0%, #3a000f 50%, #1f0008 100%)",
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center border-b border-white/10 pb-6 mb-6">
-            
-            {/* Col 1: Government Identity (6 cols) */}
-            <div className="md:col-span-6 flex items-center gap-3.5">
-              <div
-                className="w-12 h-12 rounded-full bg-white p-1 shadow-md flex items-center justify-center shrink-0 border-2 border-[#CCB252] overflow-hidden"
-                style={{ width: "48px", height: "48px", minWidth: "48px" }}
-              >
-                <img
-                  src={BRANDING.logoEmblem}
-                  alt="Telangana Government Emblem"
-                  className="object-contain"
-                  style={{ width: "38px", height: "38px", maxWidth: "38px", maxHeight: "38px" }}
-                />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="text-sm sm:text-base font-black tracking-wide text-white uppercase font-telugu telugu-text">
-                    తెలంగాణ ప్రభుత్వం
-                  </h4>
-                  <span className="text-[11px] font-bold text-[#FEF08A] tracking-wider uppercase">
-                    • GOVT OF TELANGANA
-                  </span>
-                </div>
-                <p className="text-xs text-white/80 font-medium truncate">
-                  పంచాయతీ రాజ్ మరియు గ్రామీణాభివృద్ధి శాఖ · Grama Seva
-                </p>
-              </div>
-            </div>
-
-            {/* Col 2: Useful Links (3 cols) */}
-            <div className="md:col-span-3 flex items-center gap-4 text-xs text-white/80 flex-wrap">
-              <Link to="/app" className="hover:text-[#FEF08A] transition-colors">
-                హోమ్
-              </Link>
-              <span>•</span>
-              <Link to="/login" className="hover:text-[#FEF08A] transition-colors">
-                పౌర లాగిన్
-              </Link>
-              <span>•</span>
-              <Link to="/login?official=1" className="hover:text-[#FEF08A] transition-colors">
-                అధికారులు
-              </Link>
-              <span>•</span>
-              <Link to="/emergency" className="hover:text-[#FEF08A] transition-colors text-red-300 font-bold">
-                అత్యవసరం
-              </Link>
-            </div>
-
-            {/* Col 3: Helplines (3 cols) */}
-            <div className="md:col-span-3 flex items-center justify-start md:justify-end gap-3 text-xs text-white/90">
-              <a
-                href="tel:112"
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-700/80 hover:bg-red-700 text-white font-bold border border-red-400/60 shadow-xs text-[11px]"
-              >
-                <PhoneCall size={10} /> 112
-              </a>
-              <a
-                href="tel:108"
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-600/80 hover:bg-red-600 text-white font-bold border border-red-400/60 shadow-xs text-[11px]"
-              >
-                <PhoneCall size={10} /> 108
-              </a>
-              <a
-                href="tel:1905"
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#008A3B]/80 hover:bg-[#008A3B] text-white font-bold border border-emerald-400/60 shadow-xs text-[11px]"
-              >
-                <PhoneCall size={10} /> 1905
-              </a>
-            </div>
-
-          </div>
-
-          {/* Bottom Copyright & Jai Telangana Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-white/60 text-center sm:text-left">
-            <div>
-              <p>
-                © {new Date().getFullYear()} ప్రభుత్వం తెలంగాణ (Government of Telangana). పంచాయతీ రాజ్ &amp; గ్రామీణాభివృద్ధి శాఖ.
-              </p>
-              <p className="text-[10px] text-white/40 mt-0.5">
-                Right to Information (RTI) Act Compliant · NIC Secure State Infrastructure
-              </p>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/30 border border-[#CCB252]/40 text-[#FEF08A] text-xs font-bold font-telugu telugu-text shrink-0">
-              <Sparkles size={11} className="text-[#CCB252]" />
-              <span>జై తెలంగాణ</span>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

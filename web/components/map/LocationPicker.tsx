@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import { Crosshair } from "lucide-react";
+import { MAP_CONFIG } from "@web/constants/map";
 
 const TELANGANA_CENTER: [number, number] = [17.385, 78.4867]; // Hyderabad
 
@@ -50,8 +51,10 @@ export default function LocationPicker({ latitude, longitude, onChange }: Locati
         className="h-56 w-full rounded-xl border border-slate-200 z-0"
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution={MAP_CONFIG.attribution}
+          url={MAP_CONFIG.tileUrl}
+          subdomains={MAP_CONFIG.subdomains}
+          maxZoom={MAP_CONFIG.maxZoom}
         />
         <ClickCapture onPick={onChange} />
         {hasPin && <Marker position={[latitude!, longitude!]} icon={pinIcon("#67001A")} />}

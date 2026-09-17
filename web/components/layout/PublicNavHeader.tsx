@@ -1,16 +1,18 @@
 import { Link } from "react-router";
-import { Home, LogIn, Siren, Sparkles, PhoneCall } from "lucide-react";
+import { Home, Users, Siren, Sparkles, PhoneCall, Crown } from "lucide-react";
 import { BRANDING } from "@web/constants/branding";
 
 interface PublicNavHeaderProps {
   ribbonTitle?: string;
-  activePill?: "home" | "login" | "emergency";
+  activePill?: "home" | "citizen" | "login" | "official" | "emergency";
 }
 
 export default function PublicNavHeader({
   ribbonTitle,
   activePill = "home",
 }: PublicNavHeaderProps) {
+  const isCitizenActive = activePill === "citizen" || activePill === "login";
+
   return (
     <header className="w-full flex-shrink-0 z-30">
       {/* Official Government of Telangana Top Ribbon */}
@@ -72,13 +74,13 @@ export default function PublicNavHeader({
         </div>
       </div>
 
-      {/* Unified 3-Section Executive Navigation Menu */}
+      {/* Unified 4-Pill Executive Navigation Menu */}
       <div className="w-full bg-white/95 backdrop-blur-md border-b-2 border-slate-200/80 shadow-xs">
-        <div className="max-w-5xl mx-auto px-4 py-2.5 sm:py-3 flex items-center justify-center gap-2.5 sm:gap-4 flex-wrap">
-          {/* Section 1: GramaSeva Home */}
+        <div className="max-w-5xl mx-auto px-4 py-2 sm:py-2.5 flex items-center justify-center gap-2 sm:gap-3.5 flex-wrap">
+          {/* Pill 1: GramaSeva Home */}
           <Link
             to="/app"
-            className={`inline-flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs font-black tracking-wider uppercase transition-all duration-200 ${
+            className={`inline-flex items-center gap-2 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs font-black tracking-wider uppercase transition-all duration-200 ${
               activePill === "home"
                 ? "bg-[#67001A] text-white border-2 border-[#CCB252] shadow-md shadow-[#67001A]/20 scale-[1.02]"
                 : "bg-white text-slate-700 border-2 border-slate-200 hover:border-[#CCB252] hover:text-[#67001A] hover:bg-amber-50/30 shadow-xs"
@@ -94,29 +96,48 @@ export default function PublicNavHeader({
             <span>GRAMSEVA HOME</span>
           </Link>
 
-          {/* Section 2: Citizen Login */}
+          {/* Pill 2: Citizen Login */}
           <Link
             to="/login"
-            className={`inline-flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs font-black tracking-wider uppercase transition-all duration-200 ${
-              activePill === "login"
+            className={`inline-flex items-center gap-2 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs font-black tracking-wider uppercase transition-all duration-200 ${
+              isCitizenActive
                 ? "bg-[#67001A] text-white border-2 border-[#CCB252] shadow-md shadow-[#67001A]/20 scale-[1.02]"
                 : "bg-white text-slate-700 border-2 border-slate-200 hover:border-[#CCB252] hover:text-[#67001A] hover:bg-amber-50/30 shadow-xs"
             }`}
           >
             <div
               className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
-                activePill === "login" ? "bg-[#CCB252] text-[#67001A]" : "bg-slate-100 text-slate-600"
+                isCitizenActive ? "bg-[#CCB252] text-[#67001A]" : "bg-slate-100 text-slate-600"
               }`}
             >
-              <LogIn size={12} strokeWidth={2.8} />
+              <Users size={12} strokeWidth={2.8} />
             </div>
             <span>CITIZEN LOGIN</span>
           </Link>
 
-          {/* Section 3: Emergency & Help */}
+          {/* Pill 3: Officials Login */}
+          <Link
+            to="/login?official=1"
+            className={`inline-flex items-center gap-2 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs font-black tracking-wider uppercase transition-all duration-200 ${
+              activePill === "official"
+                ? "bg-[#67001A] text-white border-2 border-[#CCB252] shadow-md shadow-[#67001A]/20 scale-[1.02]"
+                : "bg-white text-slate-700 border-2 border-slate-200 hover:border-[#CCB252] hover:text-[#67001A] hover:bg-amber-50/30 shadow-xs"
+            }`}
+          >
+            <div
+              className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
+                activePill === "official" ? "bg-[#CCB252] text-[#67001A]" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              <Crown size={12} strokeWidth={2.8} />
+            </div>
+            <span>OFFICIALS LOGIN</span>
+          </Link>
+
+          {/* Pill 4: Emergency & Help */}
           <Link
             to="/emergency"
-            className={`inline-flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs font-black tracking-wider uppercase transition-all duration-200 ${
+            className={`inline-flex items-center gap-2 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs font-black tracking-wider uppercase transition-all duration-200 ${
               activePill === "emergency"
                 ? "bg-[#67001A] text-white border-2 border-[#CCB252] shadow-md shadow-[#67001A]/20 scale-[1.02]"
                 : "bg-white text-slate-700 border-2 border-slate-200 hover:border-[#CCB252] hover:text-[#67001A] hover:bg-amber-50/30 shadow-xs"

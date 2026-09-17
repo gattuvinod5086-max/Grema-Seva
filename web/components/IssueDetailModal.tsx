@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, CheckCircle2, RotateCcw, Loader2, MapPin, Play, StickyNote } from 'lucide-react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import { pinIcon } from '@web/components/map/LocationPicker';
+import { MAP_CONFIG } from '@web/constants/map';
 import SlaDisplay from '@web/components/SlaDisplay';
 import IssueTimeline from '@web/components/IssueTimeline';
 import { GsCard } from '@web/components/ui/GsCard';
@@ -118,8 +119,10 @@ export default function IssueDetailModal({ issue, me, onClose, onChanged }: Issu
               className="h-44 w-full rounded-xl border border-slate-200 z-0"
             >
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution={MAP_CONFIG.attribution}
+                url={MAP_CONFIG.tileUrl}
+                subdomains={MAP_CONFIG.subdomains}
+                maxZoom={MAP_CONFIG.maxZoom}
               />
               <Marker position={[issue.latitude, issue.longitude]} icon={pinIcon('#67001A')} />
             </MapContainer>

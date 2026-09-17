@@ -28,6 +28,18 @@ const schema = z.object({
     .string()
     .regex(/^\+?[1-9]\d{7,14}$/, "SUPER_ADMIN_PHONE must be in E.164 format")
     .default("+919999999999"),
+
+  // Supabase Cloud Storage (S3-compatible)
+  SUPBASE_S3_URL: z.string().optional(),
+  SUPABASE_S3_URL: z.string().optional(),
+  SUPBASE_ACCESS_KEY: z.string().optional(),
+  SUPABASE_ACCESS_KEY: z.string().optional(),
+  SUPBASE_SECRET_KEY: z.string().optional(),
+  SUPABASE_SECRET_KEY: z.string().optional(),
+  SUPBASE_REGION: z.string().optional(),
+  SUPABASE_REGION: z.string().optional(),
+  SUPBASE_BUCKET: z.string().optional(),
+  SUPABASE_BUCKET: z.string().optional(),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -44,3 +56,10 @@ export const env = parsed.data;
 
 export const isGoogleOAuthConfigured = () =>
   Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+
+export const isSupabaseStorageConfigured = () =>
+  Boolean(
+    (env.SUPBASE_S3_URL || env.SUPABASE_S3_URL) &&
+    (env.SUPBASE_ACCESS_KEY || env.SUPABASE_ACCESS_KEY) &&
+    (env.SUPBASE_SECRET_KEY || env.SUPABASE_SECRET_KEY)
+  );

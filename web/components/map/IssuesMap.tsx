@@ -1,6 +1,7 @@
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import type { Issue } from "@shared/types";
+import { MAP_CONFIG } from "@web/constants/map";
 
 const STATUS_COLORS: Record<string, string> = {
   Submitted: "#64748b",
@@ -39,8 +40,10 @@ export default function IssuesMap({ issues }: { issues: Issue[] }) {
       className="h-80 w-full rounded-xl border border-slate-200 z-0"
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution={MAP_CONFIG.attribution}
+        url={MAP_CONFIG.tileUrl}
+        subdomains={MAP_CONFIG.subdomains}
+        maxZoom={MAP_CONFIG.maxZoom}
       />
       {located.map((issue) => (
         <Marker

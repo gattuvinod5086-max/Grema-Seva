@@ -3,11 +3,13 @@ import { eq } from "drizzle-orm";
 import { db, client, schema } from "./client";
 import { telanganaData } from "../../../shared/data/telangana";
 import { env } from "../env";
+import { seedSarpanchesAndWardMembers } from "./seedOfficials";
 
 /**
  * Seeds:
  *  1. jurisdictions — every village from the Telangana dataset
  *  2. the super admin (phone from SUPER_ADMIN_PHONE, auto-approved)
+ *  3. officials — Sarpanches and Ward Members for all villages
  *
  * Idempotent: safe to run repeatedly (onConflictDoNothing / upsert).
  */
@@ -73,9 +75,19 @@ async function seedSuperAdmin() {
   console.log(`[seed] created super admin ${phone}`);
 }
 
+async function seedOfficials() {
+  const stats = await seedSarpanchesAndWardMembers();
+  console.log(
+    `[seed] officials: ${stats.sarpanchesInserted} sarpanches inserted (${stats.existingSarpanchesPreserved} preserved), ` +
+      `${stats.wardMembersInserted} ward members inserted (${stats.existingWardMembersPreserved} preserved), ` +
+      `${stats.authIdentitiesLinked} auth identities linked`
+  );
+}
+
 async function main() {
   await seedJurisdictions();
   await seedSuperAdmin();
+  await seedOfficials();
 }
 
 main()

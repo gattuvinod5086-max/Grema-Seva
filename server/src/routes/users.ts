@@ -147,27 +147,21 @@ export const userRoutes = new Hono()
     const qm = c.req.query("mandal")?.trim();
     const qv = c.req.query("village")?.trim();
 
-    if (user.role === "admin" || user.role === "super_admin") {
-      if (qd && qm && qv) {
-        target = await findJurisdictionByName(qd, qm, qv);
-        if (!target) throw notFound("Village not found");
-      }
-    } else if (user.role === "mandal_official" && jurisdiction) {
-      if (qv) {
-        target = await findJurisdictionByName(jurisdiction.district, jurisdiction.mandal, qv);
-        if (!target) throw notFound("Village not found in your mandal");
-      } else if (qd && qm && qv) {
+    if (qd && qm && qv) {
+      if (user.role === "mandal_official" && jurisdiction) {
         if (
           qd.toLowerCase() !== jurisdiction.district.toLowerCase() ||
           qm.toLowerCase() !== jurisdiction.mandal.toLowerCase()
         ) {
           throw badRequest("You can only look up villages in your mandal");
         }
-        target = await findJurisdictionByName(jurisdiction.district, jurisdiction.mandal, qv);
-        if (!target) throw notFound("Village not found in your mandal");
       }
+      target = await findJurisdictionByName(qd, qm, qv);
+      if (!target) throw notFound("Village not found");
+    } else if (user.role === "mandal_official" && jurisdiction && qv) {
+      target = await findJurisdictionByName(jurisdiction.district, jurisdiction.mandal, qv);
+      if (!target) throw notFound("Village not found in your mandal");
     } else {
-      // Citizens, Sarpanches, and Ward Members are strictly locked to their own village
       target = jurisdiction;
     }
 

@@ -287,10 +287,7 @@ export default function Login() {
       }}
     >
       {/* Top Header Ribbon & Centered Navigation Pills */}
-      <PublicNavHeader
-        ribbonTitle="తెలంగాణ రాష్ట్రం | Telangana State | Digital Village Development"
-        activePill="login"
-      />
+      <PublicNavHeader activePill="login" />
 
       {/* Main Content Area */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">

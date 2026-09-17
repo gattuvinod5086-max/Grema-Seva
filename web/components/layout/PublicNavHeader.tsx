@@ -23,11 +23,11 @@ export default function PublicNavHeader({
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 text-xs">
           {/* Left: State Branding & Emblem */}
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-            <div className="w-6 h-6 rounded-full bg-white/10 ring-1 ring-[#CCB252] flex items-center justify-center shrink-0 p-0.5">
+            <div className="w-7 h-7 rounded-full bg-white ring-2 ring-[#CCB252] flex items-center justify-center shrink-0 p-0.5 shadow-xs">
               <img
                 src={BRANDING.logoEmblem}
                 alt="Government of Telangana Emblem"
-                className="w-full h-full object-contain brightness-0 invert"
+                className="w-full h-full object-contain"
                 onError={(e) => {
                   (e.target as HTMLElement).style.display = "none";
                 }}
@@ -73,15 +73,15 @@ export default function PublicNavHeader({
       </div>
 
       {/* Unified 3-Section Executive Navigation Menu */}
-      <div className="w-full bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
-        <div className="max-w-5xl mx-auto px-4 py-2.5 sm:py-3 flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
+      <div className="w-full bg-white/95 backdrop-blur-md border-b-2 border-slate-200/80 shadow-xs">
+        <div className="max-w-5xl mx-auto px-4 py-2.5 sm:py-3 flex items-center justify-center gap-2.5 sm:gap-4 flex-wrap">
           {/* Section 1: GramaSeva Home */}
           <Link
             to="/app"
-            className={`inline-flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs font-black tracking-wider uppercase transition-all ${
+            className={`inline-flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs font-black tracking-wider uppercase transition-all duration-200 ${
               activePill === "home"
                 ? "bg-[#67001A] text-white border-2 border-[#CCB252] shadow-md shadow-[#67001A]/20 scale-[1.02]"
-                : "bg-white text-slate-700 border-2 border-slate-200 hover:border-[#67001A]/60 hover:text-[#67001A] hover:bg-amber-50/40 shadow-xs"
+                : "bg-white text-slate-700 border-2 border-slate-200 hover:border-[#CCB252] hover:text-[#67001A] hover:bg-amber-50/30 shadow-xs"
             }`}
           >
             <div
@@ -97,10 +97,10 @@ export default function PublicNavHeader({
           {/* Section 2: Citizen Login */}
           <Link
             to="/login"
-            className={`inline-flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs font-black tracking-wider uppercase transition-all ${
+            className={`inline-flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs font-black tracking-wider uppercase transition-all duration-200 ${
               activePill === "login"
                 ? "bg-[#67001A] text-white border-2 border-[#CCB252] shadow-md shadow-[#67001A]/20 scale-[1.02]"
-                : "bg-white text-slate-700 border-2 border-slate-200 hover:border-[#008A3B]/60 hover:text-[#008A3B] hover:bg-emerald-50/40 shadow-xs"
+                : "bg-white text-slate-700 border-2 border-slate-200 hover:border-[#CCB252] hover:text-[#67001A] hover:bg-amber-50/30 shadow-xs"
             }`}
           >
             <div
@@ -116,15 +116,15 @@ export default function PublicNavHeader({
           {/* Section 3: Emergency & Help */}
           <Link
             to="/emergency"
-            className={`inline-flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs font-black tracking-wider uppercase transition-all ${
+            className={`inline-flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs font-black tracking-wider uppercase transition-all duration-200 ${
               activePill === "emergency"
-                ? "bg-red-700 text-white border-2 border-red-400 shadow-md shadow-red-700/25 scale-[1.02]"
-                : "bg-white text-red-700 border-2 border-red-200 hover:bg-red-50 hover:border-red-400 shadow-xs"
+                ? "bg-[#67001A] text-white border-2 border-[#CCB252] shadow-md shadow-[#67001A]/20 scale-[1.02]"
+                : "bg-white text-slate-700 border-2 border-slate-200 hover:border-[#CCB252] hover:text-[#67001A] hover:bg-amber-50/30 shadow-xs"
             }`}
           >
             <div
               className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
-                activePill === "emergency" ? "bg-white text-red-700" : "bg-red-100 text-red-700"
+                activePill === "emergency" ? "bg-[#CCB252] text-[#67001A]" : "bg-slate-100 text-slate-600"
               }`}
             >
               <Siren size={12} strokeWidth={2.8} />

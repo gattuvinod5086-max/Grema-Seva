@@ -177,10 +177,10 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
 
         {/* Brand Header */}
         <div className={`flex items-center gap-3 mb-5 px-1 relative ${isCollapsed ? "justify-center" : ""}`}>
-          <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shrink-0 ring-2 ring-[#CCB252] bg-white/10 shadow-sm">
+          <div className="w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center shrink-0 ring-2 ring-[#CCB252] bg-white shadow-sm p-1">
             <img
               src={BRANDING.logoEmblem}
-              className="w-7 md:w-8 brightness-0 invert object-contain"
+              className="w-full h-full object-contain"
               alt="Government of Telangana"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = BRANDING.logoFallback;

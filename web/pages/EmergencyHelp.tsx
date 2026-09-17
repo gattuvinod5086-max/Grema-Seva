@@ -67,10 +67,7 @@ export default function EmergencyHelp() {
   return (
     <div className="min-h-screen relative pb-16 bg-[#FAF9F6]">
       {/* Top Header Ribbon and Navigation Pills */}
-      <PublicNavHeader
-        ribbonTitle="తెలంగాణ అత్యవసర సేవలు | Telangana State Emergency & Disaster Response | 24/7 Helpline"
-        activePill="emergency"
-      />
+      <PublicNavHeader activePill="emergency" />
 
       {/* Emergency Page Title */}
       <div className="max-w-5xl mx-auto px-4 pt-6 pb-2">

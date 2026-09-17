@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import {
   LogIn,
@@ -12,6 +12,9 @@ import {
   Award,
   PhoneCall,
   Crown,
+  Sparkles,
+  Shield,
+  CheckCircle2,
 } from "lucide-react";
 import { BRANDING } from "@web/constants/branding";
 import PublicNavHeader from "@web/components/layout/PublicNavHeader";
@@ -22,65 +25,80 @@ export default function TerminalLanding() {
   const [thalliFallback, setThalliFallback] = useState(false);
   const [emblemFallback, setEmblemFallback] = useState(false);
 
+  // Set body background to the footer's darkest tone on mount to prevent white overscroll bars
+  useEffect(() => {
+    const prevBodyBg = document.body.style.background;
+    const prevHtmlBg = document.documentElement.style.background;
+    document.body.style.background = "#1f0008";
+    document.documentElement.style.background = "#1f0008";
+    return () => {
+      document.body.style.background = prevBodyBg;
+      document.documentElement.style.background = prevHtmlBg;
+    };
+  }, []);
+
   return (
     <div
-      className="min-h-screen flex flex-col relative"
+      className="min-h-screen flex flex-col relative w-full overflow-x-hidden selection:bg-[#CCB252] selection:text-[#67001A]"
       style={{
-        background: "linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 40%, #FAF9F6 100%)",
+        background: "linear-gradient(180deg, #FAF8F5 0%, #F5F2EA 50%, #FAF8F5 100%)",
       }}
     >
-      {/* Top Header Ribbon and Unified 3-Pill Navigation */}
-      <PublicNavHeader
-        ribbonTitle="తెలంగాణ ప్రభుత్వం | GOVERNMENT OF TELANGANA | పంచాయతీ రాజ్ & గ్రామీణాభివృద్ధి శాఖ"
-        activePill="home"
-      />
+      {/* 1. Official Government Top Ribbon & Unified 3-Pill Navigation */}
+      <PublicNavHeader activePill="home" />
 
-      {/* Flagship Praja Palana Banner for Political & State Leadership Appeal */}
-      <div className="w-full bg-gradient-to-r from-[#67001A] via-[#8A1538] to-[#4d0012] text-white py-2.5 px-4 shadow-sm border-b border-[#CCB252]/40">
+      {/* 2. Flagship Praja Palana Governance Banner */}
+      <div className="w-full bg-gradient-to-r from-[#520015] via-[#67001A] to-[#4d0012] text-white py-2 px-4 shadow-sm border-b-2 border-[#CCB252]">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 text-xs flex-wrap">
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded-full bg-[#CCB252] text-[#67001A] font-black text-[10px] uppercase tracking-wider shadow-xs">
-              ప్రజా పాలన
+            <span className="px-2.5 py-0.5 rounded-full bg-[#CCB252] text-[#67001A] font-black text-[10px] uppercase tracking-wider shadow-xs flex items-center gap-1">
+              <Sparkles size={11} className="text-[#67001A]" />
+              <span>ప్రజా పాలన</span>
             </span>
-            <span className="font-bold tracking-wide text-white/95">
-              తెలంగాణ ప్రజా పాలన · Praja Palana Digital Rural Initiative
+            <span className="font-bold tracking-wide text-white/95 text-[11px] sm:text-xs">
+              తెలంగాణ డిజిటల్ ప్రజా పాలన &amp; గ్రామీణాభివృద్ధి వేదిక
             </span>
           </div>
-          <div className="flex items-center gap-4 text-[11px] text-[#FEF08A] font-semibold">
-            <span className="hidden sm:inline">🏛️ 33 జిల్లాలు</span>
-            <span className="hidden sm:inline">•</span>
-            <span className="hidden sm:inline">589 మండలాలు</span>
-            <span className="hidden sm:inline">•</span>
-            <span>12,769+ గ్రామ పంచాయతీలు</span>
-            <span className="hidden md:inline px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/20">
-              ⚡ 100% డిజిటల్ పారదర్శకత
+          <div className="flex items-center gap-3 sm:gap-4 text-[11px] text-[#FEF08A] font-bold flex-wrap">
+            <span className="flex items-center gap-1">🏛️ 33 జిల్లాలు</span>
+            <span className="text-white/40">•</span>
+            <span className="flex items-center gap-1">589 మండలాలు</span>
+            <span className="text-white/40">•</span>
+            <span className="flex items-center gap-1">12,769+ గ్రామ పంచాయతీలు</span>
+            <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/25 text-[#FEF08A] border border-[#CCB252]/40 text-[10px]">
+              <CheckCircle2 size={11} className="text-[#CCB252]" />
+              <span>72 గంటల SLA గ్యారెంటీ</span>
             </span>
           </div>
         </div>
       </div>
 
-      {/* Main 3-Column Content Layout */}
+      {/* 3. Main 3-Column Content Layout */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           
-          {/* LEFT COLUMN: Map, Telangana Talli & Governance Vision */}
-          <div className="lg:col-span-3 flex flex-col gap-5 order-2 lg:order-1">
-            {/* Telangana Map Card */}
-            <div className="bg-[#0B132B] rounded-3xl border-2 border-[#CCB252]/50 shadow-lg p-5 text-center flex flex-col items-center justify-between min-h-[230px] relative overflow-hidden group hover:border-[#CCB252] transition-colors">
-              <div className="absolute top-2 left-3 right-3 flex items-center justify-between text-[10px] text-emerald-400 font-bold uppercase tracking-wider">
-                <span>సమగ్ర పటము</span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">33 జిల్లాలు</span>
+          {/* ================= LEFT COLUMN: Map, Telangana Thalli & Governance Vision ================= */}
+          <div className="lg:col-span-3 flex flex-col justify-between gap-4 order-2 lg:order-1 h-full">
+            
+            {/* Telangana Map Card (Clean White Background for Maximum Contrast) */}
+            <div className="bg-white rounded-3xl border-2 border-[#CCB252]/50 shadow-md p-4 text-center flex flex-col items-center justify-between relative overflow-hidden group hover:shadow-xl hover:border-[#CCB252] transition-all">
+              <div className="w-full flex items-center justify-between text-[11px] font-bold border-b border-amber-100 pb-2 mb-1.5">
+                <span className="text-[#67001A] font-telugu telugu-text">సమగ్ర పటము</span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px]">
+                  33 జిల్లాలు
+                </span>
               </div>
-              <div className="w-full flex-1 flex items-center justify-center pt-5 pb-2">
+
+              <div className="w-full flex-1 flex items-center justify-center py-1">
                 {!mapFallback ? (
                   <img
                     src={BRANDING.mapPanel}
                     alt="తెలంగాణ మ్యాప్"
-                    className="max-h-36 w-full object-contain filter drop-shadow-[0_4px_12px_rgba(5,150,105,0.3)] group-hover:scale-105 transition-transform"
+                    className="max-h-36 w-full object-contain filter drop-shadow-md group-hover:scale-105 transition-transform"
                     onError={() => setMapFallback(true)}
                   />
                 ) : (
-                  <svg viewBox="0 0 100 75" className="w-44 h-32 object-contain" aria-hidden>
+                  <svg viewBox="0 0 100 75" className="w-40 h-28 object-contain" aria-hidden>
                     <polygon
                       points="15,20 48,8 85,15 92,45 72,68 30,70 10,50"
                       fill="#059669"
@@ -102,203 +120,280 @@ export default function TerminalLanding() {
                   </svg>
                 )}
               </div>
-              <div className="w-full pt-2 border-t border-slate-800">
-                <p className="text-xs font-black text-[#FEF08A] font-telugu telugu-text">
+
+              <div className="w-full pt-2 border-t border-amber-100">
+                <p className="text-xs font-black text-[#520015] font-telugu telugu-text">
                   తెలంగాణ సమగ్ర స్వరూపం
                 </p>
-                <p className="text-[10px] text-slate-400 font-medium">
-                  North · South · Central Telangana
+                <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
+                  589 మండలాలు • 12,769+ పంచాయతీలు
                 </p>
               </div>
             </div>
 
-            {/* Telangana Talli Card */}
-            <div className="bg-white rounded-3xl border-2 border-[#CCB252]/40 shadow-md p-5 text-center flex flex-col items-center justify-between min-h-[300px] relative overflow-hidden group hover:shadow-xl hover:border-[#CCB252] transition-all">
-              <div className="w-full flex-1 flex items-center justify-center p-2">
+            {/* Telangana Thalli Card */}
+            <div className="bg-white rounded-3xl border-2 border-[#CCB252]/50 shadow-md p-4 text-center flex flex-col items-center justify-between relative overflow-hidden group hover:shadow-xl hover:border-[#CCB252] transition-all flex-1">
+              <div className="w-full flex items-center justify-between text-[11px] font-bold border-b border-amber-100 pb-2 mb-1.5">
+                <span className="text-[#67001A] font-telugu telugu-text">రాష్ట్ర వైభవం</span>
+                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[10px]">
+                  పల్లె ప్రగతి
+                </span>
+              </div>
+
+              <div className="w-full flex-1 flex items-center justify-center py-1">
                 {!thalliFallback ? (
                   <img
                     src={BRANDING.telanganaThalli}
                     alt="తెలంగాణ తల్లి"
-                    className="max-h-56 w-full object-contain filter drop-shadow-md group-hover:scale-102 transition-transform"
+                    className="max-h-52 w-full object-contain filter drop-shadow-md group-hover:scale-102 transition-transform"
                     onError={() => setThalliFallback(true)}
                   />
                 ) : (
-                  <div className="flex flex-col items-center justify-center p-4">
-                    <span className="text-6xl mb-2">🌾</span>
-                    <span className="text-sm font-bold text-amber-900 font-telugu">తెలంగాణ తల్లి</span>
+                  <div className="flex flex-col items-center justify-center p-3">
+                    <span className="text-5xl mb-1">🌾</span>
+                    <span className="text-xs font-bold text-amber-900 font-telugu">తెలంగాణ తల్లి</span>
                   </div>
                 )}
               </div>
+
               <div className="w-full pt-2 border-t border-amber-100">
                 <p className="text-xs font-black text-[#67001A] font-telugu telugu-text">
                   తెలంగాణ తల్లి ఆశీస్సులతో పల్లె ప్రగతి
                 </p>
                 <p className="text-[10px] font-bold text-amber-800 tracking-wider uppercase mt-0.5">
-                  గ్రామ స్వరాజ్యం · రైతు సంక్షేమం
+                  రైతు సంక్షేమం · గ్రామ సాధికారత
                 </p>
               </div>
             </div>
 
             {/* Political Vision & Leadership Assurance Card */}
-            <div className="bg-gradient-to-br from-amber-50 to-orange-50/60 rounded-3xl border-2 border-amber-200 shadow-xs p-4.5 text-left">
-              <div className="flex items-center gap-2 mb-2">
-                <Crown size={18} className="text-amber-700" />
-                <h3 className="text-xs font-black uppercase tracking-wider text-amber-950">
-                  ప్రజా ప్రతినిధుల విజన్
-                </h3>
+            <div className="bg-gradient-to-br from-[#FFFBEB] via-white to-amber-50 rounded-3xl border-2 border-[#CCB252]/50 shadow-xs p-4 text-left">
+              <div className="flex items-center gap-2 mb-1.5 border-b border-amber-200/60 pb-1.5">
+                <div className="w-6 h-6 rounded-lg bg-[#67001A] text-[#FEF08A] flex items-center justify-center">
+                  <Crown size={14} />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                    ప్రజా ప్రతినిధుల విజన్
+                  </h3>
+                  <p className="text-[9px] text-[#67001A] font-bold uppercase tracking-wider">
+                    LEADERSHIP DIRECTIVE
+                  </p>
+                </div>
               </div>
               <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                సర్పంచులు, వార్డు సభ్యులు, ఎంపీడీవోలు, జిల్లా కలెక్టర్లకు నేరుగా ప్రజల సమస్యలు చేరుస్తూ, మధ్యవర్తులు లేని స్వచ్ఛమైన పాలన.
+                సర్పంచులు, వార్డు సభ్యులు, ఎంపీడీవోలు, కలెక్టర్లకు నేరుగా ప్రజల సమస్యలు చేరుస్తూ, మధ్యవర్తులు లేని డిజిటల్ పాలన.
               </p>
-              <div className="mt-3 pt-2.5 border-t border-amber-200/80 flex items-center justify-between text-[10px] font-bold text-amber-900">
+              <div className="mt-2.5 pt-2 border-t border-amber-200/80 flex items-center justify-between text-[10px] font-bold text-amber-900">
                 <span>100% పారదర్శకత</span>
-                <span className="text-emerald-700 font-black">✓ నిజ సమయ పర్యవేక్షణ</span>
+                <span className="text-emerald-800 font-black">✓ నిజ సమయ పర్యవేక్షణ</span>
               </div>
             </div>
+
           </div>
 
-          {/* CENTER COLUMN: Master Government Terminal (Hero Card) */}
-          <div className="lg:col-span-6 order-1 lg:order-2">
+          {/* ================= CENTER COLUMN: Master Government Terminal (Hero Card) ================= */}
+          <div className="lg:col-span-6 order-1 lg:order-2 flex flex-col h-full">
             <div
-              className="bg-white rounded-[2.5rem] p-6 sm:p-10 md:p-12 text-center relative overflow-hidden shadow-2xl border-2"
+              className="bg-white rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-8 text-center relative overflow-hidden shadow-xl border-2 border-[#CCB252]/60 flex-1 flex flex-col justify-center h-full"
               style={{
-                borderColor: "rgba(204, 178, 82, 0.5)",
                 backgroundImage:
-                  "linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 25%, #FEFCE8 75%, #FFFBEB 100%)",
-                boxShadow:
-                  "0 25px 50px -12px rgba(103, 0, 26, 0.18), 0 0 0 1px rgba(204, 178, 82, 0.4)",
+                  "linear-gradient(180deg, #FFFFFF 0%, #FAF8F2 60%, #FFFDF8 100%)",
               }}
             >
-              {/* Emblem inside rounded square with golden radiant halo */}
-              <div className="relative inline-block mb-4 sm:mb-5">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-3xl bg-white p-3 shadow-xl border-2 border-[#CCB252] flex items-center justify-center ring-4 ring-[#CCB252]/20">
-                  {!emblemFallback ? (
-                    <img
-                      src={BRANDING.logoEmblem}
-                      alt="Government of Telangana Emblem"
-                      className="w-full h-full object-contain"
-                      onError={() => setEmblemFallback(true)}
-                    />
-                  ) : (
-                    <div className="w-full h-full rounded-2xl bg-[#67001A] text-[#FEF08A] flex items-center justify-center font-black text-2xl font-serif">
-                      TG
-                    </div>
-                  )}
+              {/* TOP SECTION: State Seal, Titles & Official Intro */}
+              <div className="w-full flex flex-col items-center">
+                {/* Clean Transparent State Seal with Radiant Halo */}
+                <div className="relative inline-block mb-3">
+                  <div
+                    className="w-24 h-24 sm:w-26 sm:h-26 mx-auto rounded-full bg-white p-2 shadow-xl border-2 border-[#CCB252] flex items-center justify-center ring-4 ring-[#CCB252]/20 overflow-hidden"
+                    style={{ width: "96px", height: "96px" }}
+                  >
+                    {!emblemFallback ? (
+                      <img
+                        src={BRANDING.logoEmblem}
+                        alt="Government of Telangana Emblem"
+                        className="object-contain"
+                        style={{ width: "80px", height: "80px", maxWidth: "80px", maxHeight: "80px" }}
+                        onError={() => setEmblemFallback(true)}
+                      />
+                    ) : (
+                      <div className="w-full h-full rounded-full bg-[#67001A] text-[#FEF08A] flex items-center justify-center font-black text-2xl font-serif">
+                        TG
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-[#67001A] text-[#FEF08A] text-[9px] font-black uppercase tracking-widest border border-[#CCB252] shadow-xs whitespace-nowrap">
+                    ప్రభుత్వ అధికారిక ముద్ర
+                  </div>
                 </div>
-                <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-[#67001A] text-[#FEF08A] text-[9px] font-black uppercase tracking-widest border border-[#CCB252] shadow-sm whitespace-nowrap">
-                  ప్రభుత్వ ముద్ర
+
+                {/* State Government Titles */}
+                <div className="mt-2 text-center">
+                  <p className="text-xs font-bold text-[#67001A] font-telugu">
+                    తెలంగాణ ప్రభుత్వం
+                  </p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8A1538] mt-0.5">
+                    GOVERNMENT OF TELANGANA
+                  </p>
+                </div>
+
+                {/* Main Title */}
+                <h1
+                  className="font-black text-3xl sm:text-5xl uppercase tracking-tight text-[#520015] mt-1"
+                  style={{ fontFamily: "Instrument Serif, Georgia, serif" }}
+                >
+                  GRAMA SEVA
+                </h1>
+                <p className="text-xs sm:text-sm font-black text-[#008A3B] font-telugu telugu-text mt-0.5">
+                  గ్రామ సేవ - తెలంగాణ డిజిటల్ ప్రజా పాలన వేదిక
+                </p>
+
+                {/* Sub-Heading Badge */}
+                <div className="mt-2.5 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-50 border border-amber-300/80 shadow-2xs">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
+                  <span
+                    className="text-xs font-black uppercase tracking-wider text-slate-800"
+                    style={{ fontFamily: "Instrument Serif, Georgia, serif" }}
+                  >
+                    CITIZEN SERVICE TERMINAL
+                  </span>
+                  <span className="text-[9px] font-bold text-[#67001A] uppercase tracking-wider">
+                    · DIGITAL PANCHAYAT
+                  </span>
+                </div>
+
+                {/* Value Statement */}
+                <p className="text-xs sm:text-sm font-medium text-slate-600 max-w-lg mx-auto mt-2 leading-relaxed">
+                  తెలంగాణలోని ప్రతి పల్లె ప్రజలకు మౌలిక సదుపాయాలు, నీటి సరఫరా, విద్యుత్, రోడ్లు, పింఛన్ల సమస్యలను 72 గంటల వ్యవధిలో పరిష్కరించే సమగ్ర డిజిటల్ వేదిక.
+                </p>
+
+                {/* 3-Step Citizen Resolution Workflow */}
+                <div className="w-full max-w-lg mx-auto mt-3.5 p-3 rounded-2xl bg-amber-50/70 border border-amber-200/80">
+                  <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+                    <div className="flex flex-col items-center">
+                      <span className="w-5 h-5 rounded-full bg-[#008A3B] text-white text-[10px] font-black flex items-center justify-center mb-1">1</span>
+                      <span className="font-bold text-slate-800">సమస్య నమోదు</span>
+                      <span className="text-[9px] text-slate-500 font-medium">Photo &amp; Geo-tag</span>
+                    </div>
+                    <div className="flex flex-col items-center border-x border-amber-200/80 px-1">
+                      <span className="w-5 h-5 rounded-full bg-[#67001A] text-white text-[10px] font-black flex items-center justify-center mb-1">2</span>
+                      <span className="font-bold text-slate-800">అధికారి సమీక్ష</span>
+                      <span className="text-[9px] text-slate-500 font-medium">Panchayat Action</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="w-5 h-5 rounded-full bg-amber-600 text-white text-[10px] font-black flex items-center justify-center mb-1">3</span>
+                      <span className="font-bold text-slate-800">72 గం. పరిష్కారం</span>
+                      <span className="text-[9px] text-slate-500 font-medium">Guaranteed SLA</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Title & State Branding */}
-              <p className="text-[11px] sm:text-xs font-black uppercase tracking-[0.25em] text-[#CCB252] mt-2 font-telugu">
-                తెలంగాణ ప్రభుత్వం · GOVERNMENT OF TELANGANA
-              </p>
-              <h1
-                className="font-black text-3xl sm:text-4xl md:text-5xl uppercase tracking-wider text-[#67001A] mt-1"
-                style={{ fontFamily: "Instrument Serif, Georgia, serif" }}
-              >
-                GRAMA SEVA
-              </h1>
-              <p className="text-xs sm:text-sm font-black text-[#008A3B] font-telugu telugu-text mt-1">
-                గ్రామ సేవ - తెలంగాణ డిజిటల్ ప్రజా పాలన వేదిక
-              </p>
-
-              {/* Sub-Heading */}
-              <h2
-                className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-tight text-slate-800 mt-5"
-                style={{ fontFamily: "Instrument Serif, Georgia, serif" }}
-              >
-                CITIZEN SERVICE TERMINAL
-              </h2>
-              <p className="text-xs font-black uppercase tracking-widest text-[#67001A] mt-1">
-                DIGITAL PANCHAYAT GOVERNANCE &amp; WELFARE DELIVERY
-              </p>
-
-              {/* Description appealing to citizens and political dignitaries */}
-              <p className="text-xs sm:text-sm font-medium text-slate-600 max-w-lg mx-auto mt-3.5 leading-relaxed">
-                తెలంగాణలోని ప్రతి పల్లె ప్రజలకు మౌలిక సదుపాయాలు, నీటి సరఫరా, విద్యుత్, రోడ్లు, పింఛన్ల సమస్యలను 72 గంటల వ్యవధిలో పరిష్కరించే సమగ్ర డిజిటల్ వేదిక.
-              </p>
-
-              {/* High-Impact CTA Action Buttons */}
-              <div className="space-y-3.5 max-w-md mx-auto pt-6 sm:pt-8 w-full">
-                {/* 1. CITIZEN LOGIN (Primary Vibrant Emerald Green) */}
+              {/* CENTER SECTION: Clean High-Impact Action Buttons */}
+              <div className="w-full max-w-md mx-auto mt-5 space-y-3">
+                {/* 1. CITIZEN LOGIN */}
                 <button
                   type="button"
                   onClick={() => navigate("/login")}
-                  className="w-full py-4 px-6 sm:px-8 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-[0.16em] text-white shadow-xl transition-all flex items-center justify-between gap-3 hover:brightness-110 active:scale-[0.99] border-2 border-emerald-400 group"
+                  className="w-full py-3.5 px-6 sm:px-8 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-[0.16em] text-white shadow-lg transition-all flex items-center justify-between gap-3 hover:brightness-110 active:scale-[0.99] border-2 border-emerald-400 group"
                   style={{
                     background: "linear-gradient(90deg, #00843D 0%, #008A3B 40%, #059669 80%, #047857 100%)",
-                    boxShadow: "0 14px 28px -4px rgba(0, 138, 59, 0.45), 0 4px 10px rgba(0, 0, 0, 0.08)",
+                    boxShadow: "0 10px 24px -4px rgba(0, 138, 59, 0.4)",
                   }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white">
-                      <Users size={16} strokeWidth={2.8} />
+                    <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0">
+                      <Users size={17} strokeWidth={2.6} />
                     </div>
-                    <div className="text-left">
-                      <span className="block font-black text-sm sm:text-base">CITIZEN LOGIN</span>
-                      <span className="block text-[10px] font-medium text-emerald-100 font-telugu normal-case">
-                        పౌర సేవలు &amp; సమస్య నమోదు
-                      </span>
-                    </div>
+                    <span className="font-black text-sm sm:text-base tracking-wider">CITIZEN LOGIN</span>
                   </div>
                   <ArrowRight size={18} strokeWidth={3} className="group-hover:translate-x-1 transition-transform text-[#FEF08A]" />
                 </button>
 
-                {/* 2. OFFICIALS LOGIN (Regal Telangana Gold & Maroon) */}
+                {/* 2. OFFICIALS LOGIN */}
                 <button
                   type="button"
                   onClick={() => navigate("/login?official=1")}
-                  className="w-full py-4 px-6 sm:px-8 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-[0.16em] shadow-md transition-all flex items-center justify-between gap-3 border-2 border-[#CCB252] text-[#67001A] bg-gradient-to-r from-[#FEF9C3] via-[#FEF08A] to-[#FDE047] hover:brightness-105 active:scale-[0.99] group"
+                  className="w-full py-3.5 px-6 sm:px-8 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-[0.16em] shadow-md transition-all flex items-center justify-between gap-3 border-2 border-[#CCB252] text-[#67001A] bg-gradient-to-r from-[#FEF9C3] via-[#FEF08A] to-[#FDE047] hover:brightness-105 active:scale-[0.99] group"
                   style={{
-                    boxShadow: "0 8px 20px -4px rgba(204, 178, 82, 0.4)",
+                    boxShadow: "0 8px 20px -4px rgba(204, 178, 82, 0.35)",
                   }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-[#67001A]/10 flex items-center justify-center text-[#67001A]">
-                      <LogIn size={16} strokeWidth={2.8} />
+                    <div className="w-8 h-8 rounded-xl bg-[#67001A]/10 flex items-center justify-center text-[#67001A] shrink-0">
+                      <Crown size={17} strokeWidth={2.6} />
                     </div>
-                    <div className="text-left">
-                      <span className="block font-black text-sm sm:text-base">OFFICIALS LOGIN</span>
-                      <span className="block text-[10px] font-bold text-[#67001A]/80 font-telugu normal-case">
-                        సర్పంచ్ · వార్డు సభ్యులు · మండల అధికారి · అడ్మిన్
-                      </span>
-                    </div>
+                    <span className="font-black text-sm sm:text-base tracking-wider">OFFICIALS LOGIN</span>
                   </div>
-                  <Crown size={18} strokeWidth={2.5} className="group-hover:scale-110 transition-transform text-[#67001A]" />
+                  <ArrowRight size={18} strokeWidth={2.5} className="group-hover:translate-x-1 transition-transform text-[#67001A]" />
                 </button>
               </div>
 
-              {/* Real-time Governance KPI Counters */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-6 sm:pt-8 mt-6 border-t border-slate-200">
-                <div className="p-2 rounded-xl bg-emerald-50/70 border border-emerald-200 text-center">
-                  <p className="text-xs font-black text-emerald-900">72-Hour SLA</p>
-                  <p className="text-[9px] font-bold text-emerald-700 uppercase">సమస్య పరిష్కారం</p>
-                </div>
-                <div className="p-2 rounded-xl bg-blue-50/70 border border-blue-200 text-center">
-                  <p className="text-xs font-black text-blue-900">Geo-Tagged</p>
-                  <p className="text-[9px] font-bold text-blue-700 uppercase">స్థాన పరిశీలన</p>
-                </div>
-                <div className="p-2 rounded-xl bg-amber-50/70 border border-amber-200 text-center">
-                  <p className="text-xs font-black text-amber-900">Direct OTP</p>
-                  <p className="text-[9px] font-bold text-amber-700 uppercase">సురక్షిత లాగిన్</p>
-                </div>
-                <div className="p-2 rounded-xl bg-purple-50/70 border border-purple-200 text-center">
-                  <p className="text-xs font-black text-purple-900">100% Audit</p>
-                  <p className="text-[9px] font-bold text-purple-700 uppercase">డిజిటల్ రికార్డు</p>
+              {/* TRUST RIBBON: Government Assurance Strip */}
+              <div className="w-full max-w-lg mx-auto mt-5 flex flex-wrap items-center justify-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-black uppercase tracking-wider text-emerald-900">
+                  <Shield size={12} className="text-emerald-700" />
+                  ప్రభుత్వ ఆమోదిత వేదిక
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-[10px] font-black uppercase tracking-wider text-blue-900">
+                  <CheckCircle2 size={12} className="text-blue-700" />
+                  NIC సురక్షిత హోస్టింగ్
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-300 text-[10px] font-black uppercase tracking-wider text-amber-900">
+                  <Award size={12} className="text-amber-700" />
+                  24x7 పర్యవేక్షణ
+                </span>
+              </div>
+
+              {/* BOTTOM SECTION: Real-time Governance KPI Counters */}
+              <div className="w-full mt-6 pt-3.5 border-t border-slate-200/80">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-w-lg mx-auto">
+                  <div className="p-2 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-center">
+                    <div className="w-5 h-5 rounded-lg bg-[#008A3B] text-white flex items-center justify-center mx-auto mb-1 shadow-xs">
+                      <CheckCircle2 size={12} />
+                    </div>
+                    <p className="text-xs font-black text-emerald-950">72-Hour SLA</p>
+                    <p className="text-[9px] font-bold text-emerald-800 font-telugu">సమస్య పరిష్కారం</p>
+                  </div>
+
+                  <div className="p-2 rounded-2xl bg-blue-50/80 border border-blue-200 text-center">
+                    <div className="w-5 h-5 rounded-lg bg-blue-700 text-white flex items-center justify-center mx-auto mb-1 shadow-xs">
+                      <MapPin size={12} />
+                    </div>
+                    <p className="text-xs font-black text-blue-950">Geo-Tagged</p>
+                    <p className="text-[9px] font-bold text-blue-800 font-telugu">లొకేషన్ ఆడిట్</p>
+                  </div>
+
+                  <div className="p-2 rounded-2xl bg-amber-50/80 border border-amber-200 text-center">
+                    <div className="w-5 h-5 rounded-lg bg-amber-700 text-white flex items-center justify-center mx-auto mb-1 shadow-xs">
+                      <Shield size={12} />
+                    </div>
+                    <p className="text-xs font-black text-amber-950">Direct OTP</p>
+                    <p className="text-[9px] font-bold text-amber-900 font-telugu">సురక్షిత ప్రవేశం</p>
+                  </div>
+
+                  <div className="p-2 rounded-2xl bg-purple-50/80 border border-purple-200 text-center">
+                    <div className="w-5 h-5 rounded-lg bg-[#67001A] text-white flex items-center justify-center mx-auto mb-1 shadow-xs">
+                      <Award size={12} />
+                    </div>
+                    <p className="text-xs font-black text-purple-950">100% Audit</p>
+                    <p className="text-[9px] font-bold text-purple-900 font-telugu">డిజిటల్ రికార్డు</p>
+                  </div>
                 </div>
               </div>
+
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Quick Access, Numbers, Stats & Flagship Schemes */}
-          <div className="lg:col-span-3 flex flex-col gap-4 order-3">
+          {/* ================= RIGHT COLUMN: Quick Access, Numbers, Stats & Schemes ================= */}
+          <div className="lg:col-span-3 flex flex-col justify-between gap-5 order-3 h-full">
+            
             {/* Quick Access Tiles */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-5">
-              <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-3 flex items-center justify-between">
+            <div className="bg-white rounded-3xl border-2 border-slate-200/80 shadow-md p-5">
+              <p className="text-[10px] font-black uppercase tracking-wider text-slate-600 mb-3 flex items-center justify-between border-b border-slate-100 pb-2">
                 <span>QUICK ACCESS</span>
-                <span className="text-[#67001A] font-telugu">త్వరిత సేవలు</span>
+                <span className="text-[#67001A] font-telugu font-bold">త్వరిత సేవలు</span>
               </p>
               <div className="grid grid-cols-2 gap-2.5">
                 <Link
@@ -306,10 +401,10 @@ export default function TerminalLanding() {
                   className="flex flex-col items-center justify-center p-3 rounded-2xl bg-red-50 hover:bg-red-100/80 border border-red-200 transition-colors text-center group shadow-2xs"
                 >
                   <Siren size={20} className="text-red-700 mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-black uppercase tracking-wider text-red-800">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-red-900">
                     EMERGENCY
                   </span>
-                  <span className="text-[9px] text-red-600 font-telugu">అత్యవసరం</span>
+                  <span className="text-[9px] text-red-700 font-telugu">అత్యవసరం</span>
                 </Link>
 
                 <Link
@@ -320,44 +415,45 @@ export default function TerminalLanding() {
                   <span className="text-[10px] font-black uppercase tracking-wider text-[#67001A]">
                     NOTICES
                   </span>
-                  <span className="text-[9px] text-[#67001A]/70 font-telugu">ప్రకటనలు</span>
+                  <span className="text-[9px] text-[#67001A]/80 font-telugu">ప్రకటనలు</span>
                 </Link>
 
                 <Link
                   to="/login"
                   className="flex flex-col items-center justify-center p-3 rounded-2xl bg-amber-50 hover:bg-amber-100/80 border border-amber-200 transition-colors text-center group shadow-2xs"
                 >
-                  <LogIn size={20} className="text-amber-800 mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-900">
+                  <LogIn size={20} className="text-amber-900 mb-1 group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-950">
                     LOGIN
                   </span>
-                  <span className="text-[9px] text-amber-700 font-telugu">ప్రవేశం</span>
+                  <span className="text-[9px] text-amber-800 font-telugu">ప్రవేశం</span>
                 </Link>
 
                 <Link
                   to="/login"
                   className="flex flex-col items-center justify-center p-3 rounded-2xl bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 transition-colors text-center group shadow-2xs"
                 >
-                  <ClipboardList size={20} className="text-emerald-700 mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800">
+                  <ClipboardList size={20} className="text-[#008A3B] mb-1 group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-900">
                     REPORT
                   </span>
-                  <span className="text-[9px] text-emerald-600 font-telugu">ఫిర్యాదు</span>
+                  <span className="text-[9px] text-emerald-700 font-telugu">ఫిర్యాదు</span>
                 </Link>
               </div>
             </div>
 
             {/* 24/7 State Emergency Hotlines Card */}
-            <div className="bg-white rounded-3xl border-2 border-red-200 shadow-xs p-5">
-              <div className="flex items-center justify-between mb-3">
+            <div className="bg-white rounded-3xl border-2 border-red-200/90 shadow-md p-5">
+              <div className="flex items-center justify-between mb-3 border-b border-red-100 pb-2">
                 <div className="flex items-center gap-2">
-                  <Phone size={16} className="text-red-600" />
-                  <p className="text-[10px] font-black uppercase tracking-wider text-red-700">
+                  <Phone size={15} className="text-red-600" />
+                  <p className="text-[10px] font-black uppercase tracking-wider text-red-900">
                     24/7 EMERGENCY NUMBERS
                   </p>
                 </div>
                 <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
               </div>
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50 hover:bg-slate-100 transition-colors">
                   <div>
@@ -405,7 +501,7 @@ export default function TerminalLanding() {
                   </div>
                   <a
                     href="tel:1905"
-                    className="px-3 py-1 rounded-lg text-xs font-black bg-emerald-700 text-white hover:opacity-90 shadow-xs flex items-center gap-1"
+                    className="px-3 py-1 rounded-lg text-xs font-black bg-[#008A3B] text-white hover:opacity-90 shadow-xs flex items-center gap-1"
                   >
                     <PhoneCall size={10} /> 1905
                   </a>
@@ -421,27 +517,28 @@ export default function TerminalLanding() {
             </div>
 
             {/* Telangana Flagship Welfare Programs */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-5">
-              <p className="text-[10px] font-black uppercase tracking-wider text-emerald-800 mb-3 flex items-center justify-between">
+            <div className="bg-white rounded-3xl border-2 border-[#CCB252]/40 shadow-md p-5 flex-1 flex flex-col justify-between">
+              <p className="text-[10px] font-black uppercase tracking-wider text-slate-800 mb-3 flex items-center justify-between border-b border-amber-100 pb-2">
                 <span>TELANGANA SCHEMES</span>
-                <span className="text-emerald-700 font-telugu">ప్రభుత్వ పథకాలు</span>
+                <span className="text-[#008A3B] font-telugu font-bold">ప్రభుత్వ పథకాలు</span>
               </p>
+              
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                  <MapPin size={16} className="text-red-600 mx-auto mb-0.5" />
-                  <p className="text-base font-black text-slate-900">33</p>
+                  <MapPin size={15} className="text-red-600 mx-auto mb-0.5" />
+                  <p className="text-sm font-black text-slate-900">33</p>
                   <p className="text-[9px] font-bold text-slate-500 uppercase">జిల్లాలు</p>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                  <Users size={16} className="text-emerald-700 mx-auto mb-0.5" />
-                  <p className="text-base font-black text-slate-900">589</p>
+                  <Users size={15} className="text-[#008A3B] mx-auto mb-0.5" />
+                  <p className="text-sm font-black text-slate-900">589</p>
                   <p className="text-[9px] font-bold text-slate-500 uppercase">మండలాలు</p>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                  <Award size={16} className="text-amber-600 mx-auto mb-0.5" />
-                  <p className="text-base font-black text-slate-900">12,769+</p>
+                  <Award size={15} className="text-amber-600 mx-auto mb-0.5" />
+                  <p className="text-sm font-black text-slate-900">12,769+</p>
                   <p className="text-[9px] font-bold text-slate-500 uppercase">గ్రామాలు</p>
                 </div>
               </div>
@@ -468,125 +565,111 @@ export default function TerminalLanding() {
               </div>
             </div>
 
-            {/* Quick Demo Access Note */}
+            {/* Demo Access Note */}
             <div className="p-3 rounded-2xl bg-amber-50/90 border border-amber-200 text-center shadow-xs">
               <p className="text-[11px] text-amber-950 font-semibold">
-                🔔 డెమో ప్రవేశం: మొబైల్ నంబర్ ఇచ్చి <strong className="text-[#67001A] font-black underline">1234</strong> ఓటీపీ నమోదు చేయండి.
+                🔔 డెమో ప్రవేశం: మొబైల్ నంబర్ ఇచ్చి ఆటో-ఫిల్ అయిన 6 అంకెల ఓటీపీతో సులభంగా లాగిన్ అవ్వండి.
               </p>
             </div>
+
           </div>
+
         </div>
       </main>
 
-      {/* Official Government of Telangana Footer (Eliminating Any Bottom White Space) */}
+      {/* 4. Official Government of Telangana Footer */}
       <footer
-        className="w-full text-white mt-12 relative z-20 border-t-4 border-[#CCB252] shadow-2xl"
+        className="w-full text-white mt-10 relative z-20 border-t-2 border-[#CCB252] shadow-xl"
         style={{
-          background: "linear-gradient(180deg, #520015 0%, #3e0010 45%, #24000a 100%)",
+          background: "linear-gradient(180deg, #520015 0%, #3a000f 50%, #1f0008 100%)",
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8 pb-8 border-b border-white/15">
-            {/* Col 1: Government Identity */}
-            <div className="md:col-span-2 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0 border border-[#CCB252]">
-                  <img
-                    src={BRANDING.logoEmblem}
-                    alt="Telangana Government Emblem"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-                <div>
-                  <h4 className="text-base font-black tracking-wide text-white uppercase font-telugu telugu-text">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center border-b border-white/10 pb-6 mb-6">
+            
+            {/* Col 1: Government Identity (6 cols) */}
+            <div className="md:col-span-6 flex items-center gap-3.5">
+              <div
+                className="w-12 h-12 rounded-full bg-white p-1 shadow-md flex items-center justify-center shrink-0 border-2 border-[#CCB252] overflow-hidden"
+                style={{ width: "48px", height: "48px", minWidth: "48px" }}
+              >
+                <img
+                  src={BRANDING.logoEmblem}
+                  alt="Telangana Government Emblem"
+                  className="object-contain"
+                  style={{ width: "38px", height: "38px", maxWidth: "38px", maxHeight: "38px" }}
+                />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-sm sm:text-base font-black tracking-wide text-white uppercase font-telugu telugu-text">
                     తెలంగాణ ప్రభుత్వం
                   </h4>
-                  <p className="text-xs font-bold text-[#FEF08A] tracking-wider uppercase">
-                    GOVERNMENT OF TELANGANA
-                  </p>
-                  <p className="text-[11px] text-white/80">
-                    పంచాయతీ రాజ్ మరియు గ్రామీణాభివృద్ధి శాఖ
-                  </p>
+                  <span className="text-[11px] font-bold text-[#FEF08A] tracking-wider uppercase">
+                    • GOVT OF TELANGANA
+                  </span>
                 </div>
+                <p className="text-xs text-white/80 font-medium truncate">
+                  పంచాయతీ రాజ్ మరియు గ్రామీణాభివృద్ధి శాఖ · Grama Seva
+                </p>
               </div>
-              <p className="text-xs text-white/75 leading-relaxed max-w-md pt-1">
-                గ్రామ సేవ (Grama Seva) పోర్టల్ తెలంగాణలోని సమస్త పల్లె ప్రజలకు, పంచాయతీలకు, ప్రజా ప్రతినిధులకు పారదర్శకమైన, వేగవంతమైన డిజిటల్ సేవలందిస్తుంది.
-              </p>
             </div>
 
-            {/* Col 2: Key Portals & Links */}
-            <div className="space-y-2.5">
-              <h5 className="text-xs font-black uppercase tracking-wider text-[#FEF08A] border-b border-white/15 pb-1">
-                ముఖ్య లింకులు · Useful Links
-              </h5>
-              <ul className="space-y-1.5 text-xs text-white/80">
-                <li>
-                  <Link to="/app" className="hover:text-[#FEF08A] transition-colors flex items-center gap-1.5">
-                    <span>• గ్రామ సేవ హోమ్ (Home)</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/login" className="hover:text-[#FEF08A] transition-colors flex items-center gap-1.5">
-                    <span>• పౌర సేవలు (Citizen Login)</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/login?official=1" className="hover:text-[#FEF08A] transition-colors flex items-center gap-1.5">
-                    <span>• అధికారుల లాగిన్ (Officials Portal)</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/emergency" className="hover:text-[#FEF08A] transition-colors flex items-center gap-1.5">
-                    <span>• 24/7 అత్యవసర హెల్ప్‌లైన్</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/notices" className="hover:text-[#FEF08A] transition-colors flex items-center gap-1.5">
-                    <span>• ప్రభుత్వ ప్రకటనలు (Notices)</span>
-                  </Link>
-                </li>
-              </ul>
+            {/* Col 2: Useful Links (3 cols) */}
+            <div className="md:col-span-3 flex items-center gap-4 text-xs text-white/80 flex-wrap">
+              <Link to="/app" className="hover:text-[#FEF08A] transition-colors">
+                హోమ్
+              </Link>
+              <span>•</span>
+              <Link to="/login" className="hover:text-[#FEF08A] transition-colors">
+                పౌర లాగిన్
+              </Link>
+              <span>•</span>
+              <Link to="/login?official=1" className="hover:text-[#FEF08A] transition-colors">
+                అధికారులు
+              </Link>
+              <span>•</span>
+              <Link to="/emergency" className="hover:text-[#FEF08A] transition-colors text-red-300 font-bold">
+                అత్యవసరం
+              </Link>
             </div>
 
-            {/* Col 3: State Emergency & Helplines */}
-            <div className="space-y-2.5">
-              <h5 className="text-xs font-black uppercase tracking-wider text-[#FEF08A] border-b border-white/15 pb-1">
-                అత్యవసర హెల్ప్‌లైన్ · Helplines
-              </h5>
-              <ul className="space-y-2 text-xs text-white/85">
-                <li className="flex items-center justify-between">
-                  <span>పోలీస్ / ERSS:</span>
-                  <span className="font-black text-[#FEF08A] bg-black/30 px-2 py-0.5 rounded-md">112</span>
-                </li>
-                <li className="flex items-center justify-between">
-                  <span>వైద్య అంబులెన్స్:</span>
-                  <span className="font-black text-[#FEF08A] bg-black/30 px-2 py-0.5 rounded-md">108</span>
-                </li>
-                <li className="flex items-center justify-between">
-                  <span>మహిళా హెల్ప్‌లైన్:</span>
-                  <span className="font-black text-[#FEF08A] bg-black/30 px-2 py-0.5 rounded-md">181</span>
-                </li>
-                <li className="flex items-center justify-between">
-                  <span>పంచాయతీ రాజ్ కాల్ సెంటర్:</span>
-                  <span className="font-black text-[#FEF08A] bg-black/30 px-2 py-0.5 rounded-md">1905</span>
-                </li>
-              </ul>
+            {/* Col 3: Helplines (3 cols) */}
+            <div className="md:col-span-3 flex items-center justify-start md:justify-end gap-3 text-xs text-white/90">
+              <a
+                href="tel:112"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-700/80 hover:bg-red-700 text-white font-bold border border-red-400/60 shadow-xs text-[11px]"
+              >
+                <PhoneCall size={10} /> 112
+              </a>
+              <a
+                href="tel:108"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-600/80 hover:bg-red-600 text-white font-bold border border-red-400/60 shadow-xs text-[11px]"
+              >
+                <PhoneCall size={10} /> 108
+              </a>
+              <a
+                href="tel:1905"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#008A3B]/80 hover:bg-[#008A3B] text-white font-bold border border-emerald-400/60 shadow-xs text-[11px]"
+              >
+                <PhoneCall size={10} /> 1905
+              </a>
             </div>
+
           </div>
 
-          {/* Bottom Copyright & State Compliance Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left text-xs text-white/70">
+          {/* Bottom Copyright & Jai Telangana Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-white/60 text-center sm:text-left">
             <div>
-              <p className="font-medium">
-                © 2026 తెలంగాణ ప్రభుత్వం (Government of Telangana). సర్వ హక్కులు ప్రత్యేకించబడ్డాయి.
+              <p>
+                © {new Date().getFullYear()} ప్రభుత్వం తెలంగాణ (Government of Telangana). పంచాయతీ రాజ్ &amp; గ్రామీణాభివృద్ధి శాఖ.
               </p>
-              <p className="text-[10px] text-white/50 mt-0.5">
-                Panchayat Raj &amp; Rural Development Department · Designed for Transparent Village Self-Governance.
+              <p className="text-[10px] text-white/40 mt-0.5">
+                Right to Information (RTI) Act Compliant · NIC Secure State Infrastructure
               </p>
             </div>
-            <div className="flex items-center gap-3 text-[11px] text-[#FEF08A] font-bold">
-              <span>డిజిటల్ తెలంగాణ</span>
-              <span>•</span>
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/30 border border-[#CCB252]/40 text-[#FEF08A] text-xs font-bold font-telugu telugu-text shrink-0">
+              <Sparkles size={11} className="text-[#CCB252]" />
               <span>జై తెలంగాణ</span>
             </div>
           </div>

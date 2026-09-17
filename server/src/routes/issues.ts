@@ -24,7 +24,7 @@ import { realtimeHub } from "../services/realtime";
 
 const createIssueSchema = z.object({
   category: z.enum(ISSUE_CATEGORIES),
-  description: z.string().trim().min(5).max(4000),
+  description: z.string().trim().min(5, "Description must have at least 5 characters").max(4000),
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
   accuracyM: z.number().min(0).max(100000).nullable().optional(),

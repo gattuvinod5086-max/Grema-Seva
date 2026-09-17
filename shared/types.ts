@@ -112,7 +112,7 @@ export type Issue = z.infer<typeof IssueSchema>;
 
 export const CreateIssueSchema = z.object({
   category: z.string(),
-  description: z.string().trim().min(5).max(4000),
+  description: z.string().trim().min(5, "Description must have at least 5 characters").max(4000),
   latitude: z.number().nullable().optional(),
   longitude: z.number().nullable().optional(),
   accuracyM: z.number().nullable().optional(),

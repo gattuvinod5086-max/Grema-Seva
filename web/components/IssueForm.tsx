@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, Upload, Camera, AlertTriangle, Copy } from 'lucide-react';
+import { X, Upload, Camera, AlertTriangle, Copy, Loader2 } from 'lucide-react';
 import { classifyIssue } from '@shared/services/issueClassification';
 import VoiceInput from '@web/components/VoiceInput';
 import LocationPicker from '@web/components/map/LocationPicker';
@@ -62,6 +62,18 @@ export default function IssueForm({ onClose, onSubmitted }: IssueFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const trimmedDescription = description.trim();
+    if (!category) {
+      setError('Please select an issue category.');
+      return;
+    }
+
+    if (trimmedDescription.length < 5) {
+      setError('Description must have at least 5 characters.');
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
@@ -70,7 +82,7 @@ export default function IssueForm({ onClose, onSubmitted }: IssueFormProps) {
       // files the same complaint twice.
       const payload: CreateIssue = {
         category: category ?? undefined,
-        description,
+        description: trimmedDescription,
         latitude,
         longitude,
         addressText: location || undefined,
@@ -88,7 +100,12 @@ export default function IssueForm({ onClose, onSubmitted }: IssueFormProps) {
       const body = await issueResponse.json().catch(() => ({}));
 
       if (!issueResponse.ok) {
-        setError(body?.error?.message ?? 'Failed to submit the issue.');
+        const detailMsg =
+          Array.isArray(body?.error?.details) && body.error.details.length > 0
+            ? body.error.details.map((d: { message: string }) => d.message).join(', ')
+            : null;
+        setError(detailMsg ?? body?.error?.message ?? 'Failed to submit the issue.');
+        setSubmitting(false);
         return;
       }
 
@@ -219,17 +236,48 @@ export default function IssueForm({ onClose, onSubmitted }: IssueFormProps) {
 
           {/* Description */}
           <div>
-            <label className="block text-base font-semibold text-gray-900 mb-3">
-              Description *
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-base font-semibold text-gray-900">
+                Description *
+              </label>
+              <span
+                className={`text-xs font-semibold ${
+                  description.trim().length === 0
+                    ? 'text-gray-400'
+                    : description.trim().length < 5
+                    ? 'text-red-500'
+                    : 'text-green-600'
+                }`}
+              >
+                {description.trim().length < 5
+                  ? `${description.trim().length}/5 chars min`
+                  : `${description.trim().length} chars`}
+              </span>
+            </div>
             <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the issue in detail..."
+              onChange={(e) => {
+                setDescription(e.target.value);
+                if (error && e.target.value.trim().length >= 5) {
+                  setError(null);
+                }
+              }}
+              placeholder="Describe the issue in detail (minimum 5 characters)..."
               rows={4}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all text-base"
+              minLength={5}
+              maxLength={4000}
+              className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-all text-base ${
+                description.length > 0 && description.trim().length < 5
+                  ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
+                  : 'border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200'
+              }`}
               required
             />
+            {description.length > 0 && description.trim().length < 5 && (
+              <p className="mt-1.5 text-xs font-medium text-red-600">
+                Description must be at least 5 characters (currently {description.trim().length}).
+              </p>
+            )}
           </div>
 
           {/* Photo Upload */}
@@ -287,13 +335,31 @@ export default function IssueForm({ onClose, onSubmitted }: IssueFormProps) {
           )}
 
           {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={!category || !description || submitting}
-            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-200"
-          >
-            {submitting ? 'Submitting...' : 'Submit Issue'}
-          </button>
+          <div className="space-y-2">
+            <button
+              type="submit"
+              disabled={!category || description.trim().length < 5 || submitting}
+              className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                'Submit Issue'
+              )}
+            </button>
+            {(!category || description.trim().length < 5) && !submitting && (
+              <p className="text-center text-xs text-gray-500">
+                {!category && description.trim().length < 5
+                  ? 'Select a category and enter at least 5 characters to submit'
+                  : !category
+                  ? 'Select an issue category above to submit'
+                  : 'Description must have at least 5 characters to submit'}
+              </p>
+            )}
+          </div>
         </form>
       </div>
     </div>
